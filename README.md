@@ -19,6 +19,8 @@ npm run dev
 
 设计默认保存在当前浏览器的本地存储中，建议导出 JSON 备份。具体进度和限制见 [项目状态](docs/PROJECT_STATUS.md)。
 
+## 正在持续更新中
+
 ## 许可证
 
 项目代码采用 [MIT 许可证](LICENSE)。该许可证不授予 Minecraft 或用户提供的其他第三方素材的权利。
