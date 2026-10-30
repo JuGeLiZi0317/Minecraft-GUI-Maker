@@ -13,7 +13,7 @@ npm ci
 npm run dev
 ```
 
-使用浏览器打开终端显示的地址。构建使用 `npm run build`，测试使用 `npm test`。
+使用浏览器打开终端显示的地址。构建使用 `npm run build`。测试源码和历史测试结果目前仅保留在本地，不包含在公开仓库中。
 
 Panel 的 `src/gui/panel_16x.png`、`panel_32x.png` 和 `panel.png.mcmeta` 为本地提供的素材，不包含在仓库中；现有构建需要这些文件。使用或分发 Minecraft 相关素材时，请自行确认适用的权利和条件。
 

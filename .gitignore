@@ -9,3 +9,15 @@ src/gui/
 # Local fonts, diagnostics, and exported derivative Panel textures remain untracked.
 docs/temp/
 docs/validation/panel-sample/
+
+# Local-only automated tests, fixtures, and historical validation evidence.
+/tests/
+/src/**/*.test.ts
+/docs/validation/
+/playwright.config.ts
+/playwright.manual.config.ts
+# Root-level generated JSON reports; retain project configuration and lockfile.
+/*.json
+!/package.json
+!/package-lock.json
+!/tsconfig.json
