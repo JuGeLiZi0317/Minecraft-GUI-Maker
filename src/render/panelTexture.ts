@@ -1,5 +1,6 @@
 import panel16Url from '../gui/panel_16x.png';
-import panel32Url from '../gui/panel_32x.png';
+const optional32 = import.meta.glob<string>('../gui/panel_32x.png', { eager: true, query: '?url', import: 'default' });
+const panel32Url = optional32['../gui/panel_32x.png'] ?? '';
 import metadataText from '../gui/panel.png.mcmeta?raw';
 import { NATIVE_PANEL_16, NATIVE_PANEL_32, type PanelStyle } from '../domain/panel';
 
@@ -18,7 +19,9 @@ const cache = new Map<TextureStyle, Promise<HTMLImageElement>>();
 export function getPanelImage(style: TextureStyle): Promise<HTMLImageElement> {
   const existing = cache.get(style); if (existing) return existing;
   const task = (async () => {
-    const config = PANEL_TEXTURES[style], response = await fetch(config.url);
+    const config = PANEL_TEXTURES[style];
+    if (!config.url) throw new Error('旧版 32× Panel 纹理未提供，请在本地添加 panel_32x.png');
+    const response = await fetch(config.url);
     if (!response.ok) throw new Error('无法读取用户提供的 Panel 纹理');
     const bytes = await response.arrayBuffer();
     if (!crypto.subtle) throw new Error('当前浏览器无法校验 Panel 纹理摘要');

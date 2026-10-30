@@ -13,9 +13,9 @@ npm ci
 npm run dev
 ```
 
-使用浏览器打开终端显示的地址。构建使用 `npm run build`。测试源码和历史测试结果目前仅保留在本地，不包含在公开仓库中。
+使用浏览器打开终端显示的地址。构建使用 `npm run build`；单元测试使用 `npm test`，浏览器测试使用 `npm run test:e2e`（需安装 Playwright 浏览器）。测试源码位于 `tests/`，其中 `tests/unit/` 为单元测试。测试报告仅保存在本地。
 
-Panel 的 `src/gui/panel_16x.png`、`panel_32x.png` 和 `panel.png.mcmeta` 为本地提供的素材，不包含在仓库中；现有构建需要这些文件。使用或分发 Minecraft 相关素材时，请自行确认适用的权利和条件。
+仓库包含用户提供的 `src/gui/panel_16x.png` 和对应元数据。该纹理由 Minecraft 发射器 GUI 纹理裁切拼接；使用或分发 Minecraft 相关素材时，请自行确认适用的权利和条件。旧版 32× Panel 素材不包含在仓库中；需要该兼容样式时，可在本地提供 `src/gui/panel_32x.png`。
 
 设计默认保存在当前浏览器的本地存储中，建议导出 JSON 备份。具体进度和限制见 [项目状态](docs/PROJECT_STATUS.md)。
 

@@ -4,18 +4,16 @@ test-results/
 playwright-report/
 work/
 *.log
-# User-provided Minecraft texture assets must not be committed or published.
-src/gui/
+# Only the user-authorized 16× Panel and its metadata are tracked.
+src/gui/*
+!src/gui/panel_16x.png
+!src/gui/panel.png.mcmeta
 # Local fonts, diagnostics, and exported derivative Panel textures remain untracked.
 docs/temp/
 docs/validation/panel-sample/
 
-# Local-only automated tests, fixtures, and historical validation evidence.
-/tests/
-/src/**/*.test.ts
+# Historical validation evidence remains local.
 /docs/validation/
-/playwright.config.ts
-/playwright.manual.config.ts
 # Root-level generated JSON reports; retain project configuration and lockfile.
 /*.json
 !/package.json
