@@ -1,0 +1,602 @@
+{
+  "config": {
+    "configFile": "D:\\Minecraft\\AIStudio\\workspace\\Minecraft GUI Maker\\playwright.config.ts",
+    "rootDir": "D:/Minecraft/AIStudio/workspace/Minecraft GUI Maker/tests",
+    "forbidOnly": false,
+    "fullyParallel": false,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 1
+    },
+    "preserveOutput": "always",
+    "reporter": [
+      [
+        "list",
+        null
+      ],
+      [
+        "json",
+        {
+          "outputFile": "test-results/results.json"
+        }
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "quiet": false,
+    "projects": [
+      {
+        "outputDir": "D:/Minecraft/AIStudio/workspace/Minecraft GUI Maker/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "chromium-dpr1",
+        "name": "chromium-dpr1",
+        "testDir": "D:/Minecraft/AIStudio/workspace/Minecraft GUI Maker/tests",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 60000
+      },
+      {
+        "outputDir": "D:/Minecraft/AIStudio/workspace/Minecraft GUI Maker/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "chromium-dpr2",
+        "name": "chromium-dpr2",
+        "testDir": "D:/Minecraft/AIStudio/workspace/Minecraft GUI Maker/tests",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 60000
+      }
+    ],
+    "shard": null,
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.56.1",
+    "workers": 1,
+    "webServer": {
+      "command": "npm.cmd run dev -- --port 4173 --strictPort",
+      "url": "http://127.0.0.1:4173",
+      "reuseExistingServer": false
+    }
+  },
+  "suites": [
+    {
+      "title": "client-jar-local.spec.ts",
+      "file": "client-jar-local.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "user-selected 1.21.1 client JAR GUI sprites (local optional experiment)",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 180000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr1",
+              "projectName": "chromium-dpr1",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1847,
+                  "errors": [],
+                  "stdout": [
+                    {
+                      "text": "{\"project\":\"chromium-dpr1\",\"loadMs\":192,\"memoryBefore\":13896540,\"memoryAfter\":23305890,\"samples\":[\"minecraft:widget/button · 图片 基础：minecraft_1.21.1_client.jar · 元数据 基础：minecraft_1.21.1_client.jar · 200 × 20 · {\\\"type\\\":\\\"nine_slice\\\",\\\"width\\\":200,\\\"height\\\":20,\\\"border\\\":{\\\"left\\\":3,\\\"right\\\":3,\\\"top\\\":3,\\\"bottom\\\":3}} · 仅检查 PNG 文件头，未验证完整解码；客户端版本为自报，来源未认证。\",\"minecraft:widget/button_highlighted · 图片 基础：minecraft_1.21.1_client.jar · 元数据 基础：minecraft_1.21.1_client.jar · 200 × 20 · {\\\"type\\\":\\\"nine_slice\\\",\\\"width\\\":200,\\\"height\\\":20,\\\"border\\\":{\\\"left\\\":3,\\\"right\\\":3,\\\"top\\\":3,\\\"bottom\\\":3}} · 仅检查 PNG 文件头，未验证完整解码；客户端版本为自报，来源未认证。\",\"minecraft:widget/button_disabled · 图片 基础：minecraft_1.21.1_client.jar · 元数据 基础：minecraft_1.21.1_client.jar · 200 × 20 · {\\\"type\\\":\\\"nine_slice\\\",\\\"width\\\":200,\\\"height\\\":20,\\\"border\\\":{\\\"left\\\":1,\\\"right\\\":1,\\\"top\\\":1,\\\"bottom\\\":1}} · 仅检查 PNG 文件头，未验证完整解码；客户端版本为自报，来源未认证。\",\"minecraft:widget/text_field · 图片 基础：minecraft_1.21.1_client.jar · 元数据 基础：minecraft_1.21.1_client.jar · 200 × 20 · {\\\"type\\\":\\\"nine_slice\\\",\\\"width\\\":200,\\\"height\\\":20,\\\"border\\\":{\\\"left\\\":1,\\\"right\\\":1,\\\"top\\\":1,\\\"bottom\\\":1}} · 仅检查 PNG 文件头，未验证完整解码；客户端版本为自报，来源未认证。\",\"minecraft:widget/text_field_highlighted · 图片 基础：minecraft_1.21.1_client.jar · 元数据 基础：minecraft_1.21.1_client.jar · 200 × 20 · {\\\"type\\\":\\\"nine_slice\\\",\\\"width\\\":200,\\\"height\\\":20,\\\"border\\\":{\\\"left\\\":1,\\\"right\\\":1,\\\"top\\\":1,\\\"bottom\\\":1}} · 仅检查 PNG 文件头，未验证完整解码；客户端版本为自报，来源未认证。\"]}\n"
+                    }
+                  ],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-28T09:14:37.494Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "client-jar-summary.json",
+                      "contentType": "application/json",
+                      "body": "eyJsb2FkTXMiOjE5MiwibWVtb3J5QmVmb3JlIjoxMzg5NjU0MCwibWVtb3J5QWZ0ZXIiOjIzMzA1ODkwLCJzYW1wbGVzIjpbIm1pbmVjcmFmdDp3aWRnZXQvYnV0dG9uIMK3IOWbvueJhyDln7rnoYDvvJptaW5lY3JhZnRfMS4yMS4xX2NsaWVudC5qYXIgwrcg5YWD5pWw5o2uIOWfuuehgO+8mm1pbmVjcmFmdF8xLjIxLjFfY2xpZW50LmphciDCtyAyMDAgw5cgMjAgwrcge1widHlwZVwiOlwibmluZV9zbGljZVwiLFwid2lkdGhcIjoyMDAsXCJoZWlnaHRcIjoyMCxcImJvcmRlclwiOntcImxlZnRcIjozLFwicmlnaHRcIjozLFwidG9wXCI6MyxcImJvdHRvbVwiOjN9fSDCtyDku4Xmo4Dmn6UgUE5HIOaWh+S7tuWktO+8jOacqumqjOivgeWujOaVtOino+egge+8m+WuouaIt+err+eJiOacrOS4uuiHquaKpe+8jOadpea6kOacquiupOivgeOAgiIsIm1pbmVjcmFmdDp3aWRnZXQvYnV0dG9uX2hpZ2hsaWdodGVkIMK3IOWbvueJhyDln7rnoYDvvJptaW5lY3JhZnRfMS4yMS4xX2NsaWVudC5qYXIgwrcg5YWD5pWw5o2uIOWfuuehgO+8mm1pbmVjcmFmdF8xLjIxLjFfY2xpZW50LmphciDCtyAyMDAgw5cgMjAgwrcge1widHlwZVwiOlwibmluZV9zbGljZVwiLFwid2lkdGhcIjoyMDAsXCJoZWlnaHRcIjoyMCxcImJvcmRlclwiOntcImxlZnRcIjozLFwicmlnaHRcIjozLFwidG9wXCI6MyxcImJvdHRvbVwiOjN9fSDCtyDku4Xmo4Dmn6UgUE5HIOaWh+S7tuWktO+8jOacqumqjOivgeWujOaVtOino+egge+8m+WuouaIt+err+eJiOacrOS4uuiHquaKpe+8jOadpea6kOacquiupOivgeOAgiIsIm1pbmVjcmFmdDp3aWRnZXQvYnV0dG9uX2Rpc2FibGVkIMK3IOWbvueJhyDln7rnoYDvvJptaW5lY3JhZnRfMS4yMS4xX2NsaWVudC5qYXIgwrcg5YWD5pWw5o2uIOWfuuehgO+8mm1pbmVjcmFmdF8xLjIxLjFfY2xpZW50LmphciDCtyAyMDAgw5cgMjAgwrcge1widHlwZVwiOlwibmluZV9zbGljZVwiLFwid2lkdGhcIjoyMDAsXCJoZWlnaHRcIjoyMCxcImJvcmRlclwiOntcImxlZnRcIjoxLFwicmlnaHRcIjoxLFwidG9wXCI6MSxcImJvdHRvbVwiOjF9fSDCtyDku4Xmo4Dmn6UgUE5HIOaWh+S7tuWktO+8jOacqumqjOivgeWujOaVtOino+egge+8m+WuouaIt+err+eJiOacrOS4uuiHquaKpe+8jOadpea6kOacquiupOivgeOAgiIsIm1pbmVjcmFmdDp3aWRnZXQvdGV4dF9maWVsZCDCtyDlm77niYcg5Z+656GA77yabWluZWNyYWZ0XzEuMjEuMV9jbGllbnQuamFyIMK3IOWFg+aVsOaNriDln7rnoYDvvJptaW5lY3JhZnRfMS4yMS4xX2NsaWVudC5qYXIgwrcgMjAwIMOXIDIwIMK3IHtcInR5cGVcIjpcIm5pbmVfc2xpY2VcIixcIndpZHRoXCI6MjAwLFwiaGVpZ2h0XCI6MjAsXCJib3JkZXJcIjp7XCJsZWZ0XCI6MSxcInJpZ2h0XCI6MSxcInRvcFwiOjEsXCJib3R0b21cIjoxfX0gwrcg5LuF5qOA5p+lIFBORyDmlofku7blpLTvvIzmnKrpqozor4HlrozmlbTop6PnoIHvvJvlrqLmiLfnq6/niYjmnKzkuLroh6rmiqXvvIzmnaXmupDmnKrorqTor4HjgIIiLCJtaW5lY3JhZnQ6d2lkZ2V0L3RleHRfZmllbGRfaGlnaGxpZ2h0ZWQgwrcg5Zu+54mHIOWfuuehgO+8mm1pbmVjcmFmdF8xLjIxLjFfY2xpZW50LmphciDCtyDlhYPmlbDmja4g5Z+656GA77yabWluZWNyYWZ0XzEuMjEuMV9jbGllbnQuamFyIMK3IDIwMCDDlyAyMCDCtyB7XCJ0eXBlXCI6XCJuaW5lX3NsaWNlXCIsXCJ3aWR0aFwiOjIwMCxcImhlaWdodFwiOjIwLFwiYm9yZGVyXCI6e1wibGVmdFwiOjEsXCJyaWdodFwiOjEsXCJ0b3BcIjoxLFwiYm90dG9tXCI6MX19IMK3IOS7heajgOafpSBQTkcg5paH5Lu25aS077yM5pyq6aqM6K+B5a6M5pW06Kej56CB77yb5a6i5oi356uv54mI5pys5Li66Ieq5oql77yM5p2l5rqQ5pyq6K6k6K+B44CCIl19"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "2a57fca227cabeb45d7c-11efac49b9e86f6352d3",
+          "file": "client-jar-local.spec.ts",
+          "line": 2,
+          "column": 1
+        },
+        {
+          "title": "user-selected 1.21.1 client JAR GUI sprites (local optional experiment)",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 180000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr2",
+              "projectName": "chromium-dpr2",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2046,
+                  "errors": [],
+                  "stdout": [
+                    {
+                      "text": "{\"project\":\"chromium-dpr2\",\"loadMs\":188,\"memoryBefore\":13895592,\"memoryAfter\":20333478,\"samples\":[\"minecraft:widget/button · 图片 基础：minecraft_1.21.1_client.jar · 元数据 基础：minecraft_1.21.1_client.jar · 200 × 20 · {\\\"type\\\":\\\"nine_slice\\\",\\\"width\\\":200,\\\"height\\\":20,\\\"border\\\":{\\\"left\\\":3,\\\"right\\\":3,\\\"top\\\":3,\\\"bottom\\\":3}} · 仅检查 PNG 文件头，未验证完整解码；客户端版本为自报，来源未认证。\",\"minecraft:widget/button_highlighted · 图片 基础：minecraft_1.21.1_client.jar · 元数据 基础：minecraft_1.21.1_client.jar · 200 × 20 · {\\\"type\\\":\\\"nine_slice\\\",\\\"width\\\":200,\\\"height\\\":20,\\\"border\\\":{\\\"left\\\":3,\\\"right\\\":3,\\\"top\\\":3,\\\"bottom\\\":3}} · 仅检查 PNG 文件头，未验证完整解码；客户端版本为自报，来源未认证。\",\"minecraft:widget/button_disabled · 图片 基础：minecraft_1.21.1_client.jar · 元数据 基础：minecraft_1.21.1_client.jar · 200 × 20 · {\\\"type\\\":\\\"nine_slice\\\",\\\"width\\\":200,\\\"height\\\":20,\\\"border\\\":{\\\"left\\\":1,\\\"right\\\":1,\\\"top\\\":1,\\\"bottom\\\":1}} · 仅检查 PNG 文件头，未验证完整解码；客户端版本为自报，来源未认证。\",\"minecraft:widget/text_field · 图片 基础：minecraft_1.21.1_client.jar · 元数据 基础：minecraft_1.21.1_client.jar · 200 × 20 · {\\\"type\\\":\\\"nine_slice\\\",\\\"width\\\":200,\\\"height\\\":20,\\\"border\\\":{\\\"left\\\":1,\\\"right\\\":1,\\\"top\\\":1,\\\"bottom\\\":1}} · 仅检查 PNG 文件头，未验证完整解码；客户端版本为自报，来源未认证。\",\"minecraft:widget/text_field_highlighted · 图片 基础：minecraft_1.21.1_client.jar · 元数据 基础：minecraft_1.21.1_client.jar · 200 × 20 · {\\\"type\\\":\\\"nine_slice\\\",\\\"width\\\":200,\\\"height\\\":20,\\\"border\\\":{\\\"left\\\":1,\\\"right\\\":1,\\\"top\\\":1,\\\"bottom\\\":1}} · 仅检查 PNG 文件头，未验证完整解码；客户端版本为自报，来源未认证。\"]}\n"
+                    }
+                  ],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-28T09:14:49.661Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "client-jar-summary.json",
+                      "contentType": "application/json",
+                      "body": "eyJsb2FkTXMiOjE4OCwibWVtb3J5QmVmb3JlIjoxMzg5NTU5MiwibWVtb3J5QWZ0ZXIiOjIwMzMzNDc4LCJzYW1wbGVzIjpbIm1pbmVjcmFmdDp3aWRnZXQvYnV0dG9uIMK3IOWbvueJhyDln7rnoYDvvJptaW5lY3JhZnRfMS4yMS4xX2NsaWVudC5qYXIgwrcg5YWD5pWw5o2uIOWfuuehgO+8mm1pbmVjcmFmdF8xLjIxLjFfY2xpZW50LmphciDCtyAyMDAgw5cgMjAgwrcge1widHlwZVwiOlwibmluZV9zbGljZVwiLFwid2lkdGhcIjoyMDAsXCJoZWlnaHRcIjoyMCxcImJvcmRlclwiOntcImxlZnRcIjozLFwicmlnaHRcIjozLFwidG9wXCI6MyxcImJvdHRvbVwiOjN9fSDCtyDku4Xmo4Dmn6UgUE5HIOaWh+S7tuWktO+8jOacqumqjOivgeWujOaVtOino+egge+8m+WuouaIt+err+eJiOacrOS4uuiHquaKpe+8jOadpea6kOacquiupOivgeOAgiIsIm1pbmVjcmFmdDp3aWRnZXQvYnV0dG9uX2hpZ2hsaWdodGVkIMK3IOWbvueJhyDln7rnoYDvvJptaW5lY3JhZnRfMS4yMS4xX2NsaWVudC5qYXIgwrcg5YWD5pWw5o2uIOWfuuehgO+8mm1pbmVjcmFmdF8xLjIxLjFfY2xpZW50LmphciDCtyAyMDAgw5cgMjAgwrcge1widHlwZVwiOlwibmluZV9zbGljZVwiLFwid2lkdGhcIjoyMDAsXCJoZWlnaHRcIjoyMCxcImJvcmRlclwiOntcImxlZnRcIjozLFwicmlnaHRcIjozLFwidG9wXCI6MyxcImJvdHRvbVwiOjN9fSDCtyDku4Xmo4Dmn6UgUE5HIOaWh+S7tuWktO+8jOacqumqjOivgeWujOaVtOino+egge+8m+WuouaIt+err+eJiOacrOS4uuiHquaKpe+8jOadpea6kOacquiupOivgeOAgiIsIm1pbmVjcmFmdDp3aWRnZXQvYnV0dG9uX2Rpc2FibGVkIMK3IOWbvueJhyDln7rnoYDvvJptaW5lY3JhZnRfMS4yMS4xX2NsaWVudC5qYXIgwrcg5YWD5pWw5o2uIOWfuuehgO+8mm1pbmVjcmFmdF8xLjIxLjFfY2xpZW50LmphciDCtyAyMDAgw5cgMjAgwrcge1widHlwZVwiOlwibmluZV9zbGljZVwiLFwid2lkdGhcIjoyMDAsXCJoZWlnaHRcIjoyMCxcImJvcmRlclwiOntcImxlZnRcIjoxLFwicmlnaHRcIjoxLFwidG9wXCI6MSxcImJvdHRvbVwiOjF9fSDCtyDku4Xmo4Dmn6UgUE5HIOaWh+S7tuWktO+8jOacqumqjOivgeWujOaVtOino+egge+8m+WuouaIt+err+eJiOacrOS4uuiHquaKpe+8jOadpea6kOacquiupOivgeOAgiIsIm1pbmVjcmFmdDp3aWRnZXQvdGV4dF9maWVsZCDCtyDlm77niYcg5Z+656GA77yabWluZWNyYWZ0XzEuMjEuMV9jbGllbnQuamFyIMK3IOWFg+aVsOaNriDln7rnoYDvvJptaW5lY3JhZnRfMS4yMS4xX2NsaWVudC5qYXIgwrcgMjAwIMOXIDIwIMK3IHtcInR5cGVcIjpcIm5pbmVfc2xpY2VcIixcIndpZHRoXCI6MjAwLFwiaGVpZ2h0XCI6MjAsXCJib3JkZXJcIjp7XCJsZWZ0XCI6MSxcInJpZ2h0XCI6MSxcInRvcFwiOjEsXCJib3R0b21cIjoxfX0gwrcg5LuF5qOA5p+lIFBORyDmlofku7blpLTvvIzmnKrpqozor4HlrozmlbTop6PnoIHvvJvlrqLmiLfnq6/niYjmnKzkuLroh6rmiqXvvIzmnaXmupDmnKrorqTor4HjgIIiLCJtaW5lY3JhZnQ6d2lkZ2V0L3RleHRfZmllbGRfaGlnaGxpZ2h0ZWQgwrcg5Zu+54mHIOWfuuehgO+8mm1pbmVjcmFmdF8xLjIxLjFfY2xpZW50LmphciDCtyDlhYPmlbDmja4g5Z+656GA77yabWluZWNyYWZ0XzEuMjEuMV9jbGllbnQuamFyIMK3IDIwMCDDlyAyMCDCtyB7XCJ0eXBlXCI6XCJuaW5lX3NsaWNlXCIsXCJ3aWR0aFwiOjIwMCxcImhlaWdodFwiOjIwLFwiYm9yZGVyXCI6e1wibGVmdFwiOjEsXCJyaWdodFwiOjEsXCJ0b3BcIjoxLFwiYm90dG9tXCI6MX19IMK3IOS7heajgOafpSBQTkcg5paH5Lu25aS077yM5pyq6aqM6K+B5a6M5pW06Kej56CB77yb5a6i5oi356uv54mI5pys5Li66Ieq5oql77yM5p2l5rqQ5pyq6K6k6K+B44CCIl19"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "2a57fca227cabeb45d7c-332c6b103c0b8783edfc",
+          "file": "client-jar-local.spec.ts",
+          "line": 2,
+          "column": 1
+        }
+      ]
+    },
+    {
+      "title": "export-visual.spec.ts",
+      "file": "export-visual.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "actual PNG uses the initial-state resource snapshot, reflects overrides and excludes editor aids",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr1",
+              "projectName": "chromium-dpr1",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2581,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-28T09:14:39.654Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "2ee3051f1307ae1b50c2-71b3f5b1dbf908fd4569",
+          "file": "export-visual.spec.ts",
+          "line": 143,
+          "column": 1
+        },
+        {
+          "title": "resource change during asynchronous export cancels the entire batch",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr1",
+              "projectName": "chromium-dpr1",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1931,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-28T09:14:42.244Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "2ee3051f1307ae1b50c2-6e5599a32a967aec0e44",
+          "file": "export-visual.spec.ts",
+          "line": 258,
+          "column": 1
+        },
+        {
+          "title": "invalid PNG reports a visible fallback and exports that fallback",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr1",
+              "projectName": "chromium-dpr1",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 958,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-28T09:14:44.183Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "2ee3051f1307ae1b50c2-0f6b995733861f303d85",
+          "file": "export-visual.spec.ts",
+          "line": 308,
+          "column": 1
+        },
+        {
+          "title": "actual PNG samples reflect stretch, tile and asymmetric nine-slice metadata",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr1",
+              "projectName": "chromium-dpr1",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1760,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-28T09:14:45.150Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "2ee3051f1307ae1b50c2-ababef1aaa9f426fa3a4",
+          "file": "export-visual.spec.ts",
+          "line": 372,
+          "column": 1
+        },
+        {
+          "title": "actual PNG preserves a 9×9 asymmetric nine-slice corner",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr1",
+              "projectName": "chromium-dpr1",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 971,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-28T09:14:46.918Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "2ee3051f1307ae1b50c2-536db5c378e64a6cac2f",
+          "file": "export-visual.spec.ts",
+          "line": 472,
+          "column": 1
+        },
+        {
+          "title": "unsupported atlas is reported and both canvas and PNG use the fallback",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr1",
+              "projectName": "chromium-dpr1",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1017,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-28T09:14:47.899Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "2ee3051f1307ae1b50c2-4df2994c6188db7f4f31",
+          "file": "export-visual.spec.ts",
+          "line": 555,
+          "column": 1
+        },
+        {
+          "title": "actual PNG uses the initial-state resource snapshot, reflects overrides and excludes editor aids",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr2",
+              "projectName": "chromium-dpr2",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2828,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-28T09:14:51.945Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "2ee3051f1307ae1b50c2-469b886d9f72944a7bb3",
+          "file": "export-visual.spec.ts",
+          "line": 143,
+          "column": 1
+        },
+        {
+          "title": "resource change during asynchronous export cancels the entire batch",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr2",
+              "projectName": "chromium-dpr2",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2078,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-28T09:14:54.782Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "2ee3051f1307ae1b50c2-adf85f8e0e39d0e362f9",
+          "file": "export-visual.spec.ts",
+          "line": 258,
+          "column": 1
+        },
+        {
+          "title": "invalid PNG reports a visible fallback and exports that fallback",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr2",
+              "projectName": "chromium-dpr2",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1141,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-28T09:14:56.868Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "2ee3051f1307ae1b50c2-7cfd9b1bbb2818da0b43",
+          "file": "export-visual.spec.ts",
+          "line": 308,
+          "column": 1
+        },
+        {
+          "title": "actual PNG samples reflect stretch, tile and asymmetric nine-slice metadata",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr2",
+              "projectName": "chromium-dpr2",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1842,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-28T09:14:58.018Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "2ee3051f1307ae1b50c2-996b998183b70c20cd44",
+          "file": "export-visual.spec.ts",
+          "line": 372,
+          "column": 1
+        },
+        {
+          "title": "actual PNG preserves a 9×9 asymmetric nine-slice corner",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr2",
+              "projectName": "chromium-dpr2",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1094,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-28T09:14:59.867Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "2ee3051f1307ae1b50c2-8d5438f75f67e741dfb7",
+          "file": "export-visual.spec.ts",
+          "line": 472,
+          "column": 1
+        },
+        {
+          "title": "unsupported atlas is reported and both canvas and PNG use the fallback",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr2",
+              "projectName": "chromium-dpr2",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1108,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-28T09:15:00.971Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "2ee3051f1307ae1b50c2-a147c3139a29f3fb84c7",
+          "file": "export-visual.spec.ts",
+          "line": 555,
+          "column": 1
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2026-10-28T09:14:35.760Z",
+    "duration": 26707.839,
+    "expected": 14,
+    "skipped": 0,
+    "unexpected": 0,
+    "flaky": 0
+  }
+}

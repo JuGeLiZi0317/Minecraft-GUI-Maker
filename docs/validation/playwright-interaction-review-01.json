@@ -1,0 +1,1074 @@
+{
+  "config": {
+    "configFile": "D:\\Minecraft\\AIStudio\\workspace\\Minecraft GUI Maker\\playwright.config.ts",
+    "rootDir": "D:/Minecraft/AIStudio/workspace/Minecraft GUI Maker/tests",
+    "forbidOnly": false,
+    "fullyParallel": false,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 1
+    },
+    "preserveOutput": "always",
+    "reporter": [
+      [
+        "list",
+        null
+      ],
+      [
+        "json",
+        {
+          "outputFile": "test-results/results.json"
+        }
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "quiet": false,
+    "projects": [
+      {
+        "outputDir": "D:/Minecraft/AIStudio/workspace/Minecraft GUI Maker/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "chromium-dpr1",
+        "name": "chromium-dpr1",
+        "testDir": "D:/Minecraft/AIStudio/workspace/Minecraft GUI Maker/tests",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 60000
+      },
+      {
+        "outputDir": "D:/Minecraft/AIStudio/workspace/Minecraft GUI Maker/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "chromium-dpr2",
+        "name": "chromium-dpr2",
+        "testDir": "D:/Minecraft/AIStudio/workspace/Minecraft GUI Maker/tests",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 60000
+      }
+    ],
+    "shard": null,
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.56.1",
+    "workers": 1,
+    "webServer": {
+      "command": "npm.cmd run dev -- --port 4173 --strictPort",
+      "url": "http://127.0.0.1:4173",
+      "reuseExistingServer": false
+    }
+  },
+  "suites": [
+    {
+      "title": "editor.spec.ts",
+      "file": "editor.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "four types add/move/resize/export/import/recover in one history transaction per operation",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr1",
+              "projectName": "chromium-dpr1",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 3243,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-27T09:16:03.003Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "d2f56d7d370f0ba02e91-18e2632bc0a26646cc33",
+          "file": "editor.spec.ts",
+          "line": 51,
+          "column": 1
+        },
+        {
+          "title": "logical coordinates at zoom 0.5 with pan, fractional drag and cancellation",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr1",
+              "projectName": "chromium-dpr1",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1583,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-27T09:16:06.475Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "d2f56d7d370f0ba02e91-d0c5a14a9fce3894d212",
+          "file": "editor.spec.ts",
+          "line": 130,
+          "column": 3
+        },
+        {
+          "title": "logical coordinates at zoom 1 with pan, fractional drag and cancellation",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr1",
+              "projectName": "chromium-dpr1",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1557,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-27T09:16:08.067Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "d2f56d7d370f0ba02e91-1554adff217c9ff0e76e",
+          "file": "editor.spec.ts",
+          "line": 130,
+          "column": 3
+        },
+        {
+          "title": "logical coordinates at zoom 2 with pan, fractional drag and cancellation",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr1",
+              "projectName": "chromium-dpr1",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1589,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-27T09:16:09.633Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "d2f56d7d370f0ba02e91-13bbfb4928d90dfad8f9",
+          "file": "editor.spec.ts",
+          "line": 130,
+          "column": 3
+        },
+        {
+          "title": "invalid JSON/schema/source/references do not replace document, selection or history",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr1",
+              "projectName": "chromium-dpr1",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 718,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-27T09:16:11.232Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "d2f56d7d370f0ba02e91-d29a0b6b803608d3861f",
+          "file": "editor.spec.ts",
+          "line": 196,
+          "column": 1
+        },
+        {
+          "title": "palette drag/drop, exact properties, invalid bounds and pointer cancellation",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr1",
+              "projectName": "chromium-dpr1",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 763,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-27T09:16:11.959Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "d2f56d7d370f0ba02e91-28454505511460fb5b7a",
+          "file": "editor.spec.ts",
+          "line": 231,
+          "column": 1
+        },
+        {
+          "title": "@performance 300 nodes real pointer drag and frame sampling",
+          "ok": true,
+          "tags": [
+            "performance"
+          ],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr1",
+              "projectName": "chromium-dpr1",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 12280,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-27T09:16:12.731Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "performance",
+                      "contentType": "application/json",
+                      "body": "ewogICJwcm9qZWN0IjogImNocm9taXVtLWRwcjEiLAogICJicm93c2VyVmVyc2lvbiI6ICIxNTYuMC44MDc4LjQ3IiwKICAiYnJvd3NlckNoYW5uZWwiOiAiY2hyb21lIiwKICAiZW52aXJvbm1lbnQiOiB7CiAgICAibm9kZSI6ICJ2MjQuMTcuMCIsCiAgICAicGxhdGZvcm0iOiAid2luMzIiLAogICAgInJlbGVhc2UiOiAiMTAuMC4yNjIwMCIsCiAgICAiYXJjaCI6ICJ4NjQiLAogICAgImNwdSI6ICJBTUQgUnl6ZW4gNyA3NzM1SCB3aXRoIFJhZGVvbiBHcmFwaGljcyIsCiAgICAibG9naWNhbENwdXMiOiAxNiwKICAgICJ0b3RhbE1lbW9yeUdpQiI6IDE1CiAgfSwKICAibm9kZUNvdW50IjogMzAwLAogICJ6b29tIjogMiwKICAicGFuIjogWwogICAgMCwKICAgIDAKICBdLAogICJzYW1wbGVzIjogWwogICAgewogICAgICAicm91bmQiOiAxLAogICAgICAid2FsbER1cmF0aW9uTXMiOiAzODA2LAogICAgICAiZnJhbWVzIjogNTM4LAogICAgICAibWVhbkZyYW1lTXMiOiA3LjI3MzA0ODMyNzA0ODkxOSwKICAgICAgInA1MEZyYW1lTXMiOiA2LjA5OTk5OTk5OTk5OTkwOSwKICAgICAgInA5NUZyYW1lTXMiOiAxMiwKICAgICAgIm1heEZyYW1lTXMiOiA1NC42MDAwMDAwMDAwMDAzNjQsCiAgICAgICJwb2ludGVyTW92ZXMiOiA2MSwKICAgICAgImRwciI6IDEsCiAgICAgICJ1c2VyQWdlbnQiOiAiTW96aWxsYS81LjAgKFdpbmRvd3MgTlQgMTAuMDsgV2luNjQ7IHg2NCkgQXBwbGVXZWJLaXQvNTM3LjM2IChLSFRNTCwgbGlrZSBHZWNrbykgSGVhZGxlc3NDaHJvbWUvMTU2LjAuMC4wIFNhZmFyaS81MzcuMzYiLAogICAgICAidmlld3BvcnQiOiBbCiAgICAgICAgMTQ0MCwKICAgICAgICAxMDAwCiAgICAgIF0sCiAgICAgICJoYXJkd2FyZUNvbmN1cnJlbmN5IjogMTYKICAgIH0sCiAgICB7CiAgICAgICJyb3VuZCI6IDIsCiAgICAgICJ3YWxsRHVyYXRpb25NcyI6IDM3MzUsCiAgICAgICJmcmFtZXMiOiA1NDYsCiAgICAgICJtZWFuRnJhbWVNcyI6IDYuOTU5NzA2OTU5NzA2OTYsCiAgICAgICJwNTBGcmFtZU1zIjogNi4wOTk5OTk5OTk5OTk0NTQsCiAgICAgICJwOTVGcmFtZU1zIjogNi4yMDAwMDAwMDAwMDA3MjgsCiAgICAgICJtYXhGcmFtZU1zIjogNjAuNSwKICAgICAgInBvaW50ZXJNb3ZlcyI6IDYxLAogICAgICAiZHByIjogMSwKICAgICAgInVzZXJBZ2VudCI6ICJNb3ppbGxhLzUuMCAoV2luZG93cyBOVCAxMC4wOyBXaW42NDsgeDY0KSBBcHBsZVdlYktpdC81MzcuMzYgKEtIVE1MLCBsaWtlIEdlY2tvKSBIZWFkbGVzc0Nocm9tZS8xNTYuMC4wLjAgU2FmYXJpLzUzNy4zNiIsCiAgICAgICJ2aWV3cG9ydCI6IFsKICAgICAgICAxNDQwLAogICAgICAgIDEwMDAKICAgICAgXSwKICAgICAgImhhcmR3YXJlQ29uY3VycmVuY3kiOiAxNgogICAgfSwKICAgIHsKICAgICAgInJvdW5kIjogMywKICAgICAgIndhbGxEdXJhdGlvbk1zIjogMzYwNywKICAgICAgImZyYW1lcyI6IDUzOSwKICAgICAgIm1lYW5GcmFtZU1zIjogNi44ODE0NDcxMjQzMDQyNjQsCiAgICAgICJwNTBGcmFtZU1zIjogNi4wOTk5OTk5OTk5OTg1NDUsCiAgICAgICJwOTVGcmFtZU1zIjogNi4yMDAwMDAwMDAwMDA3MjgsCiAgICAgICJtYXhGcmFtZU1zIjogNDIuODAwMDAwMDAwMDAxMDksCiAgICAgICJwb2ludGVyTW92ZXMiOiA2MSwKICAgICAgImRwciI6IDEsCiAgICAgICJ1c2VyQWdlbnQiOiAiTW96aWxsYS81LjAgKFdpbmRvd3MgTlQgMTAuMDsgV2luNjQ7IHg2NCkgQXBwbGVXZWJLaXQvNTM3LjM2IChLSFRNTCwgbGlrZSBHZWNrbykgSGVhZGxlc3NDaHJvbWUvMTU2LjAuMC4wIFNhZmFyaS81MzcuMzYiLAogICAgICAidmlld3BvcnQiOiBbCiAgICAgICAgMTQ0MCwKICAgICAgICAxMDAwCiAgICAgIF0sCiAgICAgICJoYXJkd2FyZUNvbmN1cnJlbmN5IjogMTYKICAgIH0KICBdLAogICJtZXRob2QiOiAicmVxdWVzdEFuaW1hdGlvbkZyYW1lIGludGVydmFscyBkdXJpbmcgNjAgcmVhbCBtb3VzZSBtb3ZlcyBwZXIgcm91bmQsIDE2bXMgcmVxdWVzdGVkIGRlbGF5LCAzIHJvdW5kczsgbm8gRlBTIHBhc3MgdGhyZXNob2xkIgp9"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "d2f56d7d370f0ba02e91-ce9a48a71590f57fd817",
+          "file": "editor.spec.ts",
+          "line": 275,
+          "column": 1
+        },
+        {
+          "title": "four types add/move/resize/export/import/recover in one history transaction per operation",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr2",
+              "projectName": "chromium-dpr2",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 3463,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-27T09:16:31.651Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "d2f56d7d370f0ba02e91-e95901a034c9260550af",
+          "file": "editor.spec.ts",
+          "line": 51,
+          "column": 1
+        },
+        {
+          "title": "logical coordinates at zoom 0.5 with pan, fractional drag and cancellation",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr2",
+              "projectName": "chromium-dpr2",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1695,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-27T09:16:35.343Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "d2f56d7d370f0ba02e91-2cfde70b35844e2cbca9",
+          "file": "editor.spec.ts",
+          "line": 130,
+          "column": 3
+        },
+        {
+          "title": "logical coordinates at zoom 1 with pan, fractional drag and cancellation",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr2",
+              "projectName": "chromium-dpr2",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1710,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-27T09:16:37.047Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "d2f56d7d370f0ba02e91-222aa369758371e1d7a5",
+          "file": "editor.spec.ts",
+          "line": 130,
+          "column": 3
+        },
+        {
+          "title": "logical coordinates at zoom 2 with pan, fractional drag and cancellation",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr2",
+              "projectName": "chromium-dpr2",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1696,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-27T09:16:38.766Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "d2f56d7d370f0ba02e91-bf12906a6545928be370",
+          "file": "editor.spec.ts",
+          "line": 130,
+          "column": 3
+        },
+        {
+          "title": "invalid JSON/schema/source/references do not replace document, selection or history",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr2",
+              "projectName": "chromium-dpr2",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 822,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-27T09:16:40.473Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "d2f56d7d370f0ba02e91-a5dde865bc50eeb0ff4d",
+          "file": "editor.spec.ts",
+          "line": 196,
+          "column": 1
+        },
+        {
+          "title": "palette drag/drop, exact properties, invalid bounds and pointer cancellation",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr2",
+              "projectName": "chromium-dpr2",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 865,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-27T09:16:41.304Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "d2f56d7d370f0ba02e91-4045da4cffcd2221f1c8",
+          "file": "editor.spec.ts",
+          "line": 231,
+          "column": 1
+        },
+        {
+          "title": "@performance 300 nodes real pointer drag and frame sampling",
+          "ok": true,
+          "tags": [
+            "performance"
+          ],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr2",
+              "projectName": "chromium-dpr2",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 12867,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-27T09:16:42.180Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "performance",
+                      "contentType": "application/json",
+                      "body": "ewogICJwcm9qZWN0IjogImNocm9taXVtLWRwcjIiLAogICJicm93c2VyVmVyc2lvbiI6ICIxNTYuMC44MDc4LjQ3IiwKICAiYnJvd3NlckNoYW5uZWwiOiAiY2hyb21lIiwKICAiZW52aXJvbm1lbnQiOiB7CiAgICAibm9kZSI6ICJ2MjQuMTcuMCIsCiAgICAicGxhdGZvcm0iOiAid2luMzIiLAogICAgInJlbGVhc2UiOiAiMTAuMC4yNjIwMCIsCiAgICAiYXJjaCI6ICJ4NjQiLAogICAgImNwdSI6ICJBTUQgUnl6ZW4gNyA3NzM1SCB3aXRoIFJhZGVvbiBHcmFwaGljcyIsCiAgICAibG9naWNhbENwdXMiOiAxNiwKICAgICJ0b3RhbE1lbW9yeUdpQiI6IDE1CiAgfSwKICAibm9kZUNvdW50IjogMzAwLAogICJ6b29tIjogMiwKICAicGFuIjogWwogICAgMCwKICAgIDAKICBdLAogICJzYW1wbGVzIjogWwogICAgewogICAgICAicm91bmQiOiAxLAogICAgICAid2FsbER1cmF0aW9uTXMiOiAzOTYyLAogICAgICAiZnJhbWVzIjogNTU0LAogICAgICAibWVhbkZyYW1lTXMiOiA3LjMzMzM5MzUwMTgyNjU3NSwKICAgICAgInA1MEZyYW1lTXMiOiA2LjA5OTk5OTk5OTk5OTkwOSwKICAgICAgInA5NUZyYW1lTXMiOiAxMiwKICAgICAgIm1heEZyYW1lTXMiOiA0OC41LAogICAgICAicG9pbnRlck1vdmVzIjogNjEsCiAgICAgICJkcHIiOiAyLAogICAgICAidXNlckFnZW50IjogIk1vemlsbGEvNS4wIChXaW5kb3dzIE5UIDEwLjA7IFdpbjY0OyB4NjQpIEFwcGxlV2ViS2l0LzUzNy4zNiAoS0hUTUwsIGxpa2UgR2Vja28pIEhlYWRsZXNzQ2hyb21lLzE1Ni4wLjAuMCBTYWZhcmkvNTM3LjM2IiwKICAgICAgInZpZXdwb3J0IjogWwogICAgICAgIDE0NDAsCiAgICAgICAgMTAwMAogICAgICBdLAogICAgICAiaGFyZHdhcmVDb25jdXJyZW5jeSI6IDE2CiAgICB9LAogICAgewogICAgICAicm91bmQiOiAyLAogICAgICAid2FsbER1cmF0aW9uTXMiOiAzODM4LAogICAgICAiZnJhbWVzIjogNTMzLAogICAgICAibWVhbkZyYW1lTXMiOiA3LjMyMjg4OTMwNTgxNjEzNCwKICAgICAgInA1MEZyYW1lTXMiOiA2LjA5OTk5OTk5OTk5OTQ1NCwKICAgICAgInA5NUZyYW1lTXMiOiA2LjM5OTk5OTk5OTk5OTYzNiwKICAgICAgIm1heEZyYW1lTXMiOiA0MywKICAgICAgInBvaW50ZXJNb3ZlcyI6IDYxLAogICAgICAiZHByIjogMiwKICAgICAgInVzZXJBZ2VudCI6ICJNb3ppbGxhLzUuMCAoV2luZG93cyBOVCAxMC4wOyBXaW42NDsgeDY0KSBBcHBsZVdlYktpdC81MzcuMzYgKEtIVE1MLCBsaWtlIEdlY2tvKSBIZWFkbGVzc0Nocm9tZS8xNTYuMC4wLjAgU2FmYXJpLzUzNy4zNiIsCiAgICAgICJ2aWV3cG9ydCI6IFsKICAgICAgICAxNDQwLAogICAgICAgIDEwMDAKICAgICAgXSwKICAgICAgImhhcmR3YXJlQ29uY3VycmVuY3kiOiAxNgogICAgfSwKICAgIHsKICAgICAgInJvdW5kIjogMywKICAgICAgIndhbGxEdXJhdGlvbk1zIjogMzgxOSwKICAgICAgImZyYW1lcyI6IDUzNiwKICAgICAgIm1lYW5GcmFtZU1zIjogNy4yNDc1NzQ2MjY4NjU2NywKICAgICAgInA1MEZyYW1lTXMiOiA2LjA5OTk5OTk5OTk5ODU0NSwKICAgICAgInA5NUZyYW1lTXMiOiA2LjMwMDAwMDAwMDAwMTA5MSwKICAgICAgIm1heEZyYW1lTXMiOiA0OC42MDAwMDAwMDAwMDAzNjQsCiAgICAgICJwb2ludGVyTW92ZXMiOiA2MSwKICAgICAgImRwciI6IDIsCiAgICAgICJ1c2VyQWdlbnQiOiAiTW96aWxsYS81LjAgKFdpbmRvd3MgTlQgMTAuMDsgV2luNjQ7IHg2NCkgQXBwbGVXZWJLaXQvNTM3LjM2IChLSFRNTCwgbGlrZSBHZWNrbykgSGVhZGxlc3NDaHJvbWUvMTU2LjAuMC4wIFNhZmFyaS81MzcuMzYiLAogICAgICAidmlld3BvcnQiOiBbCiAgICAgICAgMTQ0MCwKICAgICAgICAxMDAwCiAgICAgIF0sCiAgICAgICJoYXJkd2FyZUNvbmN1cnJlbmN5IjogMTYKICAgIH0KICBdLAogICJtZXRob2QiOiAicmVxdWVzdEFuaW1hdGlvbkZyYW1lIGludGVydmFscyBkdXJpbmcgNjAgcmVhbCBtb3VzZSBtb3ZlcyBwZXIgcm91bmQsIDE2bXMgcmVxdWVzdGVkIGRlbGF5LCAzIHJvdW5kczsgbm8gRlBTIHBhc3MgdGhyZXNob2xkIgp9"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "d2f56d7d370f0ba02e91-1b50df6f158f2376e442",
+          "file": "editor.spec.ts",
+          "line": 275,
+          "column": 1
+        }
+      ]
+    },
+    {
+      "title": "interaction-review.spec.ts",
+      "file": "interaction-review.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "double-click Button: one text transaction, undo, cancel",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr1",
+              "projectName": "chromium-dpr1",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 808,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-27T09:16:25.044Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "f4a05bf151d680c7daa3-c83f164971adff8339aa",
+          "file": "interaction-review.spec.ts",
+          "line": 31,
+          "column": 3
+        },
+        {
+          "title": "double-click EditBox: one text transaction, undo, cancel",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr1",
+              "projectName": "chromium-dpr1",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 803,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-27T09:16:25.861Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "f4a05bf151d680c7daa3-a06b83522851732b8f56",
+          "file": "interaction-review.spec.ts",
+          "line": 31,
+          "column": 3
+        },
+        {
+          "title": "double-click StringWidget: one text transaction, undo, cancel",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr1",
+              "projectName": "chromium-dpr1",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 826,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-27T09:16:26.673Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "f4a05bf151d680c7daa3-0e7b8379043217f948f2",
+          "file": "interaction-review.spec.ts",
+          "line": 31,
+          "column": 3
+        },
+        {
+          "title": "translation label is plain language and inline edit preserves key; blur commits",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr1",
+              "projectName": "chromium-dpr1",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 700,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-27T09:16:27.509Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "f4a05bf151d680c7daa3-8ffef4de2abb160f1724",
+          "file": "interaction-review.spec.ts",
+          "line": 71,
+          "column": 1
+        },
+        {
+          "title": "inline EditBox validation and IME composition do not corrupt document or history",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr1",
+              "projectName": "chromium-dpr1",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 721,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-27T09:16:28.218Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "f4a05bf151d680c7daa3-b0abf5eca8f9897f8551",
+          "file": "interaction-review.spec.ts",
+          "line": 99,
+          "column": 1
+        },
+        {
+          "title": "rectangle ARGB updates actual canvas pixels, including alpha; undo restores",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr1",
+              "projectName": "chromium-dpr1",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 825,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-27T09:16:28.947Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "f4a05bf151d680c7daa3-75d384eec43bbbf304f2",
+          "file": "interaction-review.spec.ts",
+          "line": 126,
+          "column": 1
+        },
+        {
+          "title": "Alt wheel zooms only canvas around cursor, right drag pans, left drag moves",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr1",
+              "projectName": "chromium-dpr1",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1001,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-27T09:16:29.782Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "f4a05bf151d680c7daa3-c9ed572804ea5773ce39",
+          "file": "interaction-review.spec.ts",
+          "line": 153,
+          "column": 1
+        },
+        {
+          "title": "double-click Button: one text transaction, undo, cancel",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr2",
+              "projectName": "chromium-dpr2",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 943,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-27T09:16:55.064Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "f4a05bf151d680c7daa3-38b2487faef6f8054216",
+          "file": "interaction-review.spec.ts",
+          "line": 31,
+          "column": 3
+        },
+        {
+          "title": "double-click EditBox: one text transaction, undo, cancel",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr2",
+              "projectName": "chromium-dpr2",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 977,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-27T09:16:56.016Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "f4a05bf151d680c7daa3-4a7ad0d1da2b894f0e80",
+          "file": "interaction-review.spec.ts",
+          "line": 31,
+          "column": 3
+        },
+        {
+          "title": "double-click StringWidget: one text transaction, undo, cancel",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr2",
+              "projectName": "chromium-dpr2",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 994,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-27T09:16:57.004Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "f4a05bf151d680c7daa3-e99427621bf3e0450595",
+          "file": "interaction-review.spec.ts",
+          "line": 31,
+          "column": 3
+        },
+        {
+          "title": "translation label is plain language and inline edit preserves key; blur commits",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr2",
+              "projectName": "chromium-dpr2",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 824,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-27T09:16:58.010Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "f4a05bf151d680c7daa3-5b12d68a121fcfe48a80",
+          "file": "interaction-review.spec.ts",
+          "line": 71,
+          "column": 1
+        },
+        {
+          "title": "inline EditBox validation and IME composition do not corrupt document or history",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr2",
+              "projectName": "chromium-dpr2",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 836,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-27T09:16:58.843Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "f4a05bf151d680c7daa3-3efca4444cfa869d21ce",
+          "file": "interaction-review.spec.ts",
+          "line": 99,
+          "column": 1
+        },
+        {
+          "title": "rectangle ARGB updates actual canvas pixels, including alpha; undo restores",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr2",
+              "projectName": "chromium-dpr2",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 912,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-27T09:16:59.689Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "f4a05bf151d680c7daa3-6cefbd032bef3150964a",
+          "file": "interaction-review.spec.ts",
+          "line": 126,
+          "column": 1
+        },
+        {
+          "title": "Alt wheel zooms only canvas around cursor, right drag pans, left drag moves",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr2",
+              "projectName": "chromium-dpr2",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1087,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-27T09:17:00.610Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "f4a05bf151d680c7daa3-90373d3521b67f11c05b",
+          "file": "interaction-review.spec.ts",
+          "line": 153,
+          "column": 1
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2026-10-27T09:16:01.301Z",
+    "duration": 60882.655999999995,
+    "expected": 28,
+    "skipped": 0,
+    "unexpected": 0,
+    "flaky": 0
+  }
+}

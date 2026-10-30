@@ -1,0 +1,4738 @@
+{
+  "config": {
+    "configFile": "D:\\Minecraft\\AIStudio\\workspace\\Minecraft GUI Maker\\playwright.config.ts",
+    "rootDir": "D:/Minecraft/AIStudio/workspace/Minecraft GUI Maker/tests",
+    "forbidOnly": false,
+    "fullyParallel": false,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 1
+    },
+    "preserveOutput": "always",
+    "reporter": [
+      [
+        "list",
+        null
+      ],
+      [
+        "json",
+        {
+          "outputFile": "test-results/results.json"
+        }
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "quiet": false,
+    "projects": [
+      {
+        "outputDir": "D:/Minecraft/AIStudio/workspace/Minecraft GUI Maker/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "chromium-dpr1",
+        "name": "chromium-dpr1",
+        "testDir": "D:/Minecraft/AIStudio/workspace/Minecraft GUI Maker/tests",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 60000
+      },
+      {
+        "outputDir": "D:/Minecraft/AIStudio/workspace/Minecraft GUI Maker/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "chromium-dpr2",
+        "name": "chromium-dpr2",
+        "testDir": "D:/Minecraft/AIStudio/workspace/Minecraft GUI Maker/tests",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 60000
+      }
+    ],
+    "shard": null,
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.56.1",
+    "workers": 1,
+    "webServer": {
+      "command": "npm.cmd run dev -- --port 4173 --strictPort",
+      "url": "http://127.0.0.1:4173",
+      "reuseExistingServer": false
+    }
+  },
+  "suites": [
+    {
+      "title": "canvas-usability.spec.ts",
+      "file": "canvas-usability.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "outside clicks close all three panels, preserve pending sizes and allow reopening the same export",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr1",
+              "projectName": "chromium-dpr1",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1068,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-28T08:44:54.404Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "b5609745363af21e2ac5-6f96042318ac257e11d1",
+          "file": "canvas-usability.spec.ts",
+          "line": 37,
+          "column": 1
+        },
+        {
+          "title": "grid spacing and zoom are view-only, actual grid pixels show, PNG ignores grid",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr1",
+              "projectName": "chromium-dpr1",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1091,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-28T08:44:55.697Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "b5609745363af21e2ac5-1aa622a5dff4380dd91d",
+          "file": "canvas-usability.spec.ts",
+          "line": 87,
+          "column": 1
+        },
+        {
+          "title": "new designs expose two panel choices and legacy options remain readable without being selectable",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr1",
+              "projectName": "chromium-dpr1",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 540,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-28T08:44:56.800Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "b5609745363af21e2ac5-2d8ad5c4c353278c8c4a",
+          "file": "canvas-usability.spec.ts",
+          "line": 139,
+          "column": 1
+        },
+        {
+          "title": "an invalid hidden size draft is retained and blocks export until corrected",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr1",
+              "projectName": "chromium-dpr1",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 799,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-28T08:44:57.351Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "b5609745363af21e2ac5-60cb326fbf04b57d9b70",
+          "file": "canvas-usability.spec.ts",
+          "line": 148,
+          "column": 1
+        },
+        {
+          "title": "outside clicks close all three panels, preserve pending sizes and allow reopening the same export",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr2",
+              "projectName": "chromium-dpr2",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1161,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-28T08:46:20.408Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "b5609745363af21e2ac5-51d8a08e07238f6f9758",
+          "file": "canvas-usability.spec.ts",
+          "line": 37,
+          "column": 1
+        },
+        {
+          "title": "grid spacing and zoom are view-only, actual grid pixels show, PNG ignores grid",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr2",
+              "projectName": "chromium-dpr2",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1212,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-28T08:46:21.797Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "b5609745363af21e2ac5-18cb2f771859a61c18fc",
+          "file": "canvas-usability.spec.ts",
+          "line": 87,
+          "column": 1
+        },
+        {
+          "title": "new designs expose two panel choices and legacy options remain readable without being selectable",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr2",
+              "projectName": "chromium-dpr2",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 619,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-28T08:46:23.024Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "b5609745363af21e2ac5-bf323c5a7733010f59ee",
+          "file": "canvas-usability.spec.ts",
+          "line": 139,
+          "column": 1
+        },
+        {
+          "title": "an invalid hidden size draft is retained and blocks export until corrected",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr2",
+              "projectName": "chromium-dpr2",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 915,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-28T08:46:23.653Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "b5609745363af21e2ac5-0ebafffaa6c57ec4bf29",
+          "file": "canvas-usability.spec.ts",
+          "line": 148,
+          "column": 1
+        }
+      ]
+    },
+    {
+      "title": "client-jar-local.spec.ts",
+      "file": "client-jar-local.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "user-selected 1.21.1 client JAR GUI sprites (local optional experiment)",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 180000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr1",
+              "projectName": "chromium-dpr1",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1436,
+                  "errors": [],
+                  "stdout": [
+                    {
+                      "text": "{\"project\":\"chromium-dpr1\",\"loadMs\":126,\"memoryBefore\":13912220,\"memoryAfter\":23914640,\"samples\":[\"minecraft:widget/button · 图片 基础：minecraft_1.21.1_client.jar · 元数据 基础：minecraft_1.21.1_client.jar · 200 × 20 · {\\\"type\\\":\\\"nine_slice\\\",\\\"width\\\":200,\\\"height\\\":20,\\\"border\\\":{\\\"left\\\":3,\\\"right\\\":3,\\\"top\\\":3,\\\"bottom\\\":3}} · 仅检查 PNG 文件头，未验证完整解码；客户端版本为自报，来源未认证。\",\"minecraft:widget/button_highlighted · 图片 基础：minecraft_1.21.1_client.jar · 元数据 基础：minecraft_1.21.1_client.jar · 200 × 20 · {\\\"type\\\":\\\"nine_slice\\\",\\\"width\\\":200,\\\"height\\\":20,\\\"border\\\":{\\\"left\\\":3,\\\"right\\\":3,\\\"top\\\":3,\\\"bottom\\\":3}} · 仅检查 PNG 文件头，未验证完整解码；客户端版本为自报，来源未认证。\",\"minecraft:widget/button_disabled · 图片 基础：minecraft_1.21.1_client.jar · 元数据 基础：minecraft_1.21.1_client.jar · 200 × 20 · {\\\"type\\\":\\\"nine_slice\\\",\\\"width\\\":200,\\\"height\\\":20,\\\"border\\\":{\\\"left\\\":1,\\\"right\\\":1,\\\"top\\\":1,\\\"bottom\\\":1}} · 仅检查 PNG 文件头，未验证完整解码；客户端版本为自报，来源未认证。\",\"minecraft:widget/text_field · 图片 基础：minecraft_1.21.1_client.jar · 元数据 基础：minecraft_1.21.1_client.jar · 200 × 20 · {\\\"type\\\":\\\"nine_slice\\\",\\\"width\\\":200,\\\"height\\\":20,\\\"border\\\":{\\\"left\\\":1,\\\"right\\\":1,\\\"top\\\":1,\\\"bottom\\\":1}} · 仅检查 PNG 文件头，未验证完整解码；客户端版本为自报，来源未认证。\",\"minecraft:widget/text_field_highlighted · 图片 基础：minecraft_1.21.1_client.jar · 元数据 基础：minecraft_1.21.1_client.jar · 200 × 20 · {\\\"type\\\":\\\"nine_slice\\\",\\\"width\\\":200,\\\"height\\\":20,\\\"border\\\":{\\\"left\\\":1,\\\"right\\\":1,\\\"top\\\":1,\\\"bottom\\\":1}} · 仅检查 PNG 文件头，未验证完整解码；客户端版本为自报，来源未认证。\"]}\n"
+                    }
+                  ],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-28T08:44:58.184Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "client-jar-summary.json",
+                      "contentType": "application/json",
+                      "body": "eyJsb2FkTXMiOjEyNiwibWVtb3J5QmVmb3JlIjoxMzkxMjIyMCwibWVtb3J5QWZ0ZXIiOjIzOTE0NjQwLCJzYW1wbGVzIjpbIm1pbmVjcmFmdDp3aWRnZXQvYnV0dG9uIMK3IOWbvueJhyDln7rnoYDvvJptaW5lY3JhZnRfMS4yMS4xX2NsaWVudC5qYXIgwrcg5YWD5pWw5o2uIOWfuuehgO+8mm1pbmVjcmFmdF8xLjIxLjFfY2xpZW50LmphciDCtyAyMDAgw5cgMjAgwrcge1widHlwZVwiOlwibmluZV9zbGljZVwiLFwid2lkdGhcIjoyMDAsXCJoZWlnaHRcIjoyMCxcImJvcmRlclwiOntcImxlZnRcIjozLFwicmlnaHRcIjozLFwidG9wXCI6MyxcImJvdHRvbVwiOjN9fSDCtyDku4Xmo4Dmn6UgUE5HIOaWh+S7tuWktO+8jOacqumqjOivgeWujOaVtOino+egge+8m+WuouaIt+err+eJiOacrOS4uuiHquaKpe+8jOadpea6kOacquiupOivgeOAgiIsIm1pbmVjcmFmdDp3aWRnZXQvYnV0dG9uX2hpZ2hsaWdodGVkIMK3IOWbvueJhyDln7rnoYDvvJptaW5lY3JhZnRfMS4yMS4xX2NsaWVudC5qYXIgwrcg5YWD5pWw5o2uIOWfuuehgO+8mm1pbmVjcmFmdF8xLjIxLjFfY2xpZW50LmphciDCtyAyMDAgw5cgMjAgwrcge1widHlwZVwiOlwibmluZV9zbGljZVwiLFwid2lkdGhcIjoyMDAsXCJoZWlnaHRcIjoyMCxcImJvcmRlclwiOntcImxlZnRcIjozLFwicmlnaHRcIjozLFwidG9wXCI6MyxcImJvdHRvbVwiOjN9fSDCtyDku4Xmo4Dmn6UgUE5HIOaWh+S7tuWktO+8jOacqumqjOivgeWujOaVtOino+egge+8m+WuouaIt+err+eJiOacrOS4uuiHquaKpe+8jOadpea6kOacquiupOivgeOAgiIsIm1pbmVjcmFmdDp3aWRnZXQvYnV0dG9uX2Rpc2FibGVkIMK3IOWbvueJhyDln7rnoYDvvJptaW5lY3JhZnRfMS4yMS4xX2NsaWVudC5qYXIgwrcg5YWD5pWw5o2uIOWfuuehgO+8mm1pbmVjcmFmdF8xLjIxLjFfY2xpZW50LmphciDCtyAyMDAgw5cgMjAgwrcge1widHlwZVwiOlwibmluZV9zbGljZVwiLFwid2lkdGhcIjoyMDAsXCJoZWlnaHRcIjoyMCxcImJvcmRlclwiOntcImxlZnRcIjoxLFwicmlnaHRcIjoxLFwidG9wXCI6MSxcImJvdHRvbVwiOjF9fSDCtyDku4Xmo4Dmn6UgUE5HIOaWh+S7tuWktO+8jOacqumqjOivgeWujOaVtOino+egge+8m+WuouaIt+err+eJiOacrOS4uuiHquaKpe+8jOadpea6kOacquiupOivgeOAgiIsIm1pbmVjcmFmdDp3aWRnZXQvdGV4dF9maWVsZCDCtyDlm77niYcg5Z+656GA77yabWluZWNyYWZ0XzEuMjEuMV9jbGllbnQuamFyIMK3IOWFg+aVsOaNriDln7rnoYDvvJptaW5lY3JhZnRfMS4yMS4xX2NsaWVudC5qYXIgwrcgMjAwIMOXIDIwIMK3IHtcInR5cGVcIjpcIm5pbmVfc2xpY2VcIixcIndpZHRoXCI6MjAwLFwiaGVpZ2h0XCI6MjAsXCJib3JkZXJcIjp7XCJsZWZ0XCI6MSxcInJpZ2h0XCI6MSxcInRvcFwiOjEsXCJib3R0b21cIjoxfX0gwrcg5LuF5qOA5p+lIFBORyDmlofku7blpLTvvIzmnKrpqozor4HlrozmlbTop6PnoIHvvJvlrqLmiLfnq6/niYjmnKzkuLroh6rmiqXvvIzmnaXmupDmnKrorqTor4HjgIIiLCJtaW5lY3JhZnQ6d2lkZ2V0L3RleHRfZmllbGRfaGlnaGxpZ2h0ZWQgwrcg5Zu+54mHIOWfuuehgO+8mm1pbmVjcmFmdF8xLjIxLjFfY2xpZW50LmphciDCtyDlhYPmlbDmja4g5Z+656GA77yabWluZWNyYWZ0XzEuMjEuMV9jbGllbnQuamFyIMK3IDIwMCDDlyAyMCDCtyB7XCJ0eXBlXCI6XCJuaW5lX3NsaWNlXCIsXCJ3aWR0aFwiOjIwMCxcImhlaWdodFwiOjIwLFwiYm9yZGVyXCI6e1wibGVmdFwiOjEsXCJyaWdodFwiOjEsXCJ0b3BcIjoxLFwiYm90dG9tXCI6MX19IMK3IOS7heajgOafpSBQTkcg5paH5Lu25aS077yM5pyq6aqM6K+B5a6M5pW06Kej56CB77yb5a6i5oi356uv54mI5pys5Li66Ieq5oql77yM5p2l5rqQ5pyq6K6k6K+B44CCIl19"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "2a57fca227cabeb45d7c-11efac49b9e86f6352d3",
+          "file": "client-jar-local.spec.ts",
+          "line": 2,
+          "column": 1
+        },
+        {
+          "title": "user-selected 1.21.1 client JAR GUI sprites (local optional experiment)",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 180000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr2",
+              "projectName": "chromium-dpr2",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1716,
+                  "errors": [],
+                  "stdout": [
+                    {
+                      "text": "{\"project\":\"chromium-dpr2\",\"loadMs\":185,\"memoryBefore\":13860279,\"memoryAfter\":16186551,\"samples\":[\"minecraft:widget/button · 图片 基础：minecraft_1.21.1_client.jar · 元数据 基础：minecraft_1.21.1_client.jar · 200 × 20 · {\\\"type\\\":\\\"nine_slice\\\",\\\"width\\\":200,\\\"height\\\":20,\\\"border\\\":{\\\"left\\\":3,\\\"right\\\":3,\\\"top\\\":3,\\\"bottom\\\":3}} · 仅检查 PNG 文件头，未验证完整解码；客户端版本为自报，来源未认证。\",\"minecraft:widget/button_highlighted · 图片 基础：minecraft_1.21.1_client.jar · 元数据 基础：minecraft_1.21.1_client.jar · 200 × 20 · {\\\"type\\\":\\\"nine_slice\\\",\\\"width\\\":200,\\\"height\\\":20,\\\"border\\\":{\\\"left\\\":3,\\\"right\\\":3,\\\"top\\\":3,\\\"bottom\\\":3}} · 仅检查 PNG 文件头，未验证完整解码；客户端版本为自报，来源未认证。\",\"minecraft:widget/button_disabled · 图片 基础：minecraft_1.21.1_client.jar · 元数据 基础：minecraft_1.21.1_client.jar · 200 × 20 · {\\\"type\\\":\\\"nine_slice\\\",\\\"width\\\":200,\\\"height\\\":20,\\\"border\\\":{\\\"left\\\":1,\\\"right\\\":1,\\\"top\\\":1,\\\"bottom\\\":1}} · 仅检查 PNG 文件头，未验证完整解码；客户端版本为自报，来源未认证。\",\"minecraft:widget/text_field · 图片 基础：minecraft_1.21.1_client.jar · 元数据 基础：minecraft_1.21.1_client.jar · 200 × 20 · {\\\"type\\\":\\\"nine_slice\\\",\\\"width\\\":200,\\\"height\\\":20,\\\"border\\\":{\\\"left\\\":1,\\\"right\\\":1,\\\"top\\\":1,\\\"bottom\\\":1}} · 仅检查 PNG 文件头，未验证完整解码；客户端版本为自报，来源未认证。\",\"minecraft:widget/text_field_highlighted · 图片 基础：minecraft_1.21.1_client.jar · 元数据 基础：minecraft_1.21.1_client.jar · 200 × 20 · {\\\"type\\\":\\\"nine_slice\\\",\\\"width\\\":200,\\\"height\\\":20,\\\"border\\\":{\\\"left\\\":1,\\\"right\\\":1,\\\"top\\\":1,\\\"bottom\\\":1}} · 仅检查 PNG 文件头，未验证完整解码；客户端版本为自报，来源未认证。\"]}\n"
+                    }
+                  ],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-28T08:46:24.597Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "client-jar-summary.json",
+                      "contentType": "application/json",
+                      "body": "eyJsb2FkTXMiOjE4NSwibWVtb3J5QmVmb3JlIjoxMzg2MDI3OSwibWVtb3J5QWZ0ZXIiOjE2MTg2NTUxLCJzYW1wbGVzIjpbIm1pbmVjcmFmdDp3aWRnZXQvYnV0dG9uIMK3IOWbvueJhyDln7rnoYDvvJptaW5lY3JhZnRfMS4yMS4xX2NsaWVudC5qYXIgwrcg5YWD5pWw5o2uIOWfuuehgO+8mm1pbmVjcmFmdF8xLjIxLjFfY2xpZW50LmphciDCtyAyMDAgw5cgMjAgwrcge1widHlwZVwiOlwibmluZV9zbGljZVwiLFwid2lkdGhcIjoyMDAsXCJoZWlnaHRcIjoyMCxcImJvcmRlclwiOntcImxlZnRcIjozLFwicmlnaHRcIjozLFwidG9wXCI6MyxcImJvdHRvbVwiOjN9fSDCtyDku4Xmo4Dmn6UgUE5HIOaWh+S7tuWktO+8jOacqumqjOivgeWujOaVtOino+egge+8m+WuouaIt+err+eJiOacrOS4uuiHquaKpe+8jOadpea6kOacquiupOivgeOAgiIsIm1pbmVjcmFmdDp3aWRnZXQvYnV0dG9uX2hpZ2hsaWdodGVkIMK3IOWbvueJhyDln7rnoYDvvJptaW5lY3JhZnRfMS4yMS4xX2NsaWVudC5qYXIgwrcg5YWD5pWw5o2uIOWfuuehgO+8mm1pbmVjcmFmdF8xLjIxLjFfY2xpZW50LmphciDCtyAyMDAgw5cgMjAgwrcge1widHlwZVwiOlwibmluZV9zbGljZVwiLFwid2lkdGhcIjoyMDAsXCJoZWlnaHRcIjoyMCxcImJvcmRlclwiOntcImxlZnRcIjozLFwicmlnaHRcIjozLFwidG9wXCI6MyxcImJvdHRvbVwiOjN9fSDCtyDku4Xmo4Dmn6UgUE5HIOaWh+S7tuWktO+8jOacqumqjOivgeWujOaVtOino+egge+8m+WuouaIt+err+eJiOacrOS4uuiHquaKpe+8jOadpea6kOacquiupOivgeOAgiIsIm1pbmVjcmFmdDp3aWRnZXQvYnV0dG9uX2Rpc2FibGVkIMK3IOWbvueJhyDln7rnoYDvvJptaW5lY3JhZnRfMS4yMS4xX2NsaWVudC5qYXIgwrcg5YWD5pWw5o2uIOWfuuehgO+8mm1pbmVjcmFmdF8xLjIxLjFfY2xpZW50LmphciDCtyAyMDAgw5cgMjAgwrcge1widHlwZVwiOlwibmluZV9zbGljZVwiLFwid2lkdGhcIjoyMDAsXCJoZWlnaHRcIjoyMCxcImJvcmRlclwiOntcImxlZnRcIjoxLFwicmlnaHRcIjoxLFwidG9wXCI6MSxcImJvdHRvbVwiOjF9fSDCtyDku4Xmo4Dmn6UgUE5HIOaWh+S7tuWktO+8jOacqumqjOivgeWujOaVtOino+egge+8m+WuouaIt+err+eJiOacrOS4uuiHquaKpe+8jOadpea6kOacquiupOivgeOAgiIsIm1pbmVjcmFmdDp3aWRnZXQvdGV4dF9maWVsZCDCtyDlm77niYcg5Z+656GA77yabWluZWNyYWZ0XzEuMjEuMV9jbGllbnQuamFyIMK3IOWFg+aVsOaNriDln7rnoYDvvJptaW5lY3JhZnRfMS4yMS4xX2NsaWVudC5qYXIgwrcgMjAwIMOXIDIwIMK3IHtcInR5cGVcIjpcIm5pbmVfc2xpY2VcIixcIndpZHRoXCI6MjAwLFwiaGVpZ2h0XCI6MjAsXCJib3JkZXJcIjp7XCJsZWZ0XCI6MSxcInJpZ2h0XCI6MSxcInRvcFwiOjEsXCJib3R0b21cIjoxfX0gwrcg5LuF5qOA5p+lIFBORyDmlofku7blpLTvvIzmnKrpqozor4HlrozmlbTop6PnoIHvvJvlrqLmiLfnq6/niYjmnKzkuLroh6rmiqXvvIzmnaXmupDmnKrorqTor4HjgIIiLCJtaW5lY3JhZnQ6d2lkZ2V0L3RleHRfZmllbGRfaGlnaGxpZ2h0ZWQgwrcg5Zu+54mHIOWfuuehgO+8mm1pbmVjcmFmdF8xLjIxLjFfY2xpZW50LmphciDCtyDlhYPmlbDmja4g5Z+656GA77yabWluZWNyYWZ0XzEuMjEuMV9jbGllbnQuamFyIMK3IDIwMCDDlyAyMCDCtyB7XCJ0eXBlXCI6XCJuaW5lX3NsaWNlXCIsXCJ3aWR0aFwiOjIwMCxcImhlaWdodFwiOjIwLFwiYm9yZGVyXCI6e1wibGVmdFwiOjEsXCJyaWdodFwiOjEsXCJ0b3BcIjoxLFwiYm90dG9tXCI6MX19IMK3IOS7heajgOafpSBQTkcg5paH5Lu25aS077yM5pyq6aqM6K+B5a6M5pW06Kej56CB77yb5a6i5oi356uv54mI5pys5Li66Ieq5oql77yM5p2l5rqQ5pyq6K6k6K+B44CCIl19"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "2a57fca227cabeb45d7c-332c6b103c0b8783edfc",
+          "file": "client-jar-local.spec.ts",
+          "line": 2,
+          "column": 1
+        }
+      ]
+    },
+    {
+      "title": "editor.spec.ts",
+      "file": "editor.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "four types add/move/resize/export/import/recover in one history transaction per operation",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr1",
+              "projectName": "chromium-dpr1",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2472,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-28T08:44:59.647Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "d2f56d7d370f0ba02e91-18e2632bc0a26646cc33",
+          "file": "editor.spec.ts",
+          "line": 51,
+          "column": 1
+        },
+        {
+          "title": "logical coordinates at zoom 0.5 with pan, fractional drag and cancellation",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr1",
+              "projectName": "chromium-dpr1",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1335,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-28T08:45:02.128Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "d2f56d7d370f0ba02e91-d0c5a14a9fce3894d212",
+          "file": "editor.spec.ts",
+          "line": 130,
+          "column": 3
+        },
+        {
+          "title": "logical coordinates at zoom 1 with pan, fractional drag and cancellation",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr1",
+              "projectName": "chromium-dpr1",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1331,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-28T08:45:03.472Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "d2f56d7d370f0ba02e91-1554adff217c9ff0e76e",
+          "file": "editor.spec.ts",
+          "line": 130,
+          "column": 3
+        },
+        {
+          "title": "logical coordinates at zoom 2 with pan, fractional drag and cancellation",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr1",
+              "projectName": "chromium-dpr1",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1316,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-28T08:45:04.812Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "d2f56d7d370f0ba02e91-13bbfb4928d90dfad8f9",
+          "file": "editor.spec.ts",
+          "line": 130,
+          "column": 3
+        },
+        {
+          "title": "invalid JSON/schema/source/references do not replace document, selection or history",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr1",
+              "projectName": "chromium-dpr1",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 635,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-28T08:45:06.137Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "d2f56d7d370f0ba02e91-d29a0b6b803608d3861f",
+          "file": "editor.spec.ts",
+          "line": 196,
+          "column": 1
+        },
+        {
+          "title": "palette drag/drop, exact properties, invalid bounds and pointer cancellation",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr1",
+              "projectName": "chromium-dpr1",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 688,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-28T08:45:06.782Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "d2f56d7d370f0ba02e91-28454505511460fb5b7a",
+          "file": "editor.spec.ts",
+          "line": 231,
+          "column": 1
+        },
+        {
+          "title": "@performance 300 nodes real pointer drag and frame sampling",
+          "ok": true,
+          "tags": [
+            "performance"
+          ],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr1",
+              "projectName": "chromium-dpr1",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 9355,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-28T08:45:07.479Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "performance",
+                      "contentType": "application/json",
+                      "body": "ewogICJwcm9qZWN0IjogImNocm9taXVtLWRwcjEiLAogICJicm93c2VyVmVyc2lvbiI6ICIxNTYuMC44MDc4LjQ4IiwKICAiYnJvd3NlckNoYW5uZWwiOiAiY2hyb21lIiwKICAiZW52aXJvbm1lbnQiOiB7CiAgICAibm9kZSI6ICJ2MjQuMTcuMCIsCiAgICAicGxhdGZvcm0iOiAid2luMzIiLAogICAgInJlbGVhc2UiOiAiMTAuMC4yNjIwMCIsCiAgICAiYXJjaCI6ICJ4NjQiLAogICAgImNwdSI6ICJBTUQgUnl6ZW4gNyA3NzM1SCB3aXRoIFJhZGVvbiBHcmFwaGljcyIsCiAgICAibG9naWNhbENwdXMiOiAxNiwKICAgICJ0b3RhbE1lbW9yeUdpQiI6IDE1CiAgfSwKICAibm9kZUNvdW50IjogMzAwLAogICJ6b29tIjogMiwKICAicGFuIjogWwogICAgMCwKICAgIDAKICBdLAogICJzYW1wbGVzIjogWwogICAgewogICAgICAicm91bmQiOiAxLAogICAgICAid2FsbER1cmF0aW9uTXMiOiAyODMxLAogICAgICAiZnJhbWVzIjogMzgxLAogICAgICAibWVhbkZyYW1lTXMiOiA3LjUxNzU4NTMwMTgwNTk3NywKICAgICAgInA1MEZyYW1lTXMiOiA2LjA5OTk5OTk5OTk5OTkwOSwKICAgICAgInA5NUZyYW1lTXMiOiAxMi4xMDAwMDAwMDAwMDAxMzYsCiAgICAgICJtYXhGcmFtZU1zIjogNjAuNjAwMDAwMDAwMDAwMzY0LAogICAgICAicG9pbnRlck1vdmVzIjogNjEsCiAgICAgICJkcHIiOiAxLAogICAgICAidXNlckFnZW50IjogIk1vemlsbGEvNS4wIChXaW5kb3dzIE5UIDEwLjA7IFdpbjY0OyB4NjQpIEFwcGxlV2ViS2l0LzUzNy4zNiAoS0hUTUwsIGxpa2UgR2Vja28pIEhlYWRsZXNzQ2hyb21lLzE1Ni4wLjAuMCBTYWZhcmkvNTM3LjM2IiwKICAgICAgInZpZXdwb3J0IjogWwogICAgICAgIDE0NDAsCiAgICAgICAgMTAwMAogICAgICBdLAogICAgICAiaGFyZHdhcmVDb25jdXJyZW5jeSI6IDE2CiAgICB9LAogICAgewogICAgICAicm91bmQiOiAyLAogICAgICAid2FsbER1cmF0aW9uTXMiOiAyODQ0LAogICAgICAiZnJhbWVzIjogMzg1LAogICAgICAibWVhbkZyYW1lTXMiOiA3LjI0MTAzODk2MTAzODk2MiwKICAgICAgInA1MEZyYW1lTXMiOiA2LjA5OTk5OTk5OTk5OTQ1NCwKICAgICAgInA5NUZyYW1lTXMiOiAxMS44OTk5OTk5OTk5OTk2MzYsCiAgICAgICJtYXhGcmFtZU1zIjogNjAuNjk5OTk5OTk5OTk5ODIsCiAgICAgICJwb2ludGVyTW92ZXMiOiA2MSwKICAgICAgImRwciI6IDEsCiAgICAgICJ1c2VyQWdlbnQiOiAiTW96aWxsYS81LjAgKFdpbmRvd3MgTlQgMTAuMDsgV2luNjQ7IHg2NCkgQXBwbGVXZWJLaXQvNTM3LjM2IChLSFRNTCwgbGlrZSBHZWNrbykgSGVhZGxlc3NDaHJvbWUvMTU2LjAuMC4wIFNhZmFyaS81MzcuMzYiLAogICAgICAidmlld3BvcnQiOiBbCiAgICAgICAgMTQ0MCwKICAgICAgICAxMDAwCiAgICAgIF0sCiAgICAgICJoYXJkd2FyZUNvbmN1cnJlbmN5IjogMTYKICAgIH0sCiAgICB7CiAgICAgICJyb3VuZCI6IDMsCiAgICAgICJ3YWxsRHVyYXRpb25NcyI6IDI3OTMsCiAgICAgICJmcmFtZXMiOiA0MDEsCiAgICAgICJtZWFuRnJhbWVNcyI6IDcuMTQwODk3NzU1NTUxNTE3LAogICAgICAicDUwRnJhbWVNcyI6IDYuMDk5OTk5OTk5OTk5NDU0LAogICAgICAicDk1RnJhbWVNcyI6IDYuNSwKICAgICAgIm1heEZyYW1lTXMiOiA1NC44MDAwMDAwMDAwMDAxOCwKICAgICAgInBvaW50ZXJNb3ZlcyI6IDYxLAogICAgICAiZHByIjogMSwKICAgICAgInVzZXJBZ2VudCI6ICJNb3ppbGxhLzUuMCAoV2luZG93cyBOVCAxMC4wOyBXaW42NDsgeDY0KSBBcHBsZVdlYktpdC81MzcuMzYgKEtIVE1MLCBsaWtlIEdlY2tvKSBIZWFkbGVzc0Nocm9tZS8xNTYuMC4wLjAgU2FmYXJpLzUzNy4zNiIsCiAgICAgICJ2aWV3cG9ydCI6IFsKICAgICAgICAxNDQwLAogICAgICAgIDEwMDAKICAgICAgXSwKICAgICAgImhhcmR3YXJlQ29uY3VycmVuY3kiOiAxNgogICAgfQogIF0sCiAgIm1ldGhvZCI6ICJyZXF1ZXN0QW5pbWF0aW9uRnJhbWUgaW50ZXJ2YWxzIGR1cmluZyA2MCByZWFsIG1vdXNlIG1vdmVzIHBlciByb3VuZCwgMTZtcyByZXF1ZXN0ZWQgZGVsYXksIDMgcm91bmRzOyBubyBGUFMgcGFzcyB0aHJlc2hvbGQiCn0="
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "d2f56d7d370f0ba02e91-ce9a48a71590f57fd817",
+          "file": "editor.spec.ts",
+          "line": 275,
+          "column": 1
+        },
+        {
+          "title": "four types add/move/resize/export/import/recover in one history transaction per operation",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr2",
+              "projectName": "chromium-dpr2",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2665,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-28T08:46:26.346Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "d2f56d7d370f0ba02e91-e95901a034c9260550af",
+          "file": "editor.spec.ts",
+          "line": 51,
+          "column": 1
+        },
+        {
+          "title": "logical coordinates at zoom 0.5 with pan, fractional drag and cancellation",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr2",
+              "projectName": "chromium-dpr2",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1503,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-28T08:46:29.020Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "d2f56d7d370f0ba02e91-2cfde70b35844e2cbca9",
+          "file": "editor.spec.ts",
+          "line": 130,
+          "column": 3
+        },
+        {
+          "title": "logical coordinates at zoom 1 with pan, fractional drag and cancellation",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr2",
+              "projectName": "chromium-dpr2",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1410,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-28T08:46:30.532Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "d2f56d7d370f0ba02e91-222aa369758371e1d7a5",
+          "file": "editor.spec.ts",
+          "line": 130,
+          "column": 3
+        },
+        {
+          "title": "logical coordinates at zoom 2 with pan, fractional drag and cancellation",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr2",
+              "projectName": "chromium-dpr2",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1466,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-28T08:46:31.950Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "d2f56d7d370f0ba02e91-bf12906a6545928be370",
+          "file": "editor.spec.ts",
+          "line": 130,
+          "column": 3
+        },
+        {
+          "title": "invalid JSON/schema/source/references do not replace document, selection or history",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr2",
+              "projectName": "chromium-dpr2",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 736,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-28T08:46:33.425Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "d2f56d7d370f0ba02e91-a5dde865bc50eeb0ff4d",
+          "file": "editor.spec.ts",
+          "line": 196,
+          "column": 1
+        },
+        {
+          "title": "palette drag/drop, exact properties, invalid bounds and pointer cancellation",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr2",
+              "projectName": "chromium-dpr2",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 796,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-28T08:46:34.171Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "d2f56d7d370f0ba02e91-4045da4cffcd2221f1c8",
+          "file": "editor.spec.ts",
+          "line": 231,
+          "column": 1
+        },
+        {
+          "title": "@performance 300 nodes real pointer drag and frame sampling",
+          "ok": true,
+          "tags": [
+            "performance"
+          ],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr2",
+              "projectName": "chromium-dpr2",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 9817,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-28T08:46:34.976Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "performance",
+                      "contentType": "application/json",
+                      "body": "ewogICJwcm9qZWN0IjogImNocm9taXVtLWRwcjIiLAogICJicm93c2VyVmVyc2lvbiI6ICIxNTYuMC44MDc4LjQ4IiwKICAiYnJvd3NlckNoYW5uZWwiOiAiY2hyb21lIiwKICAiZW52aXJvbm1lbnQiOiB7CiAgICAibm9kZSI6ICJ2MjQuMTcuMCIsCiAgICAicGxhdGZvcm0iOiAid2luMzIiLAogICAgInJlbGVhc2UiOiAiMTAuMC4yNjIwMCIsCiAgICAiYXJjaCI6ICJ4NjQiLAogICAgImNwdSI6ICJBTUQgUnl6ZW4gNyA3NzM1SCB3aXRoIFJhZGVvbiBHcmFwaGljcyIsCiAgICAibG9naWNhbENwdXMiOiAxNiwKICAgICJ0b3RhbE1lbW9yeUdpQiI6IDE1CiAgfSwKICAibm9kZUNvdW50IjogMzAwLAogICJ6b29tIjogMiwKICAicGFuIjogWwogICAgMCwKICAgIDAKICBdLAogICJzYW1wbGVzIjogWwogICAgewogICAgICAicm91bmQiOiAxLAogICAgICAid2FsbER1cmF0aW9uTXMiOiAzMTM1LAogICAgICAiZnJhbWVzIjogNDAzLAogICAgICAibWVhbkZyYW1lTXMiOiA3Ljg3MTQ2NDAxOTg1MTExMywKICAgICAgInA1MEZyYW1lTXMiOiA2LjA5OTk5OTk5OTk5OTkwOSwKICAgICAgInA5NUZyYW1lTXMiOiAxMi4xMDAwMDAwMDAwMDAwMjMsCiAgICAgICJtYXhGcmFtZU1zIjogNjEuMzAwMDAwMDAwMDAwMTgsCiAgICAgICJwb2ludGVyTW92ZXMiOiA2MSwKICAgICAgImRwciI6IDIsCiAgICAgICJ1c2VyQWdlbnQiOiAiTW96aWxsYS81LjAgKFdpbmRvd3MgTlQgMTAuMDsgV2luNjQ7IHg2NCkgQXBwbGVXZWJLaXQvNTM3LjM2IChLSFRNTCwgbGlrZSBHZWNrbykgSGVhZGxlc3NDaHJvbWUvMTU2LjAuMC4wIFNhZmFyaS81MzcuMzYiLAogICAgICAidmlld3BvcnQiOiBbCiAgICAgICAgMTQ0MCwKICAgICAgICAxMDAwCiAgICAgIF0sCiAgICAgICJoYXJkd2FyZUNvbmN1cnJlbmN5IjogMTYKICAgIH0sCiAgICB7CiAgICAgICJyb3VuZCI6IDIsCiAgICAgICJ3YWxsRHVyYXRpb25NcyI6IDI4ODQsCiAgICAgICJmcmFtZXMiOiAzODYsCiAgICAgICJtZWFuRnJhbWVNcyI6IDcuNTIwNDY2MzIxMjQzNTIzLAogICAgICAicDUwRnJhbWVNcyI6IDYuMDk5OTk5OTk5OTk5NDU0LAogICAgICAicDk1RnJhbWVNcyI6IDExLjc5OTk5OTk5OTk5OTI3MiwKICAgICAgIm1heEZyYW1lTXMiOiA2MC41LAogICAgICAicG9pbnRlck1vdmVzIjogNjEsCiAgICAgICJkcHIiOiAyLAogICAgICAidXNlckFnZW50IjogIk1vemlsbGEvNS4wIChXaW5kb3dzIE5UIDEwLjA7IFdpbjY0OyB4NjQpIEFwcGxlV2ViS2l0LzUzNy4zNiAoS0hUTUwsIGxpa2UgR2Vja28pIEhlYWRsZXNzQ2hyb21lLzE1Ni4wLjAuMCBTYWZhcmkvNTM3LjM2IiwKICAgICAgInZpZXdwb3J0IjogWwogICAgICAgIDE0NDAsCiAgICAgICAgMTAwMAogICAgICBdLAogICAgICAiaGFyZHdhcmVDb25jdXJyZW5jeSI6IDE2CiAgICB9LAogICAgewogICAgICAicm91bmQiOiAzLAogICAgICAid2FsbER1cmF0aW9uTXMiOiAyODQ1LAogICAgICAiZnJhbWVzIjogMzgyLAogICAgICAibWVhbkZyYW1lTXMiOiA3LjI5NzM4MjE5OTA0NjUwMiwKICAgICAgInA1MEZyYW1lTXMiOiA2LjA5OTk5OTk5OTk5OTQ1NCwKICAgICAgInA5NUZyYW1lTXMiOiA3LAogICAgICAibWF4RnJhbWVNcyI6IDU1LAogICAgICAicG9pbnRlck1vdmVzIjogNjEsCiAgICAgICJkcHIiOiAyLAogICAgICAidXNlckFnZW50IjogIk1vemlsbGEvNS4wIChXaW5kb3dzIE5UIDEwLjA7IFdpbjY0OyB4NjQpIEFwcGxlV2ViS2l0LzUzNy4zNiAoS0hUTUwsIGxpa2UgR2Vja28pIEhlYWRsZXNzQ2hyb21lLzE1Ni4wLjAuMCBTYWZhcmkvNTM3LjM2IiwKICAgICAgInZpZXdwb3J0IjogWwogICAgICAgIDE0NDAsCiAgICAgICAgMTAwMAogICAgICBdLAogICAgICAiaGFyZHdhcmVDb25jdXJyZW5jeSI6IDE2CiAgICB9CiAgXSwKICAibWV0aG9kIjogInJlcXVlc3RBbmltYXRpb25GcmFtZSBpbnRlcnZhbHMgZHVyaW5nIDYwIHJlYWwgbW91c2UgbW92ZXMgcGVyIHJvdW5kLCAxNm1zIHJlcXVlc3RlZCBkZWxheSwgMyByb3VuZHM7IG5vIEZQUyBwYXNzIHRocmVzaG9sZCIKfQ=="
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "d2f56d7d370f0ba02e91-1b50df6f158f2376e442",
+          "file": "editor.spec.ts",
+          "line": 275,
+          "column": 1
+        }
+      ]
+    },
+    {
+      "title": "exports.spec.ts",
+      "file": "exports.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "complete bundle has matching references/hashes and clean logical PNG, independent of view/preview/DPR",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr1",
+              "projectName": "chromium-dpr1",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2342,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-28T08:45:16.855Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "ae50ed5fee567417f9bd-760645989da402cb4f81",
+          "file": "exports.spec.ts",
+          "line": 99,
+          "column": 1
+        },
+        {
+          "title": "pending inline text commits before capture; async edits cannot change any output",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr1",
+              "projectName": "chromium-dpr1",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 6730,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-28T08:45:19.207Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "ae50ed5fee567417f9bd-e80ec224652998c407e7",
+          "file": "exports.spec.ts",
+          "line": 232,
+          "column": 1
+        },
+        {
+          "title": "pending property and screen size are committed; invalid fields block full batch and standalone JSON",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr1",
+              "projectName": "chromium-dpr1",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1418,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-28T08:45:25.946Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "ae50ed5fee567417f9bd-cf9c97d1f40b2436761b",
+          "file": "exports.spec.ts",
+          "line": 286,
+          "column": 1
+        },
+        {
+          "title": "encoder failure clears stale links and URLs, retry succeeds; oversized PNG refuses without modifying history",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr1",
+              "projectName": "chromium-dpr1",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1212,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-28T08:45:27.373Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "ae50ed5fee567417f9bd-004181b7a32fde14dbef",
+          "file": "exports.spec.ts",
+          "line": 344,
+          "column": 1
+        },
+        {
+          "title": "unfinished composition and invalid inline input prevent export; Escape restores a successful path",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr1",
+              "projectName": "chromium-dpr1",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 993,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-28T08:45:28.596Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "ae50ed5fee567417f9bd-e23d097f6d9446377589",
+          "file": "exports.spec.ts",
+          "line": 416,
+          "column": 1
+        },
+        {
+          "title": "missing Canvas2D or SHA-256 reports full failure and preserves document/history",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr1",
+              "projectName": "chromium-dpr1",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 640,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-28T08:45:29.599Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "ae50ed5fee567417f9bd-66f8b38dbc71d4810735",
+          "file": "exports.spec.ts",
+          "line": 454,
+          "column": 1
+        },
+        {
+          "title": "complete bundle has matching references/hashes and clean logical PNG, independent of view/preview/DPR",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr2",
+              "projectName": "chromium-dpr2",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2469,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-28T08:46:44.815Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "ae50ed5fee567417f9bd-c19933143456e1883b44",
+          "file": "exports.spec.ts",
+          "line": 99,
+          "column": 1
+        },
+        {
+          "title": "pending inline text commits before capture; async edits cannot change any output",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr2",
+              "projectName": "chromium-dpr2",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 6864,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-28T08:46:47.292Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "ae50ed5fee567417f9bd-43f3ec1c530f8cc5d9c8",
+          "file": "exports.spec.ts",
+          "line": 232,
+          "column": 1
+        },
+        {
+          "title": "pending property and screen size are committed; invalid fields block full batch and standalone JSON",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr2",
+              "projectName": "chromium-dpr2",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1536,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-28T08:46:54.167Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "ae50ed5fee567417f9bd-34f80782ff4e594b69f1",
+          "file": "exports.spec.ts",
+          "line": 286,
+          "column": 1
+        },
+        {
+          "title": "encoder failure clears stale links and URLs, retry succeeds; oversized PNG refuses without modifying history",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr2",
+              "projectName": "chromium-dpr2",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1347,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-28T08:46:55.714Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "ae50ed5fee567417f9bd-d1970930be0e443a1cf3",
+          "file": "exports.spec.ts",
+          "line": 344,
+          "column": 1
+        },
+        {
+          "title": "unfinished composition and invalid inline input prevent export; Escape restores a successful path",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr2",
+              "projectName": "chromium-dpr2",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1043,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-28T08:46:57.070Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "ae50ed5fee567417f9bd-0a43f34dc1d78ec35129",
+          "file": "exports.spec.ts",
+          "line": 416,
+          "column": 1
+        },
+        {
+          "title": "missing Canvas2D or SHA-256 reports full failure and preserves document/history",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr2",
+              "projectName": "chromium-dpr2",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 742,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-28T08:46:58.125Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "ae50ed5fee567417f9bd-a37b5d156e999b76c080",
+          "file": "exports.spec.ts",
+          "line": 454,
+          "column": 1
+        }
+      ]
+    },
+    {
+      "title": "interaction-review.spec.ts",
+      "file": "interaction-review.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "double-click Button: one text transaction, undo, cancel",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr1",
+              "projectName": "chromium-dpr1",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 786,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-28T08:45:30.259Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "f4a05bf151d680c7daa3-c83f164971adff8339aa",
+          "file": "interaction-review.spec.ts",
+          "line": 31,
+          "column": 3
+        },
+        {
+          "title": "double-click EditBox: one text transaction, undo, cancel",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr1",
+              "projectName": "chromium-dpr1",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 758,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-28T08:45:31.055Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "f4a05bf151d680c7daa3-a06b83522851732b8f56",
+          "file": "interaction-review.spec.ts",
+          "line": 31,
+          "column": 3
+        },
+        {
+          "title": "double-click StringWidget: one text transaction, undo, cancel",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr1",
+              "projectName": "chromium-dpr1",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 725,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-28T08:45:31.824Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "f4a05bf151d680c7daa3-0e7b8379043217f948f2",
+          "file": "interaction-review.spec.ts",
+          "line": 31,
+          "column": 3
+        },
+        {
+          "title": "translation label is plain language and inline edit preserves key; blur commits",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr1",
+              "projectName": "chromium-dpr1",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 663,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-28T08:45:32.558Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "f4a05bf151d680c7daa3-8ffef4de2abb160f1724",
+          "file": "interaction-review.spec.ts",
+          "line": 71,
+          "column": 1
+        },
+        {
+          "title": "inline EditBox validation and IME composition do not corrupt document or history",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr1",
+              "projectName": "chromium-dpr1",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 653,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-28T08:45:33.231Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "f4a05bf151d680c7daa3-b0abf5eca8f9897f8551",
+          "file": "interaction-review.spec.ts",
+          "line": 99,
+          "column": 1
+        },
+        {
+          "title": "rectangle ARGB updates actual canvas pixels, including alpha; undo restores",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr1",
+              "projectName": "chromium-dpr1",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 724,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-28T08:45:33.892Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "f4a05bf151d680c7daa3-75d384eec43bbbf304f2",
+          "file": "interaction-review.spec.ts",
+          "line": 126,
+          "column": 1
+        },
+        {
+          "title": "wheel zooms only canvas around cursor, right drag pans, left drag moves",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr1",
+              "projectName": "chromium-dpr1",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 879,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-28T08:45:34.627Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "f4a05bf151d680c7daa3-dab7eea14e7299a3d8c1",
+          "file": "interaction-review.spec.ts",
+          "line": 153,
+          "column": 1
+        },
+        {
+          "title": "double-click Button: one text transaction, undo, cancel",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr2",
+              "projectName": "chromium-dpr2",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 838,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-28T08:46:58.887Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "f4a05bf151d680c7daa3-38b2487faef6f8054216",
+          "file": "interaction-review.spec.ts",
+          "line": 31,
+          "column": 3
+        },
+        {
+          "title": "double-click EditBox: one text transaction, undo, cancel",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr2",
+              "projectName": "chromium-dpr2",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 867,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-28T08:46:59.733Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "f4a05bf151d680c7daa3-4a7ad0d1da2b894f0e80",
+          "file": "interaction-review.spec.ts",
+          "line": 31,
+          "column": 3
+        },
+        {
+          "title": "double-click StringWidget: one text transaction, undo, cancel",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr2",
+              "projectName": "chromium-dpr2",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 830,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-28T08:47:00.610Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "f4a05bf151d680c7daa3-e99427621bf3e0450595",
+          "file": "interaction-review.spec.ts",
+          "line": 31,
+          "column": 3
+        },
+        {
+          "title": "translation label is plain language and inline edit preserves key; blur commits",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr2",
+              "projectName": "chromium-dpr2",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 753,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-28T08:47:01.448Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "f4a05bf151d680c7daa3-5b12d68a121fcfe48a80",
+          "file": "interaction-review.spec.ts",
+          "line": 71,
+          "column": 1
+        },
+        {
+          "title": "inline EditBox validation and IME composition do not corrupt document or history",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr2",
+              "projectName": "chromium-dpr2",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 741,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-28T08:47:02.210Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "f4a05bf151d680c7daa3-3efca4444cfa869d21ce",
+          "file": "interaction-review.spec.ts",
+          "line": 99,
+          "column": 1
+        },
+        {
+          "title": "rectangle ARGB updates actual canvas pixels, including alpha; undo restores",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr2",
+              "projectName": "chromium-dpr2",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 822,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-28T08:47:02.960Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "f4a05bf151d680c7daa3-6cefbd032bef3150964a",
+          "file": "interaction-review.spec.ts",
+          "line": 126,
+          "column": 1
+        },
+        {
+          "title": "wheel zooms only canvas around cursor, right drag pans, left drag moves",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr2",
+              "projectName": "chromium-dpr2",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1021,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-28T08:47:03.791Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "f4a05bf151d680c7daa3-997f4e580ea6fc1062c5",
+          "file": "interaction-review.spec.ts",
+          "line": 153,
+          "column": 1
+        }
+      ]
+    },
+    {
+      "title": "panel-background.spec.ts",
+      "file": "panel-background.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "panel background is a separate 1:1 texture, stable across edits and local recovery",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr1",
+              "projectName": "chromium-dpr1",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1307,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-28T08:45:35.525Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "b504c6747201b6567c38-879812f54c43451bec7d",
+          "file": "panel-background.spec.ts",
+          "line": 20,
+          "column": 1
+        },
+        {
+          "title": "failure while encoding the independent panel texture does not publish a partial batch",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr1",
+              "projectName": "chromium-dpr1",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 645,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-28T08:45:36.840Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "b504c6747201b6567c38-b72580348822366121cd",
+          "file": "panel-background.spec.ts",
+          "line": 167,
+          "column": 1
+        },
+        {
+          "title": "changing the panel after export starts cannot alter the captured background texture",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr1",
+              "projectName": "chromium-dpr1",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2586,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-28T08:45:37.495Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "b504c6747201b6567c38-b8929ce18f86e0377e29",
+          "file": "panel-background.spec.ts",
+          "line": 193,
+          "column": 1
+        },
+        {
+          "title": "panel background is a separate 1:1 texture, stable across edits and local recovery",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr2",
+              "projectName": "chromium-dpr2",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1408,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-28T08:47:04.833Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "b504c6747201b6567c38-7c0f41a381b824534c13",
+          "file": "panel-background.spec.ts",
+          "line": 20,
+          "column": 1
+        },
+        {
+          "title": "failure while encoding the independent panel texture does not publish a partial batch",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr2",
+              "projectName": "chromium-dpr2",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 763,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-28T08:47:06.248Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "b504c6747201b6567c38-19df744b436c74ce2a36",
+          "file": "panel-background.spec.ts",
+          "line": 167,
+          "column": 1
+        },
+        {
+          "title": "changing the panel after export starts cannot alter the captured background texture",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr2",
+              "projectName": "chromium-dpr2",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2758,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-28T08:47:07.018Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "b504c6747201b6567c38-d640b11a7f711ba6e075",
+          "file": "panel-background.spec.ts",
+          "line": 193,
+          "column": 1
+        }
+      ]
+    },
+    {
+      "title": "panel-seams.spec.ts",
+      "file": "panel-seams.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "panel boundaries match a single logical raster under transformed drawing",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr1",
+              "projectName": "chromium-dpr1",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 604,
+                  "errors": [],
+                  "stdout": [
+                    {
+                      "text": "{\"project\":\"chromium-dpr1\",\"results\":[{\"size\":[37,29],\"zoom\":0.5,\"pan\":0,\"mismatch\":0,\"dark\":0,\"first\":null},{\"size\":[37,29],\"zoom\":0.5,\"pan\":0.37,\"mismatch\":0,\"dark\":0,\"first\":null},{\"size\":[37,29],\"zoom\":1,\"pan\":0,\"mismatch\":0,\"dark\":0,\"first\":null},{\"size\":[37,29],\"zoom\":1,\"pan\":0.37,\"mismatch\":0,\"dark\":0,\"first\":null},{\"size\":[37,29],\"zoom\":2,\"pan\":0,\"mismatch\":0,\"dark\":0,\"first\":null},{\"size\":[37,29],\"zoom\":2,\"pan\":0.37,\"mismatch\":0,\"dark\":0,\"first\":null},{\"size\":[37,29],\"zoom\":1.37,\"pan\":0,\"mismatch\":0,\"dark\":0,\"first\":null},{\"size\":[37,29],\"zoom\":1.37,\"pan\":0.37,\"mismatch\":0,\"dark\":0,\"first\":null},{\"size\":[320,180],\"zoom\":0.5,\"pan\":0,\"mismatch\":0,\"dark\":0,\"first\":null},{\"size\":[320,180],\"zoom\":0.5,\"pan\":0.37,\"mismatch\":0,\"dark\":0,\"first\":null},{\"size\":[320,180],\"zoom\":1,\"pan\":0,\"mismatch\":0,\"dark\":0,\"first\":null},{\"size\":[320,180],\"zoom\":1,\"pan\":0.37,\"mismatch\":0,\"dark\":0,\"first\":null},{\"size\":[320,180],\"zoom\":2,\"pan\":0,\"mismatch\":0,\"dark\":0,\"first\":null},{\"size\":[320,180],\"zoom\":2,\"pan\":0.37,\"mismatch\":0,\"dark\":0,\"first\":null},{\"size\":[320,180],\"zoom\":1.37,\"pan\":0,\"mismatch\":0,\"dark\":0,\"first\":null},{\"size\":[320,180],\"zoom\":1.37,\"pan\":0.37,\"mismatch\":0,\"dark\":0,\"first\":null}]}\n"
+                    }
+                  ],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-28T08:45:40.101Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "pixel-comparison.json",
+                      "contentType": "application/json",
+                      "body": "WwogIHsKICAgICJzaXplIjogWwogICAgICAzNywKICAgICAgMjkKICAgIF0sCiAgICAiem9vbSI6IDAuNSwKICAgICJwYW4iOiAwLAogICAgIm1pc21hdGNoIjogMCwKICAgICJkYXJrIjogMCwKICAgICJmaXJzdCI6IG51bGwKICB9LAogIHsKICAgICJzaXplIjogWwogICAgICAzNywKICAgICAgMjkKICAgIF0sCiAgICAiem9vbSI6IDAuNSwKICAgICJwYW4iOiAwLjM3LAogICAgIm1pc21hdGNoIjogMCwKICAgICJkYXJrIjogMCwKICAgICJmaXJzdCI6IG51bGwKICB9LAogIHsKICAgICJzaXplIjogWwogICAgICAzNywKICAgICAgMjkKICAgIF0sCiAgICAiem9vbSI6IDEsCiAgICAicGFuIjogMCwKICAgICJtaXNtYXRjaCI6IDAsCiAgICAiZGFyayI6IDAsCiAgICAiZmlyc3QiOiBudWxsCiAgfSwKICB7CiAgICAic2l6ZSI6IFsKICAgICAgMzcsCiAgICAgIDI5CiAgICBdLAogICAgInpvb20iOiAxLAogICAgInBhbiI6IDAuMzcsCiAgICAibWlzbWF0Y2giOiAwLAogICAgImRhcmsiOiAwLAogICAgImZpcnN0IjogbnVsbAogIH0sCiAgewogICAgInNpemUiOiBbCiAgICAgIDM3LAogICAgICAyOQogICAgXSwKICAgICJ6b29tIjogMiwKICAgICJwYW4iOiAwLAogICAgIm1pc21hdGNoIjogMCwKICAgICJkYXJrIjogMCwKICAgICJmaXJzdCI6IG51bGwKICB9LAogIHsKICAgICJzaXplIjogWwogICAgICAzNywKICAgICAgMjkKICAgIF0sCiAgICAiem9vbSI6IDIsCiAgICAicGFuIjogMC4zNywKICAgICJtaXNtYXRjaCI6IDAsCiAgICAiZGFyayI6IDAsCiAgICAiZmlyc3QiOiBudWxsCiAgfSwKICB7CiAgICAic2l6ZSI6IFsKICAgICAgMzcsCiAgICAgIDI5CiAgICBdLAogICAgInpvb20iOiAxLjM3LAogICAgInBhbiI6IDAsCiAgICAibWlzbWF0Y2giOiAwLAogICAgImRhcmsiOiAwLAogICAgImZpcnN0IjogbnVsbAogIH0sCiAgewogICAgInNpemUiOiBbCiAgICAgIDM3LAogICAgICAyOQogICAgXSwKICAgICJ6b29tIjogMS4zNywKICAgICJwYW4iOiAwLjM3LAogICAgIm1pc21hdGNoIjogMCwKICAgICJkYXJrIjogMCwKICAgICJmaXJzdCI6IG51bGwKICB9LAogIHsKICAgICJzaXplIjogWwogICAgICAzMjAsCiAgICAgIDE4MAogICAgXSwKICAgICJ6b29tIjogMC41LAogICAgInBhbiI6IDAsCiAgICAibWlzbWF0Y2giOiAwLAogICAgImRhcmsiOiAwLAogICAgImZpcnN0IjogbnVsbAogIH0sCiAgewogICAgInNpemUiOiBbCiAgICAgIDMyMCwKICAgICAgMTgwCiAgICBdLAogICAgInpvb20iOiAwLjUsCiAgICAicGFuIjogMC4zNywKICAgICJtaXNtYXRjaCI6IDAsCiAgICAiZGFyayI6IDAsCiAgICAiZmlyc3QiOiBudWxsCiAgfSwKICB7CiAgICAic2l6ZSI6IFsKICAgICAgMzIwLAogICAgICAxODAKICAgIF0sCiAgICAiem9vbSI6IDEsCiAgICAicGFuIjogMCwKICAgICJtaXNtYXRjaCI6IDAsCiAgICAiZGFyayI6IDAsCiAgICAiZmlyc3QiOiBudWxsCiAgfSwKICB7CiAgICAic2l6ZSI6IFsKICAgICAgMzIwLAogICAgICAxODAKICAgIF0sCiAgICAiem9vbSI6IDEsCiAgICAicGFuIjogMC4zNywKICAgICJtaXNtYXRjaCI6IDAsCiAgICAiZGFyayI6IDAsCiAgICAiZmlyc3QiOiBudWxsCiAgfSwKICB7CiAgICAic2l6ZSI6IFsKICAgICAgMzIwLAogICAgICAxODAKICAgIF0sCiAgICAiem9vbSI6IDIsCiAgICAicGFuIjogMCwKICAgICJtaXNtYXRjaCI6IDAsCiAgICAiZGFyayI6IDAsCiAgICAiZmlyc3QiOiBudWxsCiAgfSwKICB7CiAgICAic2l6ZSI6IFsKICAgICAgMzIwLAogICAgICAxODAKICAgIF0sCiAgICAiem9vbSI6IDIsCiAgICAicGFuIjogMC4zNywKICAgICJtaXNtYXRjaCI6IDAsCiAgICAiZGFyayI6IDAsCiAgICAiZmlyc3QiOiBudWxsCiAgfSwKICB7CiAgICAic2l6ZSI6IFsKICAgICAgMzIwLAogICAgICAxODAKICAgIF0sCiAgICAiem9vbSI6IDEuMzcsCiAgICAicGFuIjogMCwKICAgICJtaXNtYXRjaCI6IDAsCiAgICAiZGFyayI6IDAsCiAgICAiZmlyc3QiOiBudWxsCiAgfSwKICB7CiAgICAic2l6ZSI6IFsKICAgICAgMzIwLAogICAgICAxODAKICAgIF0sCiAgICAiem9vbSI6IDEuMzcsCiAgICAicGFuIjogMC4zNywKICAgICJtaXNtYXRjaCI6IDAsCiAgICAiZGFyayI6IDAsCiAgICAiZmlyc3QiOiBudWxsCiAgfQpd"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "4a3507cb17918423f358-61002c5549ceeaafde50",
+          "file": "panel-seams.spec.ts",
+          "line": 2,
+          "column": 1
+        },
+        {
+          "title": "real editor and GUI Scale preview render the same panel raster at slice boundaries",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr1",
+              "projectName": "chromium-dpr1",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 972,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-28T08:45:40.713Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "4a3507cb17918423f358-3c6c5d3581ea871f79d5",
+          "file": "panel-seams.spec.ts",
+          "line": 70,
+          "column": 1
+        },
+        {
+          "title": "diagnose boundary pixels and sample rendering cost",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr1",
+              "projectName": "chromium-dpr1",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2180,
+                  "errors": [],
+                  "stdout": [
+                    {
+                      "text": "{\"dpr\":1,\"transparentSourcePixels\":18,\"verticalCount\":338,\"verticalFirst\":[28,25,202,204,208,255,255,255],\"horizontalCount\":639,\"horizontalFirst\":[28,27,159,161,164,198,198,198],\"oldMs100Frames\":[289,436,195.5999999642372,373.80000001192093,199],\"newMs100Frames\":[113.80000001192093,4.800000011920929,5.899999976158142,4.300000011920929,6.199999988079071]}\n"
+                    }
+                  ],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-28T08:45:41.694Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "boundary-and-performance.json",
+                      "contentType": "application/json",
+                      "body": "ewogICJkcHIiOiAxLAogICJ0cmFuc3BhcmVudFNvdXJjZVBpeGVscyI6IDE4LAogICJ2ZXJ0aWNhbENvdW50IjogMzM4LAogICJ2ZXJ0aWNhbEZpcnN0IjogWwogICAgMjgsCiAgICAyNSwKICAgIDIwMiwKICAgIDIwNCwKICAgIDIwOCwKICAgIDI1NSwKICAgIDI1NSwKICAgIDI1NQogIF0sCiAgImhvcml6b250YWxDb3VudCI6IDYzOSwKICAiaG9yaXpvbnRhbEZpcnN0IjogWwogICAgMjgsCiAgICAyNywKICAgIDE1OSwKICAgIDE2MSwKICAgIDE2NCwKICAgIDE5OCwKICAgIDE5OCwKICAgIDE5OAogIF0sCiAgIm9sZE1zMTAwRnJhbWVzIjogWwogICAgMjg5LAogICAgNDM2LAogICAgMTk1LjU5OTk5OTk2NDIzNzIsCiAgICAzNzMuODAwMDAwMDExOTIwOTMsCiAgICAxOTkKICBdLAogICJuZXdNczEwMEZyYW1lcyI6IFsKICAgIDExMy44MDAwMDAwMTE5MjA5MywKICAgIDQuODAwMDAwMDExOTIwOTI5LAogICAgNS44OTk5OTk5NzYxNTgxNDIsCiAgICA0LjMwMDAwMDAxMTkyMDkyOSwKICAgIDYuMTk5OTk5OTg4MDc5MDcxCiAgXQp9"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "4a3507cb17918423f358-73524a261d18b0baa2c3",
+          "file": "panel-seams.spec.ts",
+          "line": 139,
+          "column": 1
+        },
+        {
+          "title": "preview cache replaces dimensions and reuses a bounded raster",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr1",
+              "projectName": "chromium-dpr1",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 458,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-28T08:45:43.882Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "4a3507cb17918423f358-28855d69b6deaa7bc2a4",
+          "file": "panel-seams.spec.ts",
+          "line": 214,
+          "column": 1
+        },
+        {
+          "title": "panel boundaries match a single logical raster under transformed drawing",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr2",
+              "projectName": "chromium-dpr2",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 806,
+                  "errors": [],
+                  "stdout": [
+                    {
+                      "text": "{\"project\":\"chromium-dpr2\",\"results\":[{\"size\":[37,29],\"zoom\":0.5,\"pan\":0,\"mismatch\":0,\"dark\":0,\"first\":null},{\"size\":[37,29],\"zoom\":0.5,\"pan\":0.37,\"mismatch\":0,\"dark\":0,\"first\":null},{\"size\":[37,29],\"zoom\":1,\"pan\":0,\"mismatch\":0,\"dark\":0,\"first\":null},{\"size\":[37,29],\"zoom\":1,\"pan\":0.37,\"mismatch\":0,\"dark\":0,\"first\":null},{\"size\":[37,29],\"zoom\":2,\"pan\":0,\"mismatch\":0,\"dark\":0,\"first\":null},{\"size\":[37,29],\"zoom\":2,\"pan\":0.37,\"mismatch\":0,\"dark\":0,\"first\":null},{\"size\":[37,29],\"zoom\":1.37,\"pan\":0,\"mismatch\":0,\"dark\":0,\"first\":null},{\"size\":[37,29],\"zoom\":1.37,\"pan\":0.37,\"mismatch\":0,\"dark\":0,\"first\":null},{\"size\":[320,180],\"zoom\":0.5,\"pan\":0,\"mismatch\":0,\"dark\":0,\"first\":null},{\"size\":[320,180],\"zoom\":0.5,\"pan\":0.37,\"mismatch\":0,\"dark\":0,\"first\":null},{\"size\":[320,180],\"zoom\":1,\"pan\":0,\"mismatch\":0,\"dark\":0,\"first\":null},{\"size\":[320,180],\"zoom\":1,\"pan\":0.37,\"mismatch\":0,\"dark\":0,\"first\":null},{\"size\":[320,180],\"zoom\":2,\"pan\":0,\"mismatch\":0,\"dark\":0,\"first\":null},{\"size\":[320,180],\"zoom\":2,\"pan\":0.37,\"mismatch\":0,\"dark\":0,\"first\":null},{\"size\":[320,180],\"zoom\":1.37,\"pan\":0,\"mismatch\":0,\"dark\":0,\"first\":null},{\"size\":[320,180],\"zoom\":1.37,\"pan\":0.37,\"mismatch\":0,\"dark\":0,\"first\":null}]}\n"
+                    }
+                  ],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-28T08:47:09.795Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "pixel-comparison.json",
+                      "contentType": "application/json",
+                      "body": "WwogIHsKICAgICJzaXplIjogWwogICAgICAzNywKICAgICAgMjkKICAgIF0sCiAgICAiem9vbSI6IDAuNSwKICAgICJwYW4iOiAwLAogICAgIm1pc21hdGNoIjogMCwKICAgICJkYXJrIjogMCwKICAgICJmaXJzdCI6IG51bGwKICB9LAogIHsKICAgICJzaXplIjogWwogICAgICAzNywKICAgICAgMjkKICAgIF0sCiAgICAiem9vbSI6IDAuNSwKICAgICJwYW4iOiAwLjM3LAogICAgIm1pc21hdGNoIjogMCwKICAgICJkYXJrIjogMCwKICAgICJmaXJzdCI6IG51bGwKICB9LAogIHsKICAgICJzaXplIjogWwogICAgICAzNywKICAgICAgMjkKICAgIF0sCiAgICAiem9vbSI6IDEsCiAgICAicGFuIjogMCwKICAgICJtaXNtYXRjaCI6IDAsCiAgICAiZGFyayI6IDAsCiAgICAiZmlyc3QiOiBudWxsCiAgfSwKICB7CiAgICAic2l6ZSI6IFsKICAgICAgMzcsCiAgICAgIDI5CiAgICBdLAogICAgInpvb20iOiAxLAogICAgInBhbiI6IDAuMzcsCiAgICAibWlzbWF0Y2giOiAwLAogICAgImRhcmsiOiAwLAogICAgImZpcnN0IjogbnVsbAogIH0sCiAgewogICAgInNpemUiOiBbCiAgICAgIDM3LAogICAgICAyOQogICAgXSwKICAgICJ6b29tIjogMiwKICAgICJwYW4iOiAwLAogICAgIm1pc21hdGNoIjogMCwKICAgICJkYXJrIjogMCwKICAgICJmaXJzdCI6IG51bGwKICB9LAogIHsKICAgICJzaXplIjogWwogICAgICAzNywKICAgICAgMjkKICAgIF0sCiAgICAiem9vbSI6IDIsCiAgICAicGFuIjogMC4zNywKICAgICJtaXNtYXRjaCI6IDAsCiAgICAiZGFyayI6IDAsCiAgICAiZmlyc3QiOiBudWxsCiAgfSwKICB7CiAgICAic2l6ZSI6IFsKICAgICAgMzcsCiAgICAgIDI5CiAgICBdLAogICAgInpvb20iOiAxLjM3LAogICAgInBhbiI6IDAsCiAgICAibWlzbWF0Y2giOiAwLAogICAgImRhcmsiOiAwLAogICAgImZpcnN0IjogbnVsbAogIH0sCiAgewogICAgInNpemUiOiBbCiAgICAgIDM3LAogICAgICAyOQogICAgXSwKICAgICJ6b29tIjogMS4zNywKICAgICJwYW4iOiAwLjM3LAogICAgIm1pc21hdGNoIjogMCwKICAgICJkYXJrIjogMCwKICAgICJmaXJzdCI6IG51bGwKICB9LAogIHsKICAgICJzaXplIjogWwogICAgICAzMjAsCiAgICAgIDE4MAogICAgXSwKICAgICJ6b29tIjogMC41LAogICAgInBhbiI6IDAsCiAgICAibWlzbWF0Y2giOiAwLAogICAgImRhcmsiOiAwLAogICAgImZpcnN0IjogbnVsbAogIH0sCiAgewogICAgInNpemUiOiBbCiAgICAgIDMyMCwKICAgICAgMTgwCiAgICBdLAogICAgInpvb20iOiAwLjUsCiAgICAicGFuIjogMC4zNywKICAgICJtaXNtYXRjaCI6IDAsCiAgICAiZGFyayI6IDAsCiAgICAiZmlyc3QiOiBudWxsCiAgfSwKICB7CiAgICAic2l6ZSI6IFsKICAgICAgMzIwLAogICAgICAxODAKICAgIF0sCiAgICAiem9vbSI6IDEsCiAgICAicGFuIjogMCwKICAgICJtaXNtYXRjaCI6IDAsCiAgICAiZGFyayI6IDAsCiAgICAiZmlyc3QiOiBudWxsCiAgfSwKICB7CiAgICAic2l6ZSI6IFsKICAgICAgMzIwLAogICAgICAxODAKICAgIF0sCiAgICAiem9vbSI6IDEsCiAgICAicGFuIjogMC4zNywKICAgICJtaXNtYXRjaCI6IDAsCiAgICAiZGFyayI6IDAsCiAgICAiZmlyc3QiOiBudWxsCiAgfSwKICB7CiAgICAic2l6ZSI6IFsKICAgICAgMzIwLAogICAgICAxODAKICAgIF0sCiAgICAiem9vbSI6IDIsCiAgICAicGFuIjogMCwKICAgICJtaXNtYXRjaCI6IDAsCiAgICAiZGFyayI6IDAsCiAgICAiZmlyc3QiOiBudWxsCiAgfSwKICB7CiAgICAic2l6ZSI6IFsKICAgICAgMzIwLAogICAgICAxODAKICAgIF0sCiAgICAiem9vbSI6IDIsCiAgICAicGFuIjogMC4zNywKICAgICJtaXNtYXRjaCI6IDAsCiAgICAiZGFyayI6IDAsCiAgICAiZmlyc3QiOiBudWxsCiAgfSwKICB7CiAgICAic2l6ZSI6IFsKICAgICAgMzIwLAogICAgICAxODAKICAgIF0sCiAgICAiem9vbSI6IDEuMzcsCiAgICAicGFuIjogMCwKICAgICJtaXNtYXRjaCI6IDAsCiAgICAiZGFyayI6IDAsCiAgICAiZmlyc3QiOiBudWxsCiAgfSwKICB7CiAgICAic2l6ZSI6IFsKICAgICAgMzIwLAogICAgICAxODAKICAgIF0sCiAgICAiem9vbSI6IDEuMzcsCiAgICAicGFuIjogMC4zNywKICAgICJtaXNtYXRjaCI6IDAsCiAgICAiZGFyayI6IDAsCiAgICAiZmlyc3QiOiBudWxsCiAgfQpd"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "4a3507cb17918423f358-cf7ea76900c1b7ff6c79",
+          "file": "panel-seams.spec.ts",
+          "line": 2,
+          "column": 1
+        },
+        {
+          "title": "real editor and GUI Scale preview render the same panel raster at slice boundaries",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr2",
+              "projectName": "chromium-dpr2",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1254,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-28T08:47:10.609Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "4a3507cb17918423f358-617ceabb21459cf4c77f",
+          "file": "panel-seams.spec.ts",
+          "line": 70,
+          "column": 1
+        },
+        {
+          "title": "diagnose boundary pixels and sample rendering cost",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr2",
+              "projectName": "chromium-dpr2",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2307,
+                  "errors": [],
+                  "stdout": [
+                    {
+                      "text": "{\"dpr\":2,\"transparentSourcePixels\":18,\"verticalCount\":338,\"verticalFirst\":[28,25,202,204,208,255,255,255],\"horizontalCount\":639,\"horizontalFirst\":[28,27,159,161,164,198,198,198],\"oldMs100Frames\":[269.60000002384186,410.19999998807907,200.69999998807907,370.30000001192093,201.30000001192093],\"newMs100Frames\":[116.89999997615814,4.800000011920929,6,4.600000023841858,6.099999964237213]}\n"
+                    }
+                  ],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-28T08:47:11.870Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "boundary-and-performance.json",
+                      "contentType": "application/json",
+                      "body": "ewogICJkcHIiOiAyLAogICJ0cmFuc3BhcmVudFNvdXJjZVBpeGVscyI6IDE4LAogICJ2ZXJ0aWNhbENvdW50IjogMzM4LAogICJ2ZXJ0aWNhbEZpcnN0IjogWwogICAgMjgsCiAgICAyNSwKICAgIDIwMiwKICAgIDIwNCwKICAgIDIwOCwKICAgIDI1NSwKICAgIDI1NSwKICAgIDI1NQogIF0sCiAgImhvcml6b250YWxDb3VudCI6IDYzOSwKICAiaG9yaXpvbnRhbEZpcnN0IjogWwogICAgMjgsCiAgICAyNywKICAgIDE1OSwKICAgIDE2MSwKICAgIDE2NCwKICAgIDE5OCwKICAgIDE5OCwKICAgIDE5OAogIF0sCiAgIm9sZE1zMTAwRnJhbWVzIjogWwogICAgMjY5LjYwMDAwMDAyMzg0MTg2LAogICAgNDEwLjE5OTk5OTk4ODA3OTA3LAogICAgMjAwLjY5OTk5OTk4ODA3OTA3LAogICAgMzcwLjMwMDAwMDAxMTkyMDkzLAogICAgMjAxLjMwMDAwMDAxMTkyMDkzCiAgXSwKICAibmV3TXMxMDBGcmFtZXMiOiBbCiAgICAxMTYuODk5OTk5OTc2MTU4MTQsCiAgICA0LjgwMDAwMDAxMTkyMDkyOSwKICAgIDYsCiAgICA0LjYwMDAwMDAyMzg0MTg1OCwKICAgIDYuMDk5OTk5OTY0MjM3MjEzCiAgXQp9"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "4a3507cb17918423f358-f7bdc0d792824e8d3f0a",
+          "file": "panel-seams.spec.ts",
+          "line": 139,
+          "column": 1
+        },
+        {
+          "title": "preview cache replaces dimensions and reuses a bounded raster",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr2",
+              "projectName": "chromium-dpr2",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 566,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-28T08:47:14.185Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "4a3507cb17918423f358-a8504d6da89269154330",
+          "file": "panel-seams.spec.ts",
+          "line": 214,
+          "column": 1
+        }
+      ]
+    },
+    {
+      "title": "persistence.spec.ts",
+      "file": "persistence.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "real IndexedDB saves edits/undo and restores on reload without view or history data",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr1",
+              "projectName": "chromium-dpr1",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2085,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-28T08:45:44.368Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "a5ef73a4e2a1baaea746-0959f36da6203e2185cd",
+          "file": "persistence.spec.ts",
+          "line": 67,
+          "column": 1
+        },
+        {
+          "title": "import creates a separate local copy, preserves previous edits and can reopen them",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr1",
+              "projectName": "chromium-dpr1",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1568,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-28T08:45:46.461Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "a5ef73a4e2a1baaea746-28dfe8033c656812f663",
+          "file": "persistence.spec.ts",
+          "line": 115,
+          "column": 1
+        },
+        {
+          "title": "v1-to-v2 IndexedDB upgrade adds index and preserves seeded document",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr1",
+              "projectName": "chromium-dpr1",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 481,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-28T08:45:48.037Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "a5ef73a4e2a1baaea746-1b7d43baf4a1b9aab1ec",
+          "file": "persistence.spec.ts",
+          "line": 157,
+          "column": 1
+        },
+        {
+          "title": "future-schema is retained; recovery download and explicit new copy do not overwrite it",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr1",
+              "projectName": "chromium-dpr1",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1485,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-28T08:45:48.526Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "a5ef73a4e2a1baaea746-2e25077583ad868cc870",
+          "file": "persistence.spec.ts",
+          "line": 174,
+          "column": 65
+        },
+        {
+          "title": "corrupt-document is retained; recovery download and explicit new copy do not overwrite it",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr1",
+              "projectName": "chromium-dpr1",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1472,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-28T08:45:50.020Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "a5ef73a4e2a1baaea746-d65d5195a70a96548d00",
+          "file": "persistence.spec.ts",
+          "line": 174,
+          "column": 65
+        },
+        {
+          "title": "invalid import does not create a local copy or modify existing IndexedDB records",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr1",
+              "projectName": "chromium-dpr1",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1413,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-28T08:45:51.500Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "a5ef73a4e2a1baaea746-b3873ea7574871afee0c",
+          "file": "persistence.spec.ts",
+          "line": 212,
+          "column": 1
+        },
+        {
+          "title": "temporarily unavailable IndexedDB keeps memory editable and retries when available",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr1",
+              "projectName": "chromium-dpr1",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 687,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-28T08:45:52.921Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "a5ef73a4e2a1baaea746-cf26b62a1e43c0d562d7",
+          "file": "persistence.spec.ts",
+          "line": 233,
+          "column": 1
+        },
+        {
+          "title": "blocked upgrade preserves memory and retries after old database connection closes",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr1",
+              "projectName": "chromium-dpr1",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 692,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-28T08:45:53.616Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "a5ef73a4e2a1baaea746-67e970d581a2989f41d5",
+          "file": "persistence.spec.ts",
+          "line": 263,
+          "column": 1
+        },
+        {
+          "title": "failed quota transaction preserves persisted data, remains dirty, exports and retries",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr1",
+              "projectName": "chromium-dpr1",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1394,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-28T08:45:54.314Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "a5ef73a4e2a1baaea746-07ddf68ab7cfdf79d71e",
+          "file": "persistence.spec.ts",
+          "line": 299,
+          "column": 3
+        },
+        {
+          "title": "failed abort transaction preserves persisted data, remains dirty, exports and retries",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr1",
+              "projectName": "chromium-dpr1",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1403,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-28T08:45:55.717Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "a5ef73a4e2a1baaea746-ed509411137429dda9f0",
+          "file": "persistence.spec.ts",
+          "line": 299,
+          "column": 3
+        },
+        {
+          "title": "Web Locks makes second tab readonly, then permits reconnect after writer closes",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr1",
+              "projectName": "chromium-dpr1",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1811,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-28T08:45:57.129Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "a5ef73a4e2a1baaea746-844a430ad43ab5846033",
+          "file": "persistence.spec.ts",
+          "line": 349,
+          "column": 1
+        },
+        {
+          "title": "without Web Locks stale tab CAS cannot overwrite newer saved content",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr1",
+              "projectName": "chromium-dpr1",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2586,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-28T08:45:58.948Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "a5ef73a4e2a1baaea746-7091b6966b757a1ec95b",
+          "file": "persistence.spec.ts",
+          "line": 388,
+          "column": 1
+        },
+        {
+          "title": "versionchange closes live connection and freezes editor without losing document",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr1",
+              "projectName": "chromium-dpr1",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 911,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-28T08:46:01.542Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "a5ef73a4e2a1baaea746-66b243d38cf19832adf4",
+          "file": "persistence.spec.ts",
+          "line": 425,
+          "column": 1
+        },
+        {
+          "title": "future database version stays untouched and memory editing/export remain available",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr1",
+              "projectName": "chromium-dpr1",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 549,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-28T08:46:02.460Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "a5ef73a4e2a1baaea746-a91df3b049000ffb867f",
+          "file": "persistence.spec.ts",
+          "line": 451,
+          "column": 1
+        },
+        {
+          "title": "real IndexedDB saves edits/undo and restores on reload without view or history data",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr2",
+              "projectName": "chromium-dpr2",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2244,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-28T08:47:14.771Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "a5ef73a4e2a1baaea746-248b78ed52816114a961",
+          "file": "persistence.spec.ts",
+          "line": 67,
+          "column": 1
+        },
+        {
+          "title": "import creates a separate local copy, preserves previous edits and can reopen them",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr2",
+              "projectName": "chromium-dpr2",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1740,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-28T08:47:17.023Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "a5ef73a4e2a1baaea746-816a11a5158073684618",
+          "file": "persistence.spec.ts",
+          "line": 115,
+          "column": 1
+        },
+        {
+          "title": "v1-to-v2 IndexedDB upgrade adds index and preserves seeded document",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr2",
+              "projectName": "chromium-dpr2",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 549,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-28T08:47:18.772Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "a5ef73a4e2a1baaea746-382118f0d6d2316de6ab",
+          "file": "persistence.spec.ts",
+          "line": 157,
+          "column": 1
+        },
+        {
+          "title": "future-schema is retained; recovery download and explicit new copy do not overwrite it",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr2",
+              "projectName": "chromium-dpr2",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1558,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-28T08:47:19.328Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "a5ef73a4e2a1baaea746-45126e8ebf4906f509b0",
+          "file": "persistence.spec.ts",
+          "line": 174,
+          "column": 65
+        },
+        {
+          "title": "corrupt-document is retained; recovery download and explicit new copy do not overwrite it",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr2",
+              "projectName": "chromium-dpr2",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1556,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-28T08:47:20.896Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "a5ef73a4e2a1baaea746-a8ab27e207c9928e138e",
+          "file": "persistence.spec.ts",
+          "line": 174,
+          "column": 65
+        },
+        {
+          "title": "invalid import does not create a local copy or modify existing IndexedDB records",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr2",
+              "projectName": "chromium-dpr2",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1503,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-28T08:47:22.460Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "a5ef73a4e2a1baaea746-1939a39a5917bf97bd9a",
+          "file": "persistence.spec.ts",
+          "line": 212,
+          "column": 1
+        },
+        {
+          "title": "temporarily unavailable IndexedDB keeps memory editable and retries when available",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr2",
+              "projectName": "chromium-dpr2",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 809,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-28T08:47:23.972Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "a5ef73a4e2a1baaea746-7ee09089768b85c69d66",
+          "file": "persistence.spec.ts",
+          "line": 233,
+          "column": 1
+        },
+        {
+          "title": "blocked upgrade preserves memory and retries after old database connection closes",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr2",
+              "projectName": "chromium-dpr2",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 851,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-28T08:47:24.788Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "a5ef73a4e2a1baaea746-f66c60e2b3a0dbefd574",
+          "file": "persistence.spec.ts",
+          "line": 263,
+          "column": 1
+        },
+        {
+          "title": "failed quota transaction preserves persisted data, remains dirty, exports and retries",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr2",
+              "projectName": "chromium-dpr2",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1519,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-28T08:47:25.647Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "a5ef73a4e2a1baaea746-a14a92d7ec9f5f66f351",
+          "file": "persistence.spec.ts",
+          "line": 299,
+          "column": 3
+        },
+        {
+          "title": "failed abort transaction preserves persisted data, remains dirty, exports and retries",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr2",
+              "projectName": "chromium-dpr2",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1563,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-28T08:47:27.174Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "a5ef73a4e2a1baaea746-7e025d64029e3182f0e1",
+          "file": "persistence.spec.ts",
+          "line": 299,
+          "column": 3
+        },
+        {
+          "title": "Web Locks makes second tab readonly, then permits reconnect after writer closes",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr2",
+              "projectName": "chromium-dpr2",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1924,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-28T08:47:28.744Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "a5ef73a4e2a1baaea746-824a09637732d6d4e749",
+          "file": "persistence.spec.ts",
+          "line": 349,
+          "column": 1
+        },
+        {
+          "title": "without Web Locks stale tab CAS cannot overwrite newer saved content",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr2",
+              "projectName": "chromium-dpr2",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 4701,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-28T08:47:30.676Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "a5ef73a4e2a1baaea746-374bfa2001e57a26b33f",
+          "file": "persistence.spec.ts",
+          "line": 388,
+          "column": 1
+        },
+        {
+          "title": "versionchange closes live connection and freezes editor without losing document",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr2",
+              "projectName": "chromium-dpr2",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1017,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-28T08:47:35.385Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "a5ef73a4e2a1baaea746-8ecf11ec7d67fbfb2800",
+          "file": "persistence.spec.ts",
+          "line": 425,
+          "column": 1
+        },
+        {
+          "title": "future database version stays untouched and memory editing/export remain available",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr2",
+              "projectName": "chromium-dpr2",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 665,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-28T08:47:36.411Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "a5ef73a4e2a1baaea746-629fe8212f0c81fdac0c",
+          "file": "persistence.spec.ts",
+          "line": 451,
+          "column": 1
+        }
+      ]
+    },
+    {
+      "title": "resource-core.spec.ts",
+      "file": "resource-core.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "browser ZIP and selected-directory adapter, cancellation and atomic failure",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr1",
+              "projectName": "chromium-dpr1",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 464,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-28T08:46:03.026Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "0f5194f36346d0da6499-9eb4288c93de8670bc25",
+          "file": "resource-core.spec.ts",
+          "line": 6,
+          "column": 1
+        },
+        {
+          "title": "browser webkitdirectory file input produces root-relative paths",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr1",
+              "projectName": "chromium-dpr1",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 465,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-28T08:46:03.499Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "0f5194f36346d0da6499-b4f17f9f22902d0c8ccf",
+          "file": "resource-core.spec.ts",
+          "line": 88,
+          "column": 1
+        },
+        {
+          "title": "browser counts real deflate output and rejects a forged size",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr1",
+              "projectName": "chromium-dpr1",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 888,
+                  "errors": [],
+                  "stdout": [
+                    {
+                      "text": "{\"length\":2097152,\"message\":\"实际解压大小超限\",\"elapsedMs\":272.80000001192093,\"compressedBytes\":2098092}\n"
+                    }
+                  ],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-28T08:46:03.971Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "resource-experiment.json",
+                      "contentType": "application/json",
+                      "body": "eyJsZW5ndGgiOjIwOTcxNTIsIm1lc3NhZ2UiOiLlrp7pmYXop6PljovlpKflsI/otoXpmZAiLCJlbGFwc2VkTXMiOjI3Mi44MDAwMDAwMTE5MjA5MywiY29tcHJlc3NlZEJ5dGVzIjoyMDk4MDkyfQ=="
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "0f5194f36346d0da6499-1e215c75557b40077184",
+          "file": "resource-core.spec.ts",
+          "line": 124,
+          "column": 1
+        },
+        {
+          "title": "browser ZIP and selected-directory adapter, cancellation and atomic failure",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr2",
+              "projectName": "chromium-dpr2",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 546,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-28T08:47:37.099Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "0f5194f36346d0da6499-df8d7df6d78ffe8f8d5f",
+          "file": "resource-core.spec.ts",
+          "line": 6,
+          "column": 1
+        },
+        {
+          "title": "browser webkitdirectory file input produces root-relative paths",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr2",
+              "projectName": "chromium-dpr2",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 577,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-28T08:47:37.652Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "0f5194f36346d0da6499-f5dbf7f15f8462dcff1f",
+          "file": "resource-core.spec.ts",
+          "line": 88,
+          "column": 1
+        },
+        {
+          "title": "browser counts real deflate output and rejects a forged size",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr2",
+              "projectName": "chromium-dpr2",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1008,
+                  "errors": [],
+                  "stdout": [
+                    {
+                      "text": "{\"length\":2097152,\"message\":\"实际解压大小超限\",\"elapsedMs\":311,\"compressedBytes\":2098092}\n"
+                    }
+                  ],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-28T08:47:38.238Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "resource-experiment.json",
+                      "contentType": "application/json",
+                      "body": "eyJsZW5ndGgiOjIwOTcxNTIsIm1lc3NhZ2UiOiLlrp7pmYXop6PljovlpKflsI/otoXpmZAiLCJlbGFwc2VkTXMiOjMxMSwiY29tcHJlc3NlZEJ5dGVzIjoyMDk4MDkyfQ=="
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "0f5194f36346d0da6499-468934281cb0513bf80d",
+          "file": "resource-core.spec.ts",
+          "line": 124,
+          "column": 1
+        }
+      ]
+    },
+    {
+      "title": "resource-panel.spec.ts",
+      "file": "resource-panel.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "resource panel loads ZIP and folder, queries, and keeps the current session on failure",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr1",
+              "projectName": "chromium-dpr1",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 957,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-28T08:46:04.883Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "8596219cd4a45230176a-d0069f4b2300447bf343",
+          "file": "resource-panel.spec.ts",
+          "line": 6,
+          "column": 1
+        },
+        {
+          "title": "client JAR and override metadata resolve from distinct layers in the panel",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr1",
+              "projectName": "chromium-dpr1",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 865,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-28T08:46:05.849Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "8596219cd4a45230176a-b77a0bcafb2003cb665d",
+          "file": "resource-panel.spec.ts",
+          "line": 73,
+          "column": 1
+        },
+        {
+          "title": "resource panel loads ZIP and folder, queries, and keeps the current session on failure",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr2",
+              "projectName": "chromium-dpr2",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1158,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-28T08:47:39.263Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "8596219cd4a45230176a-49ae07d63c0a574fe77f",
+          "file": "resource-panel.spec.ts",
+          "line": 6,
+          "column": 1
+        },
+        {
+          "title": "client JAR and override metadata resolve from distinct layers in the panel",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr2",
+              "projectName": "chromium-dpr2",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 929,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-28T08:47:40.429Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "8596219cd4a45230176a-eeb392dc5ce6f95ba307",
+          "file": "resource-panel.spec.ts",
+          "line": 73,
+          "column": 1
+        }
+      ]
+    },
+    {
+      "title": "screen-scale.spec.ts",
+      "file": "screen-scale.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "screen dimensions apply atomically, undo/redo, reject component clipping and persist in JSON",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr1",
+              "projectName": "chromium-dpr1",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 917,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-28T08:46:06.735Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "785c2fd23d866739bd17-911888f62bf32829c778",
+          "file": "screen-scale.spec.ts",
+          "line": 17,
+          "column": 1
+        },
+        {
+          "title": "GUI Scale preview follows framebuffer, ceil and Unicode rules without editing the document",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr1",
+              "projectName": "chromium-dpr1",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 901,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-28T08:46:07.661Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "785c2fd23d866739bd17-4b508a2c8bd204c43046",
+          "file": "screen-scale.spec.ts",
+          "line": 82,
+          "column": 1
+        },
+        {
+          "title": "outside clicks save Button before canvas selection, drag, layers and export",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr1",
+              "projectName": "chromium-dpr1",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1073,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-28T08:46:08.571Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "785c2fd23d866739bd17-5e4977941b105ece4fc1",
+          "file": "screen-scale.spec.ts",
+          "line": 147,
+          "column": 3
+        },
+        {
+          "title": "outside clicks save EditBox before canvas selection, drag, layers and export",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr1",
+              "projectName": "chromium-dpr1",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1075,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-28T08:46:09.654Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "785c2fd23d866739bd17-813467f0915f27dc20aa",
+          "file": "screen-scale.spec.ts",
+          "line": 147,
+          "column": 3
+        },
+        {
+          "title": "outside clicks save StringWidget before canvas selection, drag, layers and export",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr1",
+              "projectName": "chromium-dpr1",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1083,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-28T08:46:10.738Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "785c2fd23d866739bd17-25cb79c2234a4f1a1e31",
+          "file": "screen-scale.spec.ts",
+          "line": 147,
+          "column": 3
+        },
+        {
+          "title": "screen dimensions apply atomically, undo/redo, reject component clipping and persist in JSON",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr2",
+              "projectName": "chromium-dpr2",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1057,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-28T08:47:41.380Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "785c2fd23d866739bd17-bd9e58caf8c58f1bcf49",
+          "file": "screen-scale.spec.ts",
+          "line": 17,
+          "column": 1
+        },
+        {
+          "title": "GUI Scale preview follows framebuffer, ceil and Unicode rules without editing the document",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr2",
+              "projectName": "chromium-dpr2",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1122,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-28T08:47:42.445Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "785c2fd23d866739bd17-cbf0e394573d0a831757",
+          "file": "screen-scale.spec.ts",
+          "line": 82,
+          "column": 1
+        },
+        {
+          "title": "outside clicks save Button before canvas selection, drag, layers and export",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr2",
+              "projectName": "chromium-dpr2",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1209,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-28T08:47:43.576Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "785c2fd23d866739bd17-9c8287c6035c72429ca5",
+          "file": "screen-scale.spec.ts",
+          "line": 147,
+          "column": 3
+        },
+        {
+          "title": "outside clicks save EditBox before canvas selection, drag, layers and export",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr2",
+              "projectName": "chromium-dpr2",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1179,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-28T08:47:44.794Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "785c2fd23d866739bd17-df1da58fac6e091fd989",
+          "file": "screen-scale.spec.ts",
+          "line": 147,
+          "column": 3
+        },
+        {
+          "title": "outside clicks save StringWidget before canvas selection, drag, layers and export",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr2",
+              "projectName": "chromium-dpr2",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1185,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-28T08:47:45.983Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "785c2fd23d866739bd17-007c32271d2d3ce2894a",
+          "file": "screen-scale.spec.ts",
+          "line": 147,
+          "column": 3
+        }
+      ]
+    },
+    {
+      "title": "sprite-preview.spec.ts",
+      "file": "sprite-preview.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "raster uses stretch, tile and asymmetric nine-slice without join darkening",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr1",
+              "projectName": "chromium-dpr1",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 463,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-28T08:46:11.840Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "545857bba1cbb2a110d6-5976abae16df818c8a88",
+          "file": "sprite-preview.spec.ts",
+          "line": 5,
+          "column": 1
+        },
+        {
+          "title": "decoded sprite states update the real editor without changing its document",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr1",
+              "projectName": "chromium-dpr1",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1329,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-28T08:46:12.312Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "545857bba1cbb2a110d6-5976104ce18076a3e534",
+          "file": "sprite-preview.spec.ts",
+          "line": 91,
+          "column": 1
+        },
+        {
+          "title": "invalid PNG decoding is visible and preserves editing",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr1",
+              "projectName": "chromium-dpr1",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 679,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-28T08:46:13.651Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "545857bba1cbb2a110d6-cc8b63f6f297da230206",
+          "file": "sprite-preview.spec.ts",
+          "line": 262,
+          "column": 1
+        },
+        {
+          "title": "sample cached texture draw cost for 300 synthetic nodes",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr1",
+              "projectName": "chromium-dpr1",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 474,
+                  "errors": [],
+                  "stdout": [
+                    {
+                      "text": "{\"creationMs\":0.30000001192092896,\"msPer20Frames\":[6.599999964237213,5.300000011920929,5.199999988079071,5.800000011920929,4.699999988079071],\"reused\":true}\n"
+                    }
+                  ],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-28T08:46:14.338Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "sprite-performance.json",
+                      "contentType": "application/json",
+                      "body": "eyJjcmVhdGlvbk1zIjowLjMwMDAwMDAxMTkyMDkyODk2LCJtc1BlcjIwRnJhbWVzIjpbNi41OTk5OTk5NjQyMzcyMTMsNS4zMDAwMDAwMTE5MjA5MjksNS4xOTk5OTk5ODgwNzkwNzEsNS44MDAwMDAwMTE5MjA5MjksNC42OTk5OTk5ODgwNzkwNzFdLCJyZXVzZWQiOnRydWV9"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "545857bba1cbb2a110d6-3f30f614ee25799da4e7",
+          "file": "sprite-preview.spec.ts",
+          "line": 308,
+          "column": 1
+        },
+        {
+          "title": "raster uses stretch, tile and asymmetric nine-slice without join darkening",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr2",
+              "projectName": "chromium-dpr2",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 553,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-28T08:47:47.187Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "545857bba1cbb2a110d6-b6c8f4cb369defaa755a",
+          "file": "sprite-preview.spec.ts",
+          "line": 5,
+          "column": 1
+        },
+        {
+          "title": "decoded sprite states update the real editor without changing its document",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr2",
+              "projectName": "chromium-dpr2",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1472,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-28T08:47:47.748Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "545857bba1cbb2a110d6-5f1093e13494d0343980",
+          "file": "sprite-preview.spec.ts",
+          "line": 91,
+          "column": 1
+        },
+        {
+          "title": "invalid PNG decoding is visible and preserves editing",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr2",
+              "projectName": "chromium-dpr2",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 774,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-28T08:47:49.228Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "545857bba1cbb2a110d6-acfc94549670e18ea1fb",
+          "file": "sprite-preview.spec.ts",
+          "line": 262,
+          "column": 1
+        },
+        {
+          "title": "sample cached texture draw cost for 300 synthetic nodes",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr2",
+              "projectName": "chromium-dpr2",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 572,
+                  "errors": [],
+                  "stdout": [
+                    {
+                      "text": "{\"creationMs\":0.2999999523162842,\"msPer20Frames\":[6.300000011920929,5.100000023841858,5.399999976158142,5.600000023841858,4.5],\"reused\":true}\n"
+                    }
+                  ],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-28T08:47:50.010Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "sprite-performance.json",
+                      "contentType": "application/json",
+                      "body": "eyJjcmVhdGlvbk1zIjowLjI5OTk5OTk1MjMxNjI4NDIsIm1zUGVyMjBGcmFtZXMiOls2LjMwMDAwMDAxMTkyMDkyOSw1LjEwMDAwMDAyMzg0MTg1OCw1LjM5OTk5OTk3NjE1ODE0Miw1LjYwMDAwMDAyMzg0MTg1OCw0LjVdLCJyZXVzZWQiOnRydWV9"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "545857bba1cbb2a110d6-eee5e31bac3ef126a9e1",
+          "file": "sprite-preview.spec.ts",
+          "line": 308,
+          "column": 1
+        }
+      ]
+    },
+    {
+      "title": "supplied-panel.spec.ts",
+      "file": "supplied-panel.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "supplied 16× panel is tiled using mcmeta and exported on a transparent square",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr1",
+              "projectName": "chromium-dpr1",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 950,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-28T08:46:14.831Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "c0e6e6795d22ffac04ac-a6aa5a872e33cbfa674b",
+          "file": "supplied-panel.spec.ts",
+          "line": 6,
+          "column": 3
+        },
+        {
+          "title": "supplied 32× panel is tiled using mcmeta and exported on a transparent square",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr1",
+              "projectName": "chromium-dpr1",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1051,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-28T08:46:15.790Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "c0e6e6795d22ffac04ac-3cf31e406026c5e6507f",
+          "file": "supplied-panel.spec.ts",
+          "line": 6,
+          "column": 3
+        },
+        {
+          "title": "background sheets use 768 and 1024 buckets and reject oversized designs without losing JSON",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr1",
+              "projectName": "chromium-dpr1",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1133,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-28T08:46:16.849Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "c0e6e6795d22ffac04ac-6a4c8e499bc6db041f0b",
+          "file": "supplied-panel.spec.ts",
+          "line": 136,
+          "column": 1
+        },
+        {
+          "title": "modified supplied texture is rejected without publishing any files or changing the design",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr1",
+              "projectName": "chromium-dpr1",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 586,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-28T08:46:17.991Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "c0e6e6795d22ffac04ac-82efc3b0b85b803312c5",
+          "file": "supplied-panel.spec.ts",
+          "line": 197,
+          "column": 1
+        },
+        {
+          "title": "supplied 16× panel is tiled using mcmeta and exported on a transparent square",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr2",
+              "projectName": "chromium-dpr2",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1193,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-28T08:47:50.610Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "c0e6e6795d22ffac04ac-4c82b905f355682fd407",
+          "file": "supplied-panel.spec.ts",
+          "line": 6,
+          "column": 3
+        },
+        {
+          "title": "supplied 32× panel is tiled using mcmeta and exported on a transparent square",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr2",
+              "projectName": "chromium-dpr2",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1169,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-28T08:47:51.812Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "c0e6e6795d22ffac04ac-817086af9bccd6f13c69",
+          "file": "supplied-panel.spec.ts",
+          "line": 6,
+          "column": 3
+        },
+        {
+          "title": "background sheets use 768 and 1024 buckets and reject oversized designs without losing JSON",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr2",
+              "projectName": "chromium-dpr2",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1341,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-28T08:47:52.990Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "c0e6e6795d22ffac04ac-6cb1f6b0b23003d1612c",
+          "file": "supplied-panel.spec.ts",
+          "line": 136,
+          "column": 1
+        },
+        {
+          "title": "modified supplied texture is rejected without publishing any files or changing the design",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr2",
+              "projectName": "chromium-dpr2",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 714,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-28T08:47:54.339Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "c0e6e6795d22ffac04ac-4a42501b4993840a5174",
+          "file": "supplied-panel.spec.ts",
+          "line": 197,
+          "column": 1
+        }
+      ]
+    },
+    {
+      "title": "workspace-layout.spec.ts",
+      "file": "workspace-layout.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "menus and export results do not resize the canvas; closing and reopening keeps the batch",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr1",
+              "projectName": "chromium-dpr1",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 980,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-28T08:46:18.596Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "87206d496e61dcf70a84-799dc0c02674e88d83e1",
+          "file": "workspace-layout.spec.ts",
+          "line": 2,
+          "column": 1
+        },
+        {
+          "title": "menus and export results do not resize the canvas; closing and reopening keeps the batch",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr2",
+              "projectName": "chromium-dpr2",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1080,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-28T08:47:55.067Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "87206d496e61dcf70a84-8748d72460fc226c6733",
+          "file": "workspace-layout.spec.ts",
+          "line": 2,
+          "column": 1
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2026-10-28T08:44:52.639Z",
+    "duration": 183922.778,
+    "expected": 130,
+    "skipped": 0,
+    "unexpected": 0,
+    "flaky": 0
+  }
+}

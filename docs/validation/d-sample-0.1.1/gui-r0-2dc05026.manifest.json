@@ -1,0 +1,92 @@
+{
+  "format": "minecraft-gui-maker-export-manifest",
+  "version": "0.1.1",
+  "reference": {
+    "contract": "minecraft-gui-maker-export/0.1.1",
+    "exportId": "2dc05026-a209-4f7b-aa29-d2a0e2bf414f",
+    "createdAt": "2026-10-27T14:03:07.097Z",
+    "projectId": "project_main",
+    "revision": 0,
+    "schemaVersion": "0.1.0",
+    "catalogVersion": "mc-1.21.1-neoforge-21.1.244-audit-1",
+    "documentSha256": "9b9f06e9a2c00fa74e5a73bdd4786a337f9598d18b1123d7367811c3d0cdac9e",
+    "target": {
+      "edition": "java",
+      "minecraft": "1.21.1",
+      "loader": {
+        "id": "neoforge",
+        "version": "21.1.244"
+      },
+      "java": 21
+    }
+  },
+  "authority": {
+    "file": "gui-r0-2dc05026.project.json",
+    "sha256": "9b9f06e9a2c00fa74e5a73bdd4786a337f9598d18b1123d7367811c3d0cdac9e"
+  },
+  "designImage": {
+    "file": "gui-r0-2dc05026.design.png",
+    "kind": "design-area-reference",
+    "width": 320,
+    "height": 180,
+    "unit": "gui-px",
+    "origin": [
+      0,
+      0
+    ],
+    "xDirection": "right",
+    "yDirection": "down",
+    "pixelRatio": 1,
+    "background": "transparent",
+    "approximate": true
+  },
+  "enlargedReferenceImage": {
+    "file": "gui-r0-2dc05026.reference.png",
+    "kind": "enlarged-design-area-reference",
+    "width": 1280,
+    "height": 720,
+    "unit": "gui-px",
+    "origin": [
+      0,
+      0
+    ],
+    "xDirection": "right",
+    "yDirection": "down",
+    "pixelRatio": 4,
+    "background": "preview-matte-#1c2634",
+    "approximate": true
+  },
+  "gameWindowImage": "not-exported",
+  "files": [
+    {
+      "name": "gui-r0-2dc05026.project.json",
+      "mime": "application/json",
+      "bytes": 3956,
+      "sha256": "9b9f06e9a2c00fa74e5a73bdd4786a337f9598d18b1123d7367811c3d0cdac9e"
+    },
+    {
+      "name": "gui-r0-2dc05026.design.png",
+      "mime": "image/png",
+      "bytes": 5170,
+      "sha256": "0c85788d4cadf16d27b128b7e893c831900c0e37e9187662cdf8e68352fb9ef7"
+    },
+    {
+      "name": "gui-r0-2dc05026.implementation.json",
+      "mime": "application/json",
+      "bytes": 10435,
+      "sha256": "d590fc46deba94fa1b6aa76a1c58d54105c3b8e7d35449a13126e132a3f4bd23"
+    },
+    {
+      "name": "gui-r0-2dc05026.prompt.md",
+      "mime": "text/markdown",
+      "bytes": 7574,
+      "sha256": "05f9c6b17c12ff919f48255671d30946772339e6e466bfb8408dfc08af902283"
+    },
+    {
+      "name": "gui-r0-2dc05026.reference.png",
+      "mime": "image/png",
+      "bytes": 32917,
+      "sha256": "f87471431e32b14ad8fe73800f0eda65a873b29a488f9cb20d4f494088cf87c9"
+    }
+  ]
+}

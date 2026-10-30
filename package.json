@@ -1,0 +1,35 @@
+{
+  "name": "minecraft-gui-maker",
+  "version": "0.2.0",
+  "private": true,
+  "type": "module",
+  "engines": { "node": "24.17.0", "npm": "11.13.0" },
+  "packageManager": "npm@11.13.0",
+  "scripts": {
+    "dev": "vite --host 127.0.0.1",
+    "typecheck": "tsc --noEmit",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview --host 127.0.0.1",
+    "test": "vitest run",
+    "test:e2e": "playwright test",
+    "test:perf": "playwright test --grep @performance"
+  },
+  "dependencies": {
+    "konva": "10.0.12",
+    "react": "19.2.0",
+    "react-dom": "19.2.0",
+    "react-konva": "19.2.0",
+    "zod": "4.1.12",
+    "zustand": "5.0.8"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.56.1",
+    "@types/node": "24.10.0",
+    "@types/react": "19.2.2",
+    "@types/react-dom": "19.2.2",
+    "@vitejs/plugin-react": "5.0.4",
+    "typescript": "5.9.3",
+    "vite": "7.1.12",
+    "vitest": "3.2.4"
+  }
+}

@@ -1,0 +1,150 @@
+[
+  {
+    "project": "chromium-dpr1",
+    "browserVersion": "156.0.8078.47",
+    "browserChannel": "chrome",
+    "environment": {
+      "node": "v24.17.0",
+      "platform": "win32",
+      "release": "10.0.26200",
+      "arch": "x64",
+      "cpu": "AMD Ryzen 7 7735H with Radeon Graphics",
+      "logicalCpus": 16,
+      "totalMemoryGiB": 15
+    },
+    "nodeCount": 300,
+    "zoom": 2,
+    "pan": [
+      0,
+      0
+    ],
+    "samples": [
+      {
+        "round": 1,
+        "wallDurationMs": 3322,
+        "frames": 405,
+        "meanFrameMs": 8.320246913580235,
+        "p50FrameMs": 6.099999999999909,
+        "p95FrameMs": 18.199999999999818,
+        "maxFrameMs": 85.29999999999973,
+        "pointerMoves": 61,
+        "dpr": 1,
+        "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/156.0.0.0 Safari/537.36",
+        "viewport": [
+          1440,
+          1000
+        ],
+        "hardwareConcurrency": 16
+      },
+      {
+        "round": 2,
+        "wallDurationMs": 3694,
+        "frames": 401,
+        "meanFrameMs": 9.28827930168618,
+        "p50FrameMs": 6.099999999999454,
+        "p95FrameMs": 18.100000000000364,
+        "maxFrameMs": 90.90000000000055,
+        "pointerMoves": 61,
+        "dpr": 1,
+        "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/156.0.0.0 Safari/537.36",
+        "viewport": [
+          1440,
+          1000
+        ],
+        "hardwareConcurrency": 16
+      },
+      {
+        "round": 3,
+        "wallDurationMs": 3442,
+        "frames": 383,
+        "meanFrameMs": 9.058746736230178,
+        "p50FrameMs": 6.100000000000364,
+        "p95FrameMs": 12.300000000001091,
+        "maxFrameMs": 72.79999999999927,
+        "pointerMoves": 61,
+        "dpr": 1,
+        "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/156.0.0.0 Safari/537.36",
+        "viewport": [
+          1440,
+          1000
+        ],
+        "hardwareConcurrency": 16
+      }
+    ],
+    "method": "requestAnimationFrame intervals during 60 real mouse moves per round, 16ms requested delay, 3 rounds; no FPS pass threshold"
+  },
+  {
+    "project": "chromium-dpr2",
+    "browserVersion": "156.0.8078.47",
+    "browserChannel": "chrome",
+    "environment": {
+      "node": "v24.17.0",
+      "platform": "win32",
+      "release": "10.0.26200",
+      "arch": "x64",
+      "cpu": "AMD Ryzen 7 7735H with Radeon Graphics",
+      "logicalCpus": 16,
+      "totalMemoryGiB": 15
+    },
+    "nodeCount": 300,
+    "zoom": 2,
+    "pan": [
+      0,
+      0
+    ],
+    "samples": [
+      {
+        "round": 1,
+        "wallDurationMs": 3311,
+        "frames": 411,
+        "meanFrameMs": 8.145498783483983,
+        "p50FrameMs": 6.099999999999909,
+        "p95FrameMs": 12.200000000000045,
+        "maxFrameMs": 72.80000000000018,
+        "pointerMoves": 61,
+        "dpr": 2,
+        "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/156.0.0.0 Safari/537.36",
+        "viewport": [
+          1440,
+          1000
+        ],
+        "hardwareConcurrency": 16
+      },
+      {
+        "round": 2,
+        "wallDurationMs": 3816,
+        "frames": 407,
+        "meanFrameMs": 9.485995085995086,
+        "p50FrameMs": 6.100000000000364,
+        "p95FrameMs": 18.199999999999818,
+        "maxFrameMs": 85.40000000000055,
+        "pointerMoves": 61,
+        "dpr": 2,
+        "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/156.0.0.0 Safari/537.36",
+        "viewport": [
+          1440,
+          1000
+        ],
+        "hardwareConcurrency": 16
+      },
+      {
+        "round": 3,
+        "wallDurationMs": 3746,
+        "frames": 403,
+        "meanFrameMs": 9.37816377168258,
+        "p50FrameMs": 6.100000000000364,
+        "p95FrameMs": 18.19999999999891,
+        "maxFrameMs": 72.70000000000073,
+        "pointerMoves": 61,
+        "dpr": 2,
+        "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/156.0.0.0 Safari/537.36",
+        "viewport": [
+          1440,
+          1000
+        ],
+        "hardwareConcurrency": 16
+      }
+    ],
+    "method": "requestAnimationFrame intervals during 60 real mouse moves per round, 16ms requested delay, 3 rounds; no FPS pass threshold"
+  }
+]

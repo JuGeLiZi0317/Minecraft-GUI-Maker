@@ -1,0 +1,410 @@
+{
+  "config": {
+    "configFile": "D:\\Minecraft\\AIStudio\\workspace\\Minecraft GUI Maker\\playwright.config.ts",
+    "rootDir": "D:/Minecraft/AIStudio/workspace/Minecraft GUI Maker/tests",
+    "forbidOnly": false,
+    "fullyParallel": false,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 1
+    },
+    "preserveOutput": "always",
+    "reporter": [
+      [
+        "list",
+        null
+      ],
+      [
+        "json",
+        {
+          "outputFile": "test-results/results.json"
+        }
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "quiet": false,
+    "projects": [
+      {
+        "outputDir": "D:/Minecraft/AIStudio/workspace/Minecraft GUI Maker/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "chromium-dpr1",
+        "name": "chromium-dpr1",
+        "testDir": "D:/Minecraft/AIStudio/workspace/Minecraft GUI Maker/tests",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 60000
+      },
+      {
+        "outputDir": "D:/Minecraft/AIStudio/workspace/Minecraft GUI Maker/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "chromium-dpr2",
+        "name": "chromium-dpr2",
+        "testDir": "D:/Minecraft/AIStudio/workspace/Minecraft GUI Maker/tests",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 60000
+      }
+    ],
+    "shard": null,
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.56.1",
+    "workers": 1,
+    "webServer": {
+      "command": "npm.cmd run dev -- --port 4173 --strictPort",
+      "url": "http://127.0.0.1:4173",
+      "reuseExistingServer": false
+    }
+  },
+  "suites": [
+    {
+      "title": "panel-seams.spec.ts",
+      "file": "panel-seams.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "panel boundaries match a single logical raster under transformed drawing",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr1",
+              "projectName": "chromium-dpr1",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 711,
+                  "errors": [],
+                  "stdout": [
+                    {
+                      "text": "{\"project\":\"chromium-dpr1\",\"results\":[{\"size\":[37,29],\"zoom\":0.5,\"pan\":0,\"mismatch\":0,\"dark\":0,\"first\":null},{\"size\":[37,29],\"zoom\":0.5,\"pan\":0.37,\"mismatch\":0,\"dark\":0,\"first\":null},{\"size\":[37,29],\"zoom\":1,\"pan\":0,\"mismatch\":0,\"dark\":0,\"first\":null},{\"size\":[37,29],\"zoom\":1,\"pan\":0.37,\"mismatch\":0,\"dark\":0,\"first\":null},{\"size\":[37,29],\"zoom\":2,\"pan\":0,\"mismatch\":0,\"dark\":0,\"first\":null},{\"size\":[37,29],\"zoom\":2,\"pan\":0.37,\"mismatch\":0,\"dark\":0,\"first\":null},{\"size\":[37,29],\"zoom\":1.37,\"pan\":0,\"mismatch\":0,\"dark\":0,\"first\":null},{\"size\":[37,29],\"zoom\":1.37,\"pan\":0.37,\"mismatch\":0,\"dark\":0,\"first\":null},{\"size\":[320,180],\"zoom\":0.5,\"pan\":0,\"mismatch\":0,\"dark\":0,\"first\":null},{\"size\":[320,180],\"zoom\":0.5,\"pan\":0.37,\"mismatch\":0,\"dark\":0,\"first\":null},{\"size\":[320,180],\"zoom\":1,\"pan\":0,\"mismatch\":0,\"dark\":0,\"first\":null},{\"size\":[320,180],\"zoom\":1,\"pan\":0.37,\"mismatch\":0,\"dark\":0,\"first\":null},{\"size\":[320,180],\"zoom\":2,\"pan\":0,\"mismatch\":0,\"dark\":0,\"first\":null},{\"size\":[320,180],\"zoom\":2,\"pan\":0.37,\"mismatch\":0,\"dark\":0,\"first\":null},{\"size\":[320,180],\"zoom\":1.37,\"pan\":0,\"mismatch\":0,\"dark\":0,\"first\":null},{\"size\":[320,180],\"zoom\":1.37,\"pan\":0.37,\"mismatch\":0,\"dark\":0,\"first\":null}]}\n"
+                    }
+                  ],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-28T06:58:39.629Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "pixel-comparison.json",
+                      "contentType": "application/json",
+                      "body": "WwogIHsKICAgICJzaXplIjogWwogICAgICAzNywKICAgICAgMjkKICAgIF0sCiAgICAiem9vbSI6IDAuNSwKICAgICJwYW4iOiAwLAogICAgIm1pc21hdGNoIjogMCwKICAgICJkYXJrIjogMCwKICAgICJmaXJzdCI6IG51bGwKICB9LAogIHsKICAgICJzaXplIjogWwogICAgICAzNywKICAgICAgMjkKICAgIF0sCiAgICAiem9vbSI6IDAuNSwKICAgICJwYW4iOiAwLjM3LAogICAgIm1pc21hdGNoIjogMCwKICAgICJkYXJrIjogMCwKICAgICJmaXJzdCI6IG51bGwKICB9LAogIHsKICAgICJzaXplIjogWwogICAgICAzNywKICAgICAgMjkKICAgIF0sCiAgICAiem9vbSI6IDEsCiAgICAicGFuIjogMCwKICAgICJtaXNtYXRjaCI6IDAsCiAgICAiZGFyayI6IDAsCiAgICAiZmlyc3QiOiBudWxsCiAgfSwKICB7CiAgICAic2l6ZSI6IFsKICAgICAgMzcsCiAgICAgIDI5CiAgICBdLAogICAgInpvb20iOiAxLAogICAgInBhbiI6IDAuMzcsCiAgICAibWlzbWF0Y2giOiAwLAogICAgImRhcmsiOiAwLAogICAgImZpcnN0IjogbnVsbAogIH0sCiAgewogICAgInNpemUiOiBbCiAgICAgIDM3LAogICAgICAyOQogICAgXSwKICAgICJ6b29tIjogMiwKICAgICJwYW4iOiAwLAogICAgIm1pc21hdGNoIjogMCwKICAgICJkYXJrIjogMCwKICAgICJmaXJzdCI6IG51bGwKICB9LAogIHsKICAgICJzaXplIjogWwogICAgICAzNywKICAgICAgMjkKICAgIF0sCiAgICAiem9vbSI6IDIsCiAgICAicGFuIjogMC4zNywKICAgICJtaXNtYXRjaCI6IDAsCiAgICAiZGFyayI6IDAsCiAgICAiZmlyc3QiOiBudWxsCiAgfSwKICB7CiAgICAic2l6ZSI6IFsKICAgICAgMzcsCiAgICAgIDI5CiAgICBdLAogICAgInpvb20iOiAxLjM3LAogICAgInBhbiI6IDAsCiAgICAibWlzbWF0Y2giOiAwLAogICAgImRhcmsiOiAwLAogICAgImZpcnN0IjogbnVsbAogIH0sCiAgewogICAgInNpemUiOiBbCiAgICAgIDM3LAogICAgICAyOQogICAgXSwKICAgICJ6b29tIjogMS4zNywKICAgICJwYW4iOiAwLjM3LAogICAgIm1pc21hdGNoIjogMCwKICAgICJkYXJrIjogMCwKICAgICJmaXJzdCI6IG51bGwKICB9LAogIHsKICAgICJzaXplIjogWwogICAgICAzMjAsCiAgICAgIDE4MAogICAgXSwKICAgICJ6b29tIjogMC41LAogICAgInBhbiI6IDAsCiAgICAibWlzbWF0Y2giOiAwLAogICAgImRhcmsiOiAwLAogICAgImZpcnN0IjogbnVsbAogIH0sCiAgewogICAgInNpemUiOiBbCiAgICAgIDMyMCwKICAgICAgMTgwCiAgICBdLAogICAgInpvb20iOiAwLjUsCiAgICAicGFuIjogMC4zNywKICAgICJtaXNtYXRjaCI6IDAsCiAgICAiZGFyayI6IDAsCiAgICAiZmlyc3QiOiBudWxsCiAgfSwKICB7CiAgICAic2l6ZSI6IFsKICAgICAgMzIwLAogICAgICAxODAKICAgIF0sCiAgICAiem9vbSI6IDEsCiAgICAicGFuIjogMCwKICAgICJtaXNtYXRjaCI6IDAsCiAgICAiZGFyayI6IDAsCiAgICAiZmlyc3QiOiBudWxsCiAgfSwKICB7CiAgICAic2l6ZSI6IFsKICAgICAgMzIwLAogICAgICAxODAKICAgIF0sCiAgICAiem9vbSI6IDEsCiAgICAicGFuIjogMC4zNywKICAgICJtaXNtYXRjaCI6IDAsCiAgICAiZGFyayI6IDAsCiAgICAiZmlyc3QiOiBudWxsCiAgfSwKICB7CiAgICAic2l6ZSI6IFsKICAgICAgMzIwLAogICAgICAxODAKICAgIF0sCiAgICAiem9vbSI6IDIsCiAgICAicGFuIjogMCwKICAgICJtaXNtYXRjaCI6IDAsCiAgICAiZGFyayI6IDAsCiAgICAiZmlyc3QiOiBudWxsCiAgfSwKICB7CiAgICAic2l6ZSI6IFsKICAgICAgMzIwLAogICAgICAxODAKICAgIF0sCiAgICAiem9vbSI6IDIsCiAgICAicGFuIjogMC4zNywKICAgICJtaXNtYXRjaCI6IDAsCiAgICAiZGFyayI6IDAsCiAgICAiZmlyc3QiOiBudWxsCiAgfSwKICB7CiAgICAic2l6ZSI6IFsKICAgICAgMzIwLAogICAgICAxODAKICAgIF0sCiAgICAiem9vbSI6IDEuMzcsCiAgICAicGFuIjogMCwKICAgICJtaXNtYXRjaCI6IDAsCiAgICAiZGFyayI6IDAsCiAgICAiZmlyc3QiOiBudWxsCiAgfSwKICB7CiAgICAic2l6ZSI6IFsKICAgICAgMzIwLAogICAgICAxODAKICAgIF0sCiAgICAiem9vbSI6IDEuMzcsCiAgICAicGFuIjogMC4zNywKICAgICJtaXNtYXRjaCI6IDAsCiAgICAiZGFyayI6IDAsCiAgICAiZmlyc3QiOiBudWxsCiAgfQpd"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "4a3507cb17918423f358-61002c5549ceeaafde50",
+          "file": "panel-seams.spec.ts",
+          "line": 2,
+          "column": 1
+        },
+        {
+          "title": "real editor and GUI Scale preview render the same panel raster at slice boundaries",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr1",
+              "projectName": "chromium-dpr1",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 960,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-28T06:58:40.560Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "4a3507cb17918423f358-3c6c5d3581ea871f79d5",
+          "file": "panel-seams.spec.ts",
+          "line": 70,
+          "column": 1
+        },
+        {
+          "title": "diagnose boundary pixels and sample rendering cost",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr1",
+              "projectName": "chromium-dpr1",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1979,
+                  "errors": [],
+                  "stdout": [
+                    {
+                      "text": "{\"dpr\":1,\"transparentSourcePixels\":18,\"verticalCount\":338,\"verticalFirst\":[28,25,202,204,208,255,255,255],\"horizontalCount\":639,\"horizontalFirst\":[28,27,159,161,164,198,198,198],\"oldMs100Frames\":[200,359.9000000357628,187.5,357.69999998807907,209.89999997615814],\"newMs100Frames\":[110.90000003576279,4.699999988079071,6.100000023841858,4.299999952316284,5.700000047683716]}\n"
+                    }
+                  ],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-28T06:58:41.529Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "boundary-and-performance.json",
+                      "contentType": "application/json",
+                      "body": "ewogICJkcHIiOiAxLAogICJ0cmFuc3BhcmVudFNvdXJjZVBpeGVscyI6IDE4LAogICJ2ZXJ0aWNhbENvdW50IjogMzM4LAogICJ2ZXJ0aWNhbEZpcnN0IjogWwogICAgMjgsCiAgICAyNSwKICAgIDIwMiwKICAgIDIwNCwKICAgIDIwOCwKICAgIDI1NSwKICAgIDI1NSwKICAgIDI1NQogIF0sCiAgImhvcml6b250YWxDb3VudCI6IDYzOSwKICAiaG9yaXpvbnRhbEZpcnN0IjogWwogICAgMjgsCiAgICAyNywKICAgIDE1OSwKICAgIDE2MSwKICAgIDE2NCwKICAgIDE5OCwKICAgIDE5OCwKICAgIDE5OAogIF0sCiAgIm9sZE1zMTAwRnJhbWVzIjogWwogICAgMjAwLAogICAgMzU5LjkwMDAwMDAzNTc2MjgsCiAgICAxODcuNSwKICAgIDM1Ny42OTk5OTk5ODgwNzkwNywKICAgIDIwOS44OTk5OTk5NzYxNTgxNAogIF0sCiAgIm5ld01zMTAwRnJhbWVzIjogWwogICAgMTEwLjkwMDAwMDAzNTc2Mjc5LAogICAgNC42OTk5OTk5ODgwNzkwNzEsCiAgICA2LjEwMDAwMDAyMzg0MTg1OCwKICAgIDQuMjk5OTk5OTUyMzE2Mjg0LAogICAgNS43MDAwMDAwNDc2ODM3MTYKICBdCn0="
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "4a3507cb17918423f358-73524a261d18b0baa2c3",
+          "file": "panel-seams.spec.ts",
+          "line": 139,
+          "column": 1
+        },
+        {
+          "title": "preview cache replaces dimensions and reuses a bounded raster",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr1",
+              "projectName": "chromium-dpr1",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 436,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-28T06:58:43.519Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "4a3507cb17918423f358-28855d69b6deaa7bc2a4",
+          "file": "panel-seams.spec.ts",
+          "line": 214,
+          "column": 1
+        },
+        {
+          "title": "panel boundaries match a single logical raster under transformed drawing",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr2",
+              "projectName": "chromium-dpr2",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 857,
+                  "errors": [],
+                  "stdout": [
+                    {
+                      "text": "{\"project\":\"chromium-dpr2\",\"results\":[{\"size\":[37,29],\"zoom\":0.5,\"pan\":0,\"mismatch\":0,\"dark\":0,\"first\":null},{\"size\":[37,29],\"zoom\":0.5,\"pan\":0.37,\"mismatch\":0,\"dark\":0,\"first\":null},{\"size\":[37,29],\"zoom\":1,\"pan\":0,\"mismatch\":0,\"dark\":0,\"first\":null},{\"size\":[37,29],\"zoom\":1,\"pan\":0.37,\"mismatch\":0,\"dark\":0,\"first\":null},{\"size\":[37,29],\"zoom\":2,\"pan\":0,\"mismatch\":0,\"dark\":0,\"first\":null},{\"size\":[37,29],\"zoom\":2,\"pan\":0.37,\"mismatch\":0,\"dark\":0,\"first\":null},{\"size\":[37,29],\"zoom\":1.37,\"pan\":0,\"mismatch\":0,\"dark\":0,\"first\":null},{\"size\":[37,29],\"zoom\":1.37,\"pan\":0.37,\"mismatch\":0,\"dark\":0,\"first\":null},{\"size\":[320,180],\"zoom\":0.5,\"pan\":0,\"mismatch\":0,\"dark\":0,\"first\":null},{\"size\":[320,180],\"zoom\":0.5,\"pan\":0.37,\"mismatch\":0,\"dark\":0,\"first\":null},{\"size\":[320,180],\"zoom\":1,\"pan\":0,\"mismatch\":0,\"dark\":0,\"first\":null},{\"size\":[320,180],\"zoom\":1,\"pan\":0.37,\"mismatch\":0,\"dark\":0,\"first\":null},{\"size\":[320,180],\"zoom\":2,\"pan\":0,\"mismatch\":0,\"dark\":0,\"first\":null},{\"size\":[320,180],\"zoom\":2,\"pan\":0.37,\"mismatch\":0,\"dark\":0,\"first\":null},{\"size\":[320,180],\"zoom\":1.37,\"pan\":0,\"mismatch\":0,\"dark\":0,\"first\":null},{\"size\":[320,180],\"zoom\":1.37,\"pan\":0.37,\"mismatch\":0,\"dark\":0,\"first\":null}]}\n"
+                    }
+                  ],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-28T06:58:44.922Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "pixel-comparison.json",
+                      "contentType": "application/json",
+                      "body": "WwogIHsKICAgICJzaXplIjogWwogICAgICAzNywKICAgICAgMjkKICAgIF0sCiAgICAiem9vbSI6IDAuNSwKICAgICJwYW4iOiAwLAogICAgIm1pc21hdGNoIjogMCwKICAgICJkYXJrIjogMCwKICAgICJmaXJzdCI6IG51bGwKICB9LAogIHsKICAgICJzaXplIjogWwogICAgICAzNywKICAgICAgMjkKICAgIF0sCiAgICAiem9vbSI6IDAuNSwKICAgICJwYW4iOiAwLjM3LAogICAgIm1pc21hdGNoIjogMCwKICAgICJkYXJrIjogMCwKICAgICJmaXJzdCI6IG51bGwKICB9LAogIHsKICAgICJzaXplIjogWwogICAgICAzNywKICAgICAgMjkKICAgIF0sCiAgICAiem9vbSI6IDEsCiAgICAicGFuIjogMCwKICAgICJtaXNtYXRjaCI6IDAsCiAgICAiZGFyayI6IDAsCiAgICAiZmlyc3QiOiBudWxsCiAgfSwKICB7CiAgICAic2l6ZSI6IFsKICAgICAgMzcsCiAgICAgIDI5CiAgICBdLAogICAgInpvb20iOiAxLAogICAgInBhbiI6IDAuMzcsCiAgICAibWlzbWF0Y2giOiAwLAogICAgImRhcmsiOiAwLAogICAgImZpcnN0IjogbnVsbAogIH0sCiAgewogICAgInNpemUiOiBbCiAgICAgIDM3LAogICAgICAyOQogICAgXSwKICAgICJ6b29tIjogMiwKICAgICJwYW4iOiAwLAogICAgIm1pc21hdGNoIjogMCwKICAgICJkYXJrIjogMCwKICAgICJmaXJzdCI6IG51bGwKICB9LAogIHsKICAgICJzaXplIjogWwogICAgICAzNywKICAgICAgMjkKICAgIF0sCiAgICAiem9vbSI6IDIsCiAgICAicGFuIjogMC4zNywKICAgICJtaXNtYXRjaCI6IDAsCiAgICAiZGFyayI6IDAsCiAgICAiZmlyc3QiOiBudWxsCiAgfSwKICB7CiAgICAic2l6ZSI6IFsKICAgICAgMzcsCiAgICAgIDI5CiAgICBdLAogICAgInpvb20iOiAxLjM3LAogICAgInBhbiI6IDAsCiAgICAibWlzbWF0Y2giOiAwLAogICAgImRhcmsiOiAwLAogICAgImZpcnN0IjogbnVsbAogIH0sCiAgewogICAgInNpemUiOiBbCiAgICAgIDM3LAogICAgICAyOQogICAgXSwKICAgICJ6b29tIjogMS4zNywKICAgICJwYW4iOiAwLjM3LAogICAgIm1pc21hdGNoIjogMCwKICAgICJkYXJrIjogMCwKICAgICJmaXJzdCI6IG51bGwKICB9LAogIHsKICAgICJzaXplIjogWwogICAgICAzMjAsCiAgICAgIDE4MAogICAgXSwKICAgICJ6b29tIjogMC41LAogICAgInBhbiI6IDAsCiAgICAibWlzbWF0Y2giOiAwLAogICAgImRhcmsiOiAwLAogICAgImZpcnN0IjogbnVsbAogIH0sCiAgewogICAgInNpemUiOiBbCiAgICAgIDMyMCwKICAgICAgMTgwCiAgICBdLAogICAgInpvb20iOiAwLjUsCiAgICAicGFuIjogMC4zNywKICAgICJtaXNtYXRjaCI6IDAsCiAgICAiZGFyayI6IDAsCiAgICAiZmlyc3QiOiBudWxsCiAgfSwKICB7CiAgICAic2l6ZSI6IFsKICAgICAgMzIwLAogICAgICAxODAKICAgIF0sCiAgICAiem9vbSI6IDEsCiAgICAicGFuIjogMCwKICAgICJtaXNtYXRjaCI6IDAsCiAgICAiZGFyayI6IDAsCiAgICAiZmlyc3QiOiBudWxsCiAgfSwKICB7CiAgICAic2l6ZSI6IFsKICAgICAgMzIwLAogICAgICAxODAKICAgIF0sCiAgICAiem9vbSI6IDEsCiAgICAicGFuIjogMC4zNywKICAgICJtaXNtYXRjaCI6IDAsCiAgICAiZGFyayI6IDAsCiAgICAiZmlyc3QiOiBudWxsCiAgfSwKICB7CiAgICAic2l6ZSI6IFsKICAgICAgMzIwLAogICAgICAxODAKICAgIF0sCiAgICAiem9vbSI6IDIsCiAgICAicGFuIjogMCwKICAgICJtaXNtYXRjaCI6IDAsCiAgICAiZGFyayI6IDAsCiAgICAiZmlyc3QiOiBudWxsCiAgfSwKICB7CiAgICAic2l6ZSI6IFsKICAgICAgMzIwLAogICAgICAxODAKICAgIF0sCiAgICAiem9vbSI6IDIsCiAgICAicGFuIjogMC4zNywKICAgICJtaXNtYXRjaCI6IDAsCiAgICAiZGFyayI6IDAsCiAgICAiZmlyc3QiOiBudWxsCiAgfSwKICB7CiAgICAic2l6ZSI6IFsKICAgICAgMzIwLAogICAgICAxODAKICAgIF0sCiAgICAiem9vbSI6IDEuMzcsCiAgICAicGFuIjogMCwKICAgICJtaXNtYXRjaCI6IDAsCiAgICAiZGFyayI6IDAsCiAgICAiZmlyc3QiOiBudWxsCiAgfSwKICB7CiAgICAic2l6ZSI6IFsKICAgICAgMzIwLAogICAgICAxODAKICAgIF0sCiAgICAiem9vbSI6IDEuMzcsCiAgICAicGFuIjogMC4zNywKICAgICJtaXNtYXRjaCI6IDAsCiAgICAiZGFyayI6IDAsCiAgICAiZmlyc3QiOiBudWxsCiAgfQpd"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "4a3507cb17918423f358-cf7ea76900c1b7ff6c79",
+          "file": "panel-seams.spec.ts",
+          "line": 2,
+          "column": 1
+        },
+        {
+          "title": "real editor and GUI Scale preview render the same panel raster at slice boundaries",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr2",
+              "projectName": "chromium-dpr2",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1168,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-28T06:58:45.997Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "4a3507cb17918423f358-617ceabb21459cf4c77f",
+          "file": "panel-seams.spec.ts",
+          "line": 70,
+          "column": 1
+        },
+        {
+          "title": "diagnose boundary pixels and sample rendering cost",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr2",
+              "projectName": "chromium-dpr2",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2083,
+                  "errors": [],
+                  "stdout": [
+                    {
+                      "text": "{\"dpr\":2,\"transparentSourcePixels\":18,\"verticalCount\":338,\"verticalFirst\":[28,25,202,204,208,255,255,255],\"horizontalCount\":639,\"horizontalFirst\":[28,27,159,161,164,198,198,198],\"oldMs100Frames\":[206.10000002384186,361.5,192.30000001192093,359,194.30000001192093],\"newMs100Frames\":[111.29999995231628,4.900000035762787,5.899999976158142,4.300000011920929,5.800000011920929]}\n"
+                    }
+                  ],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-28T06:58:47.174Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "boundary-and-performance.json",
+                      "contentType": "application/json",
+                      "body": "ewogICJkcHIiOiAyLAogICJ0cmFuc3BhcmVudFNvdXJjZVBpeGVscyI6IDE4LAogICJ2ZXJ0aWNhbENvdW50IjogMzM4LAogICJ2ZXJ0aWNhbEZpcnN0IjogWwogICAgMjgsCiAgICAyNSwKICAgIDIwMiwKICAgIDIwNCwKICAgIDIwOCwKICAgIDI1NSwKICAgIDI1NSwKICAgIDI1NQogIF0sCiAgImhvcml6b250YWxDb3VudCI6IDYzOSwKICAiaG9yaXpvbnRhbEZpcnN0IjogWwogICAgMjgsCiAgICAyNywKICAgIDE1OSwKICAgIDE2MSwKICAgIDE2NCwKICAgIDE5OCwKICAgIDE5OCwKICAgIDE5OAogIF0sCiAgIm9sZE1zMTAwRnJhbWVzIjogWwogICAgMjA2LjEwMDAwMDAyMzg0MTg2LAogICAgMzYxLjUsCiAgICAxOTIuMzAwMDAwMDExOTIwOTMsCiAgICAzNTksCiAgICAxOTQuMzAwMDAwMDExOTIwOTMKICBdLAogICJuZXdNczEwMEZyYW1lcyI6IFsKICAgIDExMS4yOTk5OTk5NTIzMTYyOCwKICAgIDQuOTAwMDAwMDM1NzYyNzg3LAogICAgNS44OTk5OTk5NzYxNTgxNDIsCiAgICA0LjMwMDAwMDAxMTkyMDkyOSwKICAgIDUuODAwMDAwMDExOTIwOTI5CiAgXQp9"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "4a3507cb17918423f358-f7bdc0d792824e8d3f0a",
+          "file": "panel-seams.spec.ts",
+          "line": 139,
+          "column": 1
+        },
+        {
+          "title": "preview cache replaces dimensions and reuses a bounded raster",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr2",
+              "projectName": "chromium-dpr2",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 543,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-28T06:58:49.266Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "4a3507cb17918423f358-a8504d6da89269154330",
+          "file": "panel-seams.spec.ts",
+          "line": 214,
+          "column": 1
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2026-10-28T06:58:37.940Z",
+    "duration": 12530.564999999999,
+    "expected": 8,
+    "skipped": 0,
+    "unexpected": 0,
+    "flaky": 0
+  }
+}

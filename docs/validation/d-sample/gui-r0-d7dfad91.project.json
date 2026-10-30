@@ -1,0 +1,171 @@
+{
+  "format": "minecraft-gui-maker",
+  "schemaVersion": "0.1.0",
+  "catalogVersion": "mc-1.21.1-neoforge-21.1.244-audit-1",
+  "target": {
+    "edition": "java",
+    "minecraft": "1.21.1",
+    "loader": {
+      "id": "neoforge",
+      "version": "21.1.244"
+    },
+    "java": 21
+  },
+  "project": {
+    "id": "project_main",
+    "name": "Untitled interface",
+    "revision": 0
+  },
+  "screens": [
+    {
+      "id": "screen_main",
+      "title": {
+        "kind": "literal",
+        "value": "Untitled screen"
+      },
+      "base": "screen",
+      "designSize": {
+        "width": 320,
+        "height": 180,
+        "unit": "gui-px"
+      },
+      "placement": "center",
+      "background": {
+        "kind": "none"
+      },
+      "nodes": [
+        {
+          "id": "button",
+          "bounds": {
+            "x": 16,
+            "y": 16,
+            "w": 150,
+            "h": 20
+          },
+          "type": "minecraft:button",
+          "source": {
+            "category": "vanilla-widget",
+            "className": "net.minecraft.client.gui.components.Button"
+          },
+          "state": {
+            "visible": true,
+            "enabled": true
+          },
+          "props": {
+            "message": {
+              "kind": "literal",
+              "value": "Button"
+            }
+          },
+          "events": {}
+        },
+        {
+          "id": "input",
+          "bounds": {
+            "x": 20,
+            "y": 70,
+            "w": 120,
+            "h": 20
+          },
+          "type": "minecraft:edit-box",
+          "source": {
+            "category": "vanilla-widget",
+            "className": "net.minecraft.client.gui.components.EditBox"
+          },
+          "state": {
+            "visible": true,
+            "enabled": true
+          },
+          "props": {
+            "narration": {
+              "kind": "literal",
+              "value": "Input"
+            },
+            "value": "",
+            "maxLength": 32,
+            "hint": {
+              "kind": "literal",
+              "value": "Enter text…"
+            },
+            "bordered": true,
+            "editable": true
+          },
+          "events": {}
+        },
+        {
+          "id": "label",
+          "bounds": {
+            "x": 20,
+            "y": 140,
+            "w": 100,
+            "h": 16
+          },
+          "type": "minecraft:string-widget",
+          "source": {
+            "category": "vanilla-widget",
+            "className": "net.minecraft.client.gui.components.StringWidget"
+          },
+          "state": {
+            "visible": true
+          },
+          "props": {
+            "text": {
+              "kind": "literal",
+              "value": "Text label"
+            },
+            "color": "#FFE5E7EB",
+            "align": "left"
+          },
+          "events": {}
+        },
+        {
+          "id": "rectangle",
+          "bounds": {
+            "x": 20,
+            "y": 40,
+            "w": 20,
+            "h": 10
+          },
+          "type": "minecraft:fill",
+          "source": {
+            "category": "vanilla-draw",
+            "className": "net.minecraft.client.gui.GuiGraphics",
+            "member": "fill"
+          },
+          "state": {
+            "visible": true
+          },
+          "props": {
+            "color": "#FFFF0000"
+          },
+          "events": {}
+        },
+        {
+          "id": "hidden",
+          "bounds": {
+            "x": 100,
+            "y": 100,
+            "w": 20,
+            "h": 10
+          },
+          "type": "minecraft:fill",
+          "source": {
+            "category": "vanilla-draw",
+            "className": "net.minecraft.client.gui.GuiGraphics",
+            "member": "fill"
+          },
+          "state": {
+            "visible": false
+          },
+          "props": {
+            "color": "#FF48546B"
+          },
+          "events": {}
+        }
+      ],
+      "variables": [],
+      "behaviors": []
+    }
+  ],
+  "assets": []
+}

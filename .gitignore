@@ -1,0 +1,11 @@
+node_modules/
+dist/
+test-results/
+playwright-report/
+work/
+*.log
+# User-provided Minecraft texture assets must not be committed or published.
+src/gui/
+# Local fonts, diagnostics, and exported derivative Panel textures remain untracked.
+docs/temp/
+docs/validation/panel-sample/

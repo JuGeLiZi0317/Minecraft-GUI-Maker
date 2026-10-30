@@ -1,0 +1,254 @@
+{
+  "config": {
+    "configFile": "D:\\Minecraft\\AIStudio\\workspace\\Minecraft GUI Maker\\playwright.config.ts",
+    "rootDir": "D:/Minecraft/AIStudio/workspace/Minecraft GUI Maker/tests",
+    "forbidOnly": false,
+    "fullyParallel": false,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 1
+    },
+    "preserveOutput": "always",
+    "reporter": [
+      [
+        "list",
+        null
+      ],
+      [
+        "json",
+        {
+          "outputFile": "test-results/results.json"
+        }
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "quiet": false,
+    "projects": [
+      {
+        "outputDir": "D:/Minecraft/AIStudio/workspace/Minecraft GUI Maker/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "chromium-dpr1",
+        "name": "chromium-dpr1",
+        "testDir": "D:/Minecraft/AIStudio/workspace/Minecraft GUI Maker/tests",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 60000
+      },
+      {
+        "outputDir": "D:/Minecraft/AIStudio/workspace/Minecraft GUI Maker/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "chromium-dpr2",
+        "name": "chromium-dpr2",
+        "testDir": "D:/Minecraft/AIStudio/workspace/Minecraft GUI Maker/tests",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 60000
+      }
+    ],
+    "shard": null,
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.56.1",
+    "workers": 1,
+    "webServer": {
+      "command": "npm.cmd run dev -- --port 4173 --strictPort",
+      "url": "http://127.0.0.1:4173",
+      "reuseExistingServer": false
+    }
+  },
+  "suites": [
+    {
+      "title": "panel-seams.spec.ts",
+      "file": "panel-seams.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "panel boundaries match a single logical raster under transformed drawing",
+          "ok": false,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr1",
+              "projectName": "chromium-dpr1",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "failed",
+                  "duration": 782,
+                  "error": {
+                    "message": "Error: {\"size\":[37,29],\"zoom\":0.5,\"pan\":0,\"mismatch\":102,\"dark\":60,\"first\":[10,10,0,0,0,255,28,38,52,255]}\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32m0\u001b[39m\nReceived: \u001b[31m102\u001b[39m",
+                    "stack": "Error: {\"size\":[37,29],\"zoom\":0.5,\"pan\":0,\"mismatch\":102,\"dark\":60,\"first\":[10,10,0,0,0,255,28,38,52,255]}\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32m0\u001b[39m\nReceived: \u001b[31m102\u001b[39m\n    at D:\\Minecraft\\AIStudio\\workspace\\Minecraft GUI Maker\\tests\\panel-seams.spec.ts:36:81",
+                    "location": {
+                      "file": "D:\\Minecraft\\AIStudio\\workspace\\Minecraft GUI Maker\\tests\\panel-seams.spec.ts",
+                      "column": 81,
+                      "line": 36
+                    },
+                    "snippet": "  34 |   await info.attach('pixel-comparison.json', { body: JSON.stringify(results, null, 2), contentType: 'application/json' });\n  35 |   console.log(JSON.stringify({ project: info.project.name, results }));\n> 36 |   for (const result of results) expect(result.mismatch, JSON.stringify(result)).toBe(0);\n     |                                                                                 ^\n  37 | });\n  38 |"
+                  },
+                  "errors": [
+                    {
+                      "location": {
+                        "file": "D:\\Minecraft\\AIStudio\\workspace\\Minecraft GUI Maker\\tests\\panel-seams.spec.ts",
+                        "column": 81,
+                        "line": 36
+                      },
+                      "message": "Error: {\"size\":[37,29],\"zoom\":0.5,\"pan\":0,\"mismatch\":102,\"dark\":60,\"first\":[10,10,0,0,0,255,28,38,52,255]}\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32m0\u001b[39m\nReceived: \u001b[31m102\u001b[39m\n\n  34 |   await info.attach('pixel-comparison.json', { body: JSON.stringify(results, null, 2), contentType: 'application/json' });\n  35 |   console.log(JSON.stringify({ project: info.project.name, results }));\n> 36 |   for (const result of results) expect(result.mismatch, JSON.stringify(result)).toBe(0);\n     |                                                                                 ^\n  37 | });\n  38 |\n    at D:\\Minecraft\\AIStudio\\workspace\\Minecraft GUI Maker\\tests\\panel-seams.spec.ts:36:81"
+                    }
+                  ],
+                  "stdout": [
+                    {
+                      "text": "{\"project\":\"chromium-dpr1\",\"results\":[{\"size\":[37,29],\"zoom\":0.5,\"pan\":0,\"mismatch\":102,\"dark\":60,\"first\":[10,10,0,0,0,255,28,38,52,255]},{\"size\":[37,29],\"zoom\":0.5,\"pan\":0.37,\"mismatch\":64,\"dark\":58,\"first\":[12,10,7,9,12,255,10,14,19,255]},{\"size\":[37,29],\"zoom\":1,\"pan\":0,\"mismatch\":0,\"dark\":0,\"first\":null},{\"size\":[37,29],\"zoom\":1,\"pan\":0.37,\"mismatch\":180,\"dark\":123,\"first\":[14,10,7,9,12,255,10,14,19,255]},{\"size\":[37,29],\"zoom\":2,\"pan\":0,\"mismatch\":0,\"dark\":0,\"first\":null},{\"size\":[37,29],\"zoom\":2,\"pan\":0.37,\"mismatch\":362,\"dark\":245,\"first\":[18,10,7,9,12,255,10,14,19,255]},{\"size\":[37,29],\"zoom\":1.37,\"pan\":0,\"mismatch\":178,\"dark\":163,\"first\":[15,10,7,10,13,255,0,0,0,255]},{\"size\":[37,29],\"zoom\":1.37,\"pan\":0.37,\"mismatch\":249,\"dark\":168,\"first\":[15,10,9,12,16,255,10,14,19,255]},{\"size\":[320,180],\"zoom\":0.5,\"pan\":0,\"mismatch\":976,\"dark\":731,\"first\":[10,10,0,0,0,255,28,38,52,255]},{\"size\":[320,180],\"zoom\":0.5,\"pan\":0.37,\"mismatch\":740,\"dark\":495,\"first\":[12,10,7,9,12,255,10,14,19,255]},{\"size\":[320,180],\"zoom\":1,\"pan\":0,\"mismatch\":0,\"dark\":0,\"first\":null},{\"size\":[320,180],\"zoom\":1,\"pan\":0.37,\"mismatch\":1482,\"dark\":991,\"first\":[14,10,7,9,12,255,10,14,19,255]},{\"size\":[320,180],\"zoom\":2,\"pan\":0,\"mismatch\":0,\"dark\":0,\"first\":null},{\"size\":[320,180],\"zoom\":2,\"pan\":0.37,\"mismatch\":2966,\"dark\":1981,\"first\":[18,10,7,9,12,255,10,14,19,255]},{\"size\":[320,180],\"zoom\":1.37,\"pan\":0,\"mismatch\":1603,\"dark\":1356,\"first\":[15,10,7,10,13,255,0,0,0,255]},{\"size\":[320,180],\"zoom\":1.37,\"pan\":0.37,\"mismatch\":1368,\"dark\":1353,\"first\":[15,10,9,12,16,255,10,14,19,255]}]}\n"
+                    }
+                  ],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-28T06:53:58.712Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "pixel-comparison.json",
+                      "contentType": "application/json",
+                      "body": "WwogIHsKICAgICJzaXplIjogWwogICAgICAzNywKICAgICAgMjkKICAgIF0sCiAgICAiem9vbSI6IDAuNSwKICAgICJwYW4iOiAwLAogICAgIm1pc21hdGNoIjogMTAyLAogICAgImRhcmsiOiA2MCwKICAgICJmaXJzdCI6IFsKICAgICAgMTAsCiAgICAgIDEwLAogICAgICAwLAogICAgICAwLAogICAgICAwLAogICAgICAyNTUsCiAgICAgIDI4LAogICAgICAzOCwKICAgICAgNTIsCiAgICAgIDI1NQogICAgXQogIH0sCiAgewogICAgInNpemUiOiBbCiAgICAgIDM3LAogICAgICAyOQogICAgXSwKICAgICJ6b29tIjogMC41LAogICAgInBhbiI6IDAuMzcsCiAgICAibWlzbWF0Y2giOiA2NCwKICAgICJkYXJrIjogNTgsCiAgICAiZmlyc3QiOiBbCiAgICAgIDEyLAogICAgICAxMCwKICAgICAgNywKICAgICAgOSwKICAgICAgMTIsCiAgICAgIDI1NSwKICAgICAgMTAsCiAgICAgIDE0LAogICAgICAxOSwKICAgICAgMjU1CiAgICBdCiAgfSwKICB7CiAgICAic2l6ZSI6IFsKICAgICAgMzcsCiAgICAgIDI5CiAgICBdLAogICAgInpvb20iOiAxLAogICAgInBhbiI6IDAsCiAgICAibWlzbWF0Y2giOiAwLAogICAgImRhcmsiOiAwLAogICAgImZpcnN0IjogbnVsbAogIH0sCiAgewogICAgInNpemUiOiBbCiAgICAgIDM3LAogICAgICAyOQogICAgXSwKICAgICJ6b29tIjogMSwKICAgICJwYW4iOiAwLjM3LAogICAgIm1pc21hdGNoIjogMTgwLAogICAgImRhcmsiOiAxMjMsCiAgICAiZmlyc3QiOiBbCiAgICAgIDE0LAogICAgICAxMCwKICAgICAgNywKICAgICAgOSwKICAgICAgMTIsCiAgICAgIDI1NSwKICAgICAgMTAsCiAgICAgIDE0LAogICAgICAxOSwKICAgICAgMjU1CiAgICBdCiAgfSwKICB7CiAgICAic2l6ZSI6IFsKICAgICAgMzcsCiAgICAgIDI5CiAgICBdLAogICAgInpvb20iOiAyLAogICAgInBhbiI6IDAsCiAgICAibWlzbWF0Y2giOiAwLAogICAgImRhcmsiOiAwLAogICAgImZpcnN0IjogbnVsbAogIH0sCiAgewogICAgInNpemUiOiBbCiAgICAgIDM3LAogICAgICAyOQogICAgXSwKICAgICJ6b29tIjogMiwKICAgICJwYW4iOiAwLjM3LAogICAgIm1pc21hdGNoIjogMzYyLAogICAgImRhcmsiOiAyNDUsCiAgICAiZmlyc3QiOiBbCiAgICAgIDE4LAogICAgICAxMCwKICAgICAgNywKICAgICAgOSwKICAgICAgMTIsCiAgICAgIDI1NSwKICAgICAgMTAsCiAgICAgIDE0LAogICAgICAxOSwKICAgICAgMjU1CiAgICBdCiAgfSwKICB7CiAgICAic2l6ZSI6IFsKICAgICAgMzcsCiAgICAgIDI5CiAgICBdLAogICAgInpvb20iOiAxLjM3LAogICAgInBhbiI6IDAsCiAgICAibWlzbWF0Y2giOiAxNzgsCiAgICAiZGFyayI6IDE2MywKICAgICJmaXJzdCI6IFsKICAgICAgMTUsCiAgICAgIDEwLAogICAgICA3LAogICAgICAxMCwKICAgICAgMTMsCiAgICAgIDI1NSwKICAgICAgMCwKICAgICAgMCwKICAgICAgMCwKICAgICAgMjU1CiAgICBdCiAgfSwKICB7CiAgICAic2l6ZSI6IFsKICAgICAgMzcsCiAgICAgIDI5CiAgICBdLAogICAgInpvb20iOiAxLjM3LAogICAgInBhbiI6IDAuMzcsCiAgICAibWlzbWF0Y2giOiAyNDksCiAgICAiZGFyayI6IDE2OCwKICAgICJmaXJzdCI6IFsKICAgICAgMTUsCiAgICAgIDEwLAogICAgICA5LAogICAgICAxMiwKICAgICAgMTYsCiAgICAgIDI1NSwKICAgICAgMTAsCiAgICAgIDE0LAogICAgICAxOSwKICAgICAgMjU1CiAgICBdCiAgfSwKICB7CiAgICAic2l6ZSI6IFsKICAgICAgMzIwLAogICAgICAxODAKICAgIF0sCiAgICAiem9vbSI6IDAuNSwKICAgICJwYW4iOiAwLAogICAgIm1pc21hdGNoIjogOTc2LAogICAgImRhcmsiOiA3MzEsCiAgICAiZmlyc3QiOiBbCiAgICAgIDEwLAogICAgICAxMCwKICAgICAgMCwKICAgICAgMCwKICAgICAgMCwKICAgICAgMjU1LAogICAgICAyOCwKICAgICAgMzgsCiAgICAgIDUyLAogICAgICAyNTUKICAgIF0KICB9LAogIHsKICAgICJzaXplIjogWwogICAgICAzMjAsCiAgICAgIDE4MAogICAgXSwKICAgICJ6b29tIjogMC41LAogICAgInBhbiI6IDAuMzcsCiAgICAibWlzbWF0Y2giOiA3NDAsCiAgICAiZGFyayI6IDQ5NSwKICAgICJmaXJzdCI6IFsKICAgICAgMTIsCiAgICAgIDEwLAogICAgICA3LAogICAgICA5LAogICAgICAxMiwKICAgICAgMjU1LAogICAgICAxMCwKICAgICAgMTQsCiAgICAgIDE5LAogICAgICAyNTUKICAgIF0KICB9LAogIHsKICAgICJzaXplIjogWwogICAgICAzMjAsCiAgICAgIDE4MAogICAgXSwKICAgICJ6b29tIjogMSwKICAgICJwYW4iOiAwLAogICAgIm1pc21hdGNoIjogMCwKICAgICJkYXJrIjogMCwKICAgICJmaXJzdCI6IG51bGwKICB9LAogIHsKICAgICJzaXplIjogWwogICAgICAzMjAsCiAgICAgIDE4MAogICAgXSwKICAgICJ6b29tIjogMSwKICAgICJwYW4iOiAwLjM3LAogICAgIm1pc21hdGNoIjogMTQ4MiwKICAgICJkYXJrIjogOTkxLAogICAgImZpcnN0IjogWwogICAgICAxNCwKICAgICAgMTAsCiAgICAgIDcsCiAgICAgIDksCiAgICAgIDEyLAogICAgICAyNTUsCiAgICAgIDEwLAogICAgICAxNCwKICAgICAgMTksCiAgICAgIDI1NQogICAgXQogIH0sCiAgewogICAgInNpemUiOiBbCiAgICAgIDMyMCwKICAgICAgMTgwCiAgICBdLAogICAgInpvb20iOiAyLAogICAgInBhbiI6IDAsCiAgICAibWlzbWF0Y2giOiAwLAogICAgImRhcmsiOiAwLAogICAgImZpcnN0IjogbnVsbAogIH0sCiAgewogICAgInNpemUiOiBbCiAgICAgIDMyMCwKICAgICAgMTgwCiAgICBdLAogICAgInpvb20iOiAyLAogICAgInBhbiI6IDAuMzcsCiAgICAibWlzbWF0Y2giOiAyOTY2LAogICAgImRhcmsiOiAxOTgxLAogICAgImZpcnN0IjogWwogICAgICAxOCwKICAgICAgMTAsCiAgICAgIDcsCiAgICAgIDksCiAgICAgIDEyLAogICAgICAyNTUsCiAgICAgIDEwLAogICAgICAxNCwKICAgICAgMTksCiAgICAgIDI1NQogICAgXQogIH0sCiAgewogICAgInNpemUiOiBbCiAgICAgIDMyMCwKICAgICAgMTgwCiAgICBdLAogICAgInpvb20iOiAxLjM3LAogICAgInBhbiI6IDAsCiAgICAibWlzbWF0Y2giOiAxNjAzLAogICAgImRhcmsiOiAxMzU2LAogICAgImZpcnN0IjogWwogICAgICAxNSwKICAgICAgMTAsCiAgICAgIDcsCiAgICAgIDEwLAogICAgICAxMywKICAgICAgMjU1LAogICAgICAwLAogICAgICAwLAogICAgICAwLAogICAgICAyNTUKICAgIF0KICB9LAogIHsKICAgICJzaXplIjogWwogICAgICAzMjAsCiAgICAgIDE4MAogICAgXSwKICAgICJ6b29tIjogMS4zNywKICAgICJwYW4iOiAwLjM3LAogICAgIm1pc21hdGNoIjogMTM2OCwKICAgICJkYXJrIjogMTM1MywKICAgICJmaXJzdCI6IFsKICAgICAgMTUsCiAgICAgIDEwLAogICAgICA5LAogICAgICAxMiwKICAgICAgMTYsCiAgICAgIDI1NSwKICAgICAgMTAsCiAgICAgIDE0LAogICAgICAxOSwKICAgICAgMjU1CiAgICBdCiAgfQpd"
+                    },
+                    {
+                      "name": "screenshot",
+                      "contentType": "image/png",
+                      "path": "D:\\Minecraft\\AIStudio\\workspace\\Minecraft GUI Maker\\test-results\\panel-seams-panel-boundari-18953-r-under-transformed-drawing-chromium-dpr1\\test-failed-1.png"
+                    },
+                    {
+                      "name": "error-context",
+                      "contentType": "text/markdown",
+                      "path": "D:\\Minecraft\\AIStudio\\workspace\\Minecraft GUI Maker\\test-results\\panel-seams-panel-boundari-18953-r-under-transformed-drawing-chromium-dpr1\\error-context.md"
+                    }
+                  ],
+                  "errorLocation": {
+                    "file": "D:\\Minecraft\\AIStudio\\workspace\\Minecraft GUI Maker\\tests\\panel-seams.spec.ts",
+                    "column": 81,
+                    "line": 36
+                  }
+                }
+              ],
+              "status": "unexpected"
+            }
+          ],
+          "id": "4a3507cb17918423f358-61002c5549ceeaafde50",
+          "file": "panel-seams.spec.ts",
+          "line": 2,
+          "column": 1
+        },
+        {
+          "title": "panel boundaries match a single logical raster under transformed drawing",
+          "ok": false,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-dpr2",
+              "projectName": "chromium-dpr2",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "failed",
+                  "duration": 921,
+                  "error": {
+                    "message": "Error: {\"size\":[37,29],\"zoom\":0.5,\"pan\":0.37,\"mismatch\":180,\"dark\":120,\"first\":[24,20,67,73,80,255,21,28,38,255]}\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32m0\u001b[39m\nReceived: \u001b[31m180\u001b[39m",
+                    "stack": "Error: {\"size\":[37,29],\"zoom\":0.5,\"pan\":0.37,\"mismatch\":180,\"dark\":120,\"first\":[24,20,67,73,80,255,21,28,38,255]}\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32m0\u001b[39m\nReceived: \u001b[31m180\u001b[39m\n    at D:\\Minecraft\\AIStudio\\workspace\\Minecraft GUI Maker\\tests\\panel-seams.spec.ts:36:81",
+                    "location": {
+                      "file": "D:\\Minecraft\\AIStudio\\workspace\\Minecraft GUI Maker\\tests\\panel-seams.spec.ts",
+                      "column": 81,
+                      "line": 36
+                    },
+                    "snippet": "  34 |   await info.attach('pixel-comparison.json', { body: JSON.stringify(results, null, 2), contentType: 'application/json' });\n  35 |   console.log(JSON.stringify({ project: info.project.name, results }));\n> 36 |   for (const result of results) expect(result.mismatch, JSON.stringify(result)).toBe(0);\n     |                                                                                 ^\n  37 | });\n  38 |"
+                  },
+                  "errors": [
+                    {
+                      "location": {
+                        "file": "D:\\Minecraft\\AIStudio\\workspace\\Minecraft GUI Maker\\tests\\panel-seams.spec.ts",
+                        "column": 81,
+                        "line": 36
+                      },
+                      "message": "Error: {\"size\":[37,29],\"zoom\":0.5,\"pan\":0.37,\"mismatch\":180,\"dark\":120,\"first\":[24,20,67,73,80,255,21,28,38,255]}\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32m0\u001b[39m\nReceived: \u001b[31m180\u001b[39m\n\n  34 |   await info.attach('pixel-comparison.json', { body: JSON.stringify(results, null, 2), contentType: 'application/json' });\n  35 |   console.log(JSON.stringify({ project: info.project.name, results }));\n> 36 |   for (const result of results) expect(result.mismatch, JSON.stringify(result)).toBe(0);\n     |                                                                                 ^\n  37 | });\n  38 |\n    at D:\\Minecraft\\AIStudio\\workspace\\Minecraft GUI Maker\\tests\\panel-seams.spec.ts:36:81"
+                    }
+                  ],
+                  "stdout": [
+                    {
+                      "text": "{\"project\":\"chromium-dpr2\",\"results\":[{\"size\":[37,29],\"zoom\":0.5,\"pan\":0,\"mismatch\":0,\"dark\":0,\"first\":null},{\"size\":[37,29],\"zoom\":0.5,\"pan\":0.37,\"mismatch\":180,\"dark\":120,\"first\":[24,20,67,73,80,255,21,28,38,255]},{\"size\":[37,29],\"zoom\":1,\"pan\":0,\"mismatch\":0,\"dark\":0,\"first\":null},{\"size\":[37,29],\"zoom\":1,\"pan\":0.37,\"mismatch\":362,\"dark\":244,\"first\":[28,20,67,73,80,255,21,28,38,255]},{\"size\":[37,29],\"zoom\":2,\"pan\":0,\"mismatch\":0,\"dark\":0,\"first\":null},{\"size\":[37,29],\"zoom\":2,\"pan\":0.37,\"mismatch\":726,\"dark\":492,\"first\":[36,20,67,73,80,255,21,28,38,255]},{\"size\":[37,29],\"zoom\":1.37,\"pan\":0,\"mismatch\":496,\"dark\":322,\"first\":[30,20,1,1,2,255,0,0,0,255]},{\"size\":[37,29],\"zoom\":1.37,\"pan\":0.37,\"mismatch\":636,\"dark\":333,\"first\":[31,20,54,59,66,255,21,28,38,255]},{\"size\":[320,180],\"zoom\":0.5,\"pan\":0,\"mismatch\":0,\"dark\":0,\"first\":null},{\"size\":[320,180],\"zoom\":0.5,\"pan\":0.37,\"mismatch\":1482,\"dark\":988,\"first\":[24,20,67,73,80,255,21,28,38,255]},{\"size\":[320,180],\"zoom\":1,\"pan\":0,\"mismatch\":0,\"dark\":0,\"first\":null},{\"size\":[320,180],\"zoom\":1,\"pan\":0.37,\"mismatch\":2966,\"dark\":1980,\"first\":[28,20,67,73,80,255,21,28,38,255]},{\"size\":[320,180],\"zoom\":2,\"pan\":0,\"mismatch\":0,\"dark\":0,\"first\":null},{\"size\":[320,180],\"zoom\":2,\"pan\":0.37,\"mismatch\":5934,\"dark\":3964,\"first\":[36,20,67,73,80,255,21,28,38,255]},{\"size\":[320,180],\"zoom\":1.37,\"pan\":0,\"mismatch\":3591,\"dark\":2699,\"first\":[30,20,1,1,2,255,0,0,0,255]},{\"size\":[320,180],\"zoom\":1.37,\"pan\":0.37,\"mismatch\":4063,\"dark\":2707,\"first\":[31,20,67,73,80,255,21,28,38,255]}]}\n"
+                    }
+                  ],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-28T06:54:00.575Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "pixel-comparison.json",
+                      "contentType": "application/json",
+                      "body": "WwogIHsKICAgICJzaXplIjogWwogICAgICAzNywKICAgICAgMjkKICAgIF0sCiAgICAiem9vbSI6IDAuNSwKICAgICJwYW4iOiAwLAogICAgIm1pc21hdGNoIjogMCwKICAgICJkYXJrIjogMCwKICAgICJmaXJzdCI6IG51bGwKICB9LAogIHsKICAgICJzaXplIjogWwogICAgICAzNywKICAgICAgMjkKICAgIF0sCiAgICAiem9vbSI6IDAuNSwKICAgICJwYW4iOiAwLjM3LAogICAgIm1pc21hdGNoIjogMTgwLAogICAgImRhcmsiOiAxMjAsCiAgICAiZmlyc3QiOiBbCiAgICAgIDI0LAogICAgICAyMCwKICAgICAgNjcsCiAgICAgIDczLAogICAgICA4MCwKICAgICAgMjU1LAogICAgICAyMSwKICAgICAgMjgsCiAgICAgIDM4LAogICAgICAyNTUKICAgIF0KICB9LAogIHsKICAgICJzaXplIjogWwogICAgICAzNywKICAgICAgMjkKICAgIF0sCiAgICAiem9vbSI6IDEsCiAgICAicGFuIjogMCwKICAgICJtaXNtYXRjaCI6IDAsCiAgICAiZGFyayI6IDAsCiAgICAiZmlyc3QiOiBudWxsCiAgfSwKICB7CiAgICAic2l6ZSI6IFsKICAgICAgMzcsCiAgICAgIDI5CiAgICBdLAogICAgInpvb20iOiAxLAogICAgInBhbiI6IDAuMzcsCiAgICAibWlzbWF0Y2giOiAzNjIsCiAgICAiZGFyayI6IDI0NCwKICAgICJmaXJzdCI6IFsKICAgICAgMjgsCiAgICAgIDIwLAogICAgICA2NywKICAgICAgNzMsCiAgICAgIDgwLAogICAgICAyNTUsCiAgICAgIDIxLAogICAgICAyOCwKICAgICAgMzgsCiAgICAgIDI1NQogICAgXQogIH0sCiAgewogICAgInNpemUiOiBbCiAgICAgIDM3LAogICAgICAyOQogICAgXSwKICAgICJ6b29tIjogMiwKICAgICJwYW4iOiAwLAogICAgIm1pc21hdGNoIjogMCwKICAgICJkYXJrIjogMCwKICAgICJmaXJzdCI6IG51bGwKICB9LAogIHsKICAgICJzaXplIjogWwogICAgICAzNywKICAgICAgMjkKICAgIF0sCiAgICAiem9vbSI6IDIsCiAgICAicGFuIjogMC4zNywKICAgICJtaXNtYXRjaCI6IDcyNiwKICAgICJkYXJrIjogNDkyLAogICAgImZpcnN0IjogWwogICAgICAzNiwKICAgICAgMjAsCiAgICAgIDY3LAogICAgICA3MywKICAgICAgODAsCiAgICAgIDI1NSwKICAgICAgMjEsCiAgICAgIDI4LAogICAgICAzOCwKICAgICAgMjU1CiAgICBdCiAgfSwKICB7CiAgICAic2l6ZSI6IFsKICAgICAgMzcsCiAgICAgIDI5CiAgICBdLAogICAgInpvb20iOiAxLjM3LAogICAgInBhbiI6IDAsCiAgICAibWlzbWF0Y2giOiA0OTYsCiAgICAiZGFyayI6IDMyMiwKICAgICJmaXJzdCI6IFsKICAgICAgMzAsCiAgICAgIDIwLAogICAgICAxLAogICAgICAxLAogICAgICAyLAogICAgICAyNTUsCiAgICAgIDAsCiAgICAgIDAsCiAgICAgIDAsCiAgICAgIDI1NQogICAgXQogIH0sCiAgewogICAgInNpemUiOiBbCiAgICAgIDM3LAogICAgICAyOQogICAgXSwKICAgICJ6b29tIjogMS4zNywKICAgICJwYW4iOiAwLjM3LAogICAgIm1pc21hdGNoIjogNjM2LAogICAgImRhcmsiOiAzMzMsCiAgICAiZmlyc3QiOiBbCiAgICAgIDMxLAogICAgICAyMCwKICAgICAgNTQsCiAgICAgIDU5LAogICAgICA2NiwKICAgICAgMjU1LAogICAgICAyMSwKICAgICAgMjgsCiAgICAgIDM4LAogICAgICAyNTUKICAgIF0KICB9LAogIHsKICAgICJzaXplIjogWwogICAgICAzMjAsCiAgICAgIDE4MAogICAgXSwKICAgICJ6b29tIjogMC41LAogICAgInBhbiI6IDAsCiAgICAibWlzbWF0Y2giOiAwLAogICAgImRhcmsiOiAwLAogICAgImZpcnN0IjogbnVsbAogIH0sCiAgewogICAgInNpemUiOiBbCiAgICAgIDMyMCwKICAgICAgMTgwCiAgICBdLAogICAgInpvb20iOiAwLjUsCiAgICAicGFuIjogMC4zNywKICAgICJtaXNtYXRjaCI6IDE0ODIsCiAgICAiZGFyayI6IDk4OCwKICAgICJmaXJzdCI6IFsKICAgICAgMjQsCiAgICAgIDIwLAogICAgICA2NywKICAgICAgNzMsCiAgICAgIDgwLAogICAgICAyNTUsCiAgICAgIDIxLAogICAgICAyOCwKICAgICAgMzgsCiAgICAgIDI1NQogICAgXQogIH0sCiAgewogICAgInNpemUiOiBbCiAgICAgIDMyMCwKICAgICAgMTgwCiAgICBdLAogICAgInpvb20iOiAxLAogICAgInBhbiI6IDAsCiAgICAibWlzbWF0Y2giOiAwLAogICAgImRhcmsiOiAwLAogICAgImZpcnN0IjogbnVsbAogIH0sCiAgewogICAgInNpemUiOiBbCiAgICAgIDMyMCwKICAgICAgMTgwCiAgICBdLAogICAgInpvb20iOiAxLAogICAgInBhbiI6IDAuMzcsCiAgICAibWlzbWF0Y2giOiAyOTY2LAogICAgImRhcmsiOiAxOTgwLAogICAgImZpcnN0IjogWwogICAgICAyOCwKICAgICAgMjAsCiAgICAgIDY3LAogICAgICA3MywKICAgICAgODAsCiAgICAgIDI1NSwKICAgICAgMjEsCiAgICAgIDI4LAogICAgICAzOCwKICAgICAgMjU1CiAgICBdCiAgfSwKICB7CiAgICAic2l6ZSI6IFsKICAgICAgMzIwLAogICAgICAxODAKICAgIF0sCiAgICAiem9vbSI6IDIsCiAgICAicGFuIjogMCwKICAgICJtaXNtYXRjaCI6IDAsCiAgICAiZGFyayI6IDAsCiAgICAiZmlyc3QiOiBudWxsCiAgfSwKICB7CiAgICAic2l6ZSI6IFsKICAgICAgMzIwLAogICAgICAxODAKICAgIF0sCiAgICAiem9vbSI6IDIsCiAgICAicGFuIjogMC4zNywKICAgICJtaXNtYXRjaCI6IDU5MzQsCiAgICAiZGFyayI6IDM5NjQsCiAgICAiZmlyc3QiOiBbCiAgICAgIDM2LAogICAgICAyMCwKICAgICAgNjcsCiAgICAgIDczLAogICAgICA4MCwKICAgICAgMjU1LAogICAgICAyMSwKICAgICAgMjgsCiAgICAgIDM4LAogICAgICAyNTUKICAgIF0KICB9LAogIHsKICAgICJzaXplIjogWwogICAgICAzMjAsCiAgICAgIDE4MAogICAgXSwKICAgICJ6b29tIjogMS4zNywKICAgICJwYW4iOiAwLAogICAgIm1pc21hdGNoIjogMzU5MSwKICAgICJkYXJrIjogMjY5OSwKICAgICJmaXJzdCI6IFsKICAgICAgMzAsCiAgICAgIDIwLAogICAgICAxLAogICAgICAxLAogICAgICAyLAogICAgICAyNTUsCiAgICAgIDAsCiAgICAgIDAsCiAgICAgIDAsCiAgICAgIDI1NQogICAgXQogIH0sCiAgewogICAgInNpemUiOiBbCiAgICAgIDMyMCwKICAgICAgMTgwCiAgICBdLAogICAgInpvb20iOiAxLjM3LAogICAgInBhbiI6IDAuMzcsCiAgICAibWlzbWF0Y2giOiA0MDYzLAogICAgImRhcmsiOiAyNzA3LAogICAgImZpcnN0IjogWwogICAgICAzMSwKICAgICAgMjAsCiAgICAgIDY3LAogICAgICA3MywKICAgICAgODAsCiAgICAgIDI1NSwKICAgICAgMjEsCiAgICAgIDI4LAogICAgICAzOCwKICAgICAgMjU1CiAgICBdCiAgfQpd"
+                    },
+                    {
+                      "name": "screenshot",
+                      "contentType": "image/png",
+                      "path": "D:\\Minecraft\\AIStudio\\workspace\\Minecraft GUI Maker\\test-results\\panel-seams-panel-boundari-18953-r-under-transformed-drawing-chromium-dpr2\\test-failed-1.png"
+                    },
+                    {
+                      "name": "error-context",
+                      "contentType": "text/markdown",
+                      "path": "D:\\Minecraft\\AIStudio\\workspace\\Minecraft GUI Maker\\test-results\\panel-seams-panel-boundari-18953-r-under-transformed-drawing-chromium-dpr2\\error-context.md"
+                    }
+                  ],
+                  "errorLocation": {
+                    "file": "D:\\Minecraft\\AIStudio\\workspace\\Minecraft GUI Maker\\tests\\panel-seams.spec.ts",
+                    "column": 81,
+                    "line": 36
+                  }
+                }
+              ],
+              "status": "unexpected"
+            }
+          ],
+          "id": "4a3507cb17918423f358-cf7ea76900c1b7ff6c79",
+          "file": "panel-seams.spec.ts",
+          "line": 2,
+          "column": 1
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2026-10-28T06:53:57.035Z",
+    "duration": 5096.991999999999,
+    "expected": 0,
+    "skipped": 0,
+    "unexpected": 2,
+    "flaky": 0
+  }
+}
