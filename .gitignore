@@ -19,3 +19,8 @@ docs/validation/panel-sample/
 !/package.json
 !/package-lock.json
 !/tsconfig.json
+
+# Keep project design documents local; only the approved public demo is tracked.
+/docs/**
+!/docs/results/
+!/docs/results/**

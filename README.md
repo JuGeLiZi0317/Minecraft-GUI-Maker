@@ -33,7 +33,7 @@ npm run dev
 
 仓库包含用户提供的 `src/gui/panel_16x.png` 和对应元数据。该纹理由 Minecraft 发射器 GUI 纹理裁切拼接；使用或分发 Minecraft 相关素材时，请自行确认适用的权利和条件。旧版 32× Panel 素材不包含在仓库中；需要该兼容样式时，可在本地提供 `src/gui/panel_32x.png`。
 
-设计默认保存在当前浏览器的本地存储中，建议导出 JSON 备份。具体进度和限制见 [项目状态](docs/PROJECT_STATUS.md)。
+设计默认保存在当前浏览器的本地存储中，建议导出 JSON 备份。
 
 ## 正在持续更新中
 
