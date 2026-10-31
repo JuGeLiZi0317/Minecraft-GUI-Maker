@@ -4,6 +4,22 @@
 
 项目提供组件编辑、有限的行为预览、本地保存，以及 JSON、参考 PNG、规格、Prompt 和 ZIP 导出。它不生成 Java 源码，也不替代游戏内验证。
 
+## 演示
+
+以下截图展示了三个 Screen 的编辑工作区，以及对应的 Minecraft 游戏内页面效果。
+
+### 编辑器工作区
+
+![三 Screen 项目在 GUI Maker 中的多画布编辑视图](docs/results/web-design.png)
+
+### Minecraft 游戏内效果
+
+| Main Screen | Screen 1 |
+| --- | --- |
+| ![Main Screen 游戏内截图](docs/results/Main-Screen.png) | ![Screen 1 游戏内截图](docs/results/Sub-Screen.png) |
+
+截图为代表性项目演示；浏览器近似预览与不同游戏环境下的实际视觉效果可能存在差异。GUI Maker 输出设计和实现规格，不自动生成或运行游戏代码。
+
 ## 运行
 
 需要 Node.js 24.17.0 和 npm 11.13.0：
