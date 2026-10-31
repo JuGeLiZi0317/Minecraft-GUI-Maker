@@ -1,0 +1,232 @@
+/* Canvas view chrome. Konva content stays in Canvas.tsx. */
+.screen-toolbar {
+  z-index: 8;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-height: 42px;
+  padding: 5px 12px;
+  border-bottom: 1px solid var(--line-subtle);
+  background: var(--bg-panel);
+}
+.screen-toolbar-select { display: flex; align-items: center; gap: 7px; color: var(--text-3); font-size: var(--fs-10); }
+.screen-toolbar-select select { width: min(270px, 32vw); height: 29px; padding: 4px 8px; font-size: var(--fs-10); }
+.screen-toolbar-title { overflow: hidden; color: var(--text-1); font-size: var(--fs-11); font-weight: 550; text-overflow: ellipsis; white-space: nowrap; }
+.screen-toolbar-actions { display: flex; align-items: center; gap: 4px; margin-left: auto; }
+.screen-tool-button { display: grid; width: 30px; height: 29px; place-items: center; padding: 0; font-size: 16px; line-height: 1; }
+.screen-tool-button svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+.screen-delete-button { color: var(--danger); }
+.screen-rename-form { display: flex; align-items: center; gap: 4px; }
+.screen-rename-form input { width: min(220px, 28vw); height: 29px; padding: 4px 7px; font-size: var(--fs-10); }
+.entry-screen-field { display: grid; gap: 6px; margin: 0 0 12px; color: var(--text-3); font-size: var(--fs-10); }
+.entry-screen-field select { width: 100%; padding: 7px; font-size: var(--fs-10); }
+.canvas-caption {
+  position: absolute;
+  top: 26px;
+  left: 12px;
+  z-index: 4;
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+  pointer-events: none;
+  color: var(--text-2);
+  font-family: var(--font-mono);
+  font-size: var(--fs-10);
+  letter-spacing: .02em;
+}
+.canvas-caption b { color: var(--text-1); font-weight: 500; }
+.canvas-caption span { color: var(--text-3); font-size: var(--fs-10); }
+.canvas-caption .caption-rule {
+  display: inline-block;
+  width: 10px; height: 1px;
+  margin: 0 1px 3px;
+  background: var(--line-strong);
+}
+
+.canvas-badge {
+  position: absolute;
+  top: 26px;
+  right: 12px;
+  z-index: 4;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  max-width: min(300px, 46%);
+  padding: 3px 7px;
+  border: 1px solid var(--line-subtle);
+  border-radius: var(--radius-1);
+  background: color-mix(in srgb, var(--bg-panel) 88%, transparent);
+  color: var(--text-3);
+  font-size: var(--fs-10);
+  line-height: 1.4;
+  pointer-events: none;
+  backdrop-filter: blur(4px);
+}
+.canvas-badge::before {
+  content: "";
+  width: 4px; height: 4px;
+  flex: 0 0 4px;
+  border-radius: 50%;
+  background: var(--text-disabled);
+}
+.canvas-badge.preview::before { background: var(--accent); }
+.canvas-badge.resource::before { background: var(--text-2); }
+
+.canvas-zoom {
+  position: absolute;
+  right: 12px;
+  bottom: 40px;
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 7px;
+  border: 1px solid var(--line-subtle);
+  border-radius: var(--radius-1);
+  background: color-mix(in srgb, var(--bg-panel) 88%, transparent);
+  color: var(--text-3);
+  font-family: var(--font-mono);
+  font-size: var(--fs-10);
+  pointer-events: none;
+  backdrop-filter: blur(4px);
+}
+.canvas-zoom b { color: var(--text-2); font-weight: 500; }
+.canvas-zoom .zoom-sep { color: var(--line-strong); }
+
+.canvas-empty {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: 5;
+  width: min(360px, calc(100% - 48px));
+  transform: translate(-50%, -50%);
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-3);
+  background: color-mix(in srgb, var(--bg-panel) 94%, transparent);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, .35);
+  color: var(--text-2);
+}
+.canvas-empty-eyebrow {
+  color: var(--text-3);
+  font-family: var(--font-mono);
+  font-size: var(--fs-10);
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+.canvas-empty h2 {
+  margin-top: 5px;
+  color: var(--text-1);
+  font-size: var(--fs-13);
+  font-weight: 600;
+}
+.canvas-empty p {
+  margin-top: 6px;
+  color: var(--text-3);
+  font-size: var(--fs-11);
+  line-height: 1.6;
+}
+.canvas-empty-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 12px;
+}
+.canvas-empty-actions button {
+  min-height: 26px;
+  padding: 0 8px;
+  font-size: var(--fs-10);
+}
+.canvas-empty-note {
+  margin-top: 10px !important;
+  padding-top: 9px;
+  border-top: 1px solid var(--line-subtle);
+  color: var(--text-3) !important;
+  font-family: var(--font-mono);
+  font-size: var(--fs-10) !important;
+}
+
+.sprite-diagnostics {
+  position: absolute;
+  left: 12px;
+  bottom: 40px;
+  z-index: 8;
+  max-width: min(520px, 62%);
+  max-height: 30%;
+  overflow: auto;
+  padding: 7px 9px;
+  border: 1px solid var(--danger-line);
+  border-radius: var(--radius-2);
+  background: var(--danger-soft);
+  color: var(--text-1);
+  font-size: var(--fs-10);
+  line-height: 1.5;
+}
+.sprite-diagnostics strong {
+  display: block;
+  margin-bottom: 3px;
+  color: var(--danger);
+  font-weight: 600;
+}
+.sprite-diagnostics div + div { margin-top: 2px; }
+
+.canvas-note {
+  position: absolute;
+  left: 12px;
+  bottom: 40px;
+  z-index: 7;
+  max-width: min(420px, 58%);
+  padding: 4px 7px;
+  border: 1px solid var(--line-subtle);
+  border-radius: var(--radius-1);
+  background: color-mix(in srgb, var(--bg-panel) 90%, transparent);
+  color: var(--text-3);
+  font-size: var(--fs-10);
+  pointer-events: none;
+}
+
+.panel-load-error {
+  position: absolute;
+  left: 12px;
+  bottom: 40px;
+  z-index: 8;
+  max-width: min(520px, 62%);
+  padding: 7px 9px;
+  border: 1px solid var(--danger-line);
+  border-radius: var(--radius-2);
+  background: var(--danger-soft);
+  color: var(--danger);
+  font-size: var(--fs-10);
+}
+
+.inline-editor { position: absolute; z-index: 20; pointer-events: none; }
+.inline-editor input {
+  pointer-events: auto;
+  width: 100%;
+  min-height: 28px;
+  padding: 2px 5px;
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-1);
+  background: var(--bg-input);
+  color: var(--text-1);
+  font-family: var(--font-mono);
+  outline: none;
+}
+.inline-editor-help, .inline-editor-error {
+  display: block;
+  margin-top: 3px;
+  padding: 3px 6px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-1);
+  background: var(--bg-panel);
+  color: var(--text-3);
+  font-size: var(--fs-10);
+  line-height: 1.5;
+  white-space: normal;
+}
+.inline-editor-error { border-color: var(--danger-line); background: var(--danger-soft); color: var(--danger); }
+
+@media (max-width: 900px) {
+  .canvas-caption { max-width: 52%; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+  .canvas-badge { max-width: 48%; }
+}

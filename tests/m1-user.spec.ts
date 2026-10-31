@@ -1,0 +1,21 @@
+import { expect, test } from '@playwright/test';
+test('normal multi-screen editing, history and reload', async ({page}) => {
+  await page.goto('/'); await expect(page.getByTestId('save-status')).toContainText('本地已保存');
+  const read = async () => JSON.parse((await page.getByTestId('project-json').textContent())!);
+  const before = await read(); expect(before.schemaVersion).toBe('0.1.0');
+  await page.getByRole('button', {name:'添加 Button', exact:true}).click();
+  await page.getByRole('button', {name:'新增 Screen', exact:true}).click();
+  let doc = await read(); expect(doc.schemaVersion).toBe('0.12.0'); expect(doc.screens).toHaveLength(2); const first = doc.screens[0].id, second = doc.screens[1].id;
+  await expect(page.getByLabel('当前 Screen')).toHaveValue(second);
+  await page.getByRole('button', {name:'添加 Rectangle', exact:true}).click();
+  doc = await read(); expect(doc.screens[0].nodes).toHaveLength(1); expect(doc.screens[1].nodes).toHaveLength(1); expect(doc.screens[0].nodes[0].id).not.toBe(doc.screens[1].nodes[0].id);
+  await page.getByLabel('Screen 名称').fill('第二屏'); await page.getByRole('button', {name:'重命名 Screen'}).click();
+  await page.getByLabel('当前 Screen').selectOption(first); await expect(page.getByRole('button', {name:`选择 ${doc.screens[0].nodes[0].id}`})).toBeVisible();
+  await page.getByLabel('当前 Screen').selectOption(second); await expect(page.getByLabel('Screen 名称')).toHaveValue('第二屏');
+  await page.getByRole('button', {name:'撤销',exact:true}).click(); await expect(page.getByLabel('Screen 名称')).toHaveValue('Screen 1');
+  await page.getByRole('button', {name:'重做',exact:true}).click(); await expect(page.getByLabel('Screen 名称')).toHaveValue('第二屏');
+  await expect(page.getByTestId('save-status')).toContainText('本地已保存'); await page.reload(); await expect.poll(async()=> (await read()).screens.length).toBe(2);
+  await page.getByLabel('当前 Screen').selectOption(second); await expect(page.getByLabel('Screen 名称')).toHaveValue('第二屏');
+  await expect(page.getByRole('button', {name:`选择 ${doc.screens[1].nodes[0].id}`})).toBeVisible();
+  await page.getByRole('button', {name:'导出规格',exact:true}).click(); await expect(page.getByTestId('export-panel')).toBeVisible(); await expect(page.locator('.export-links a')).toHaveCount(8);
+});

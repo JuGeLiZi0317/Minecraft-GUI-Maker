@@ -41,7 +41,7 @@ export function ResourceTestPanel({ manager: shared, onChange, openRequest = 0, 
   const clear = () => { sequence.current++; querySequence.current++; controller.current?.abort(); controller.current = null; manager.current!.close(); onChange(); setBusy(false); setBase(null); setLayer(null); setResult(null); setSpriteResult(null); setError(false); setMessage('资源会话已清除'); };
   return <div className="resource-test" ref={root}>
     {!hideTrigger && <button aria-expanded={open} aria-controls="resource-test-menu" onClick={() => setOpen(!open)}>资源包检查</button>}
-    <section id="resource-test-menu" className={`resource-test-popover${hideTrigger ? ' resource-test-popover-menu' : ''}`} hidden={!open} aria-label="资源包检查">
+    <section id="resource-test-menu" className="resource-test-popover resource-test-popover-menu" hidden={!open} aria-label="资源包检查">
       <div className="resource-test-heading"><strong>资源包检查 · 实验功能</strong><button aria-label="关闭资源包检查" onClick={() => setOpen(false)}>✕</button></div>
       <p>选择客户端 JAR 和可选资源包；仅在本页读取，不上传或保存。Button 与有边框的 EditBox 使用纹理预览，字体仍为网页近似。</p>
       <div className="resource-test-actions">

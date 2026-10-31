@@ -1,10 +1,72 @@
 import { describe, expect, it } from 'vitest';
-import { createEditorStore } from '../../../src/editor/store';
+import { createEditorStore, currentScreen, screenById } from '../../../src/editor/store';
 import { emptyProject } from '../../../src/domain/model';
 import { exportProject } from '../../../src/domain/schema';
 import { PANEL_STYLE, NATIVE_PANEL_16 } from '../../../src/domain/panel';
 
 describe('document transactions', () => {
+  it('creates independent screens in one versioned transaction, protects bindings and restores history', () => {
+    const store = createEditorStore();
+    store.getState().saveScreenTarget({ id: 'destination', name: 'Destination' });
+    const old = structuredClone(store.getState().doc);
+    store.getState().addScreen();
+    expect(store.getState().doc.schemaVersion).toBe('0.12.0');
+    expect(store.getState().doc.screens).toHaveLength(2);
+    expect(store.getState().doc.screens[0].screenTargets).toEqual(old.screens[0].screenTargets);
+    const second = store.getState().currentScreenId;
+    store.getState().add('minecraft:button');
+    expect(store.getState().doc.screens[0].nodes).toHaveLength(0);
+    expect(store.getState().doc.screens[1].nodes).toHaveLength(1);
+    const button = store.getState().doc.screens[1].nodes[0].id;
+    store.getState().setPanel(true);
+    store.getState().saveBehavior({ id: 'rule_second', event: { type: 'button-click', sourceId: button }, action: { type: 'set-visible', targetId: button, visible: false } });
+    expect(store.getState().doc.screens[0].behaviors).toHaveLength(0);
+    expect(store.getState().doc.screens[0].background.kind).toBe('none');
+    expect(store.getState().doc.screens[1].behaviors).toHaveLength(1);
+    store.getState().switchScreen(old.screens[0].id);
+    store.getState().saveScreenTarget({ id: 'destination', name: 'Destination', boundScreenId: second });
+    expect(() => store.getState().deleteScreen(second)).toThrow('解除绑定');
+    store.getState().renameScreen(second, 'Changed');
+    expect(store.getState().doc.screens[0].screenTargets![0].boundScreenId).toBe(second);
+    store.getState().saveScreenTarget({ id: 'destination', name: 'Destination' });
+    store.getState().deleteScreen(second); expect(store.getState().doc.screens).toHaveLength(1);
+    store.getState().undo(); expect(store.getState().doc.screens).toHaveLength(2);
+    store.getState().redo(); expect(store.getState().doc.screens).toHaveLength(1);
+    const invalid = structuredClone(old); invalid.screens.push({ ...structuredClone(old.screens[0]), id: 'screen_x' });
+    expect(() => store.getState().importJson(JSON.stringify(invalid))).toThrow();
+    const invalidBinding = structuredClone(store.getState().doc);
+    invalidBinding.screens[0].screenTargets![0].boundScreenId = 'missing_screen';
+    const stable = store.getState().doc;
+    expect(() => store.getState().importJson(JSON.stringify(invalidBinding))).toThrow();
+    expect(store.getState().doc).toBe(stable);
+  });
+  it('switches isolated screen fixtures without changing history or the design', () => {
+    const store = createEditorStore();
+    const doc = structuredClone(store.getState().doc);
+    const second = structuredClone(doc.screens[0]); second.id = 'screen_other'; doc.screens.push(second);
+    // A test-only fixture: the public schema still rejects multi-screen documents.
+    store.setState({ doc, selected: null });
+    const before = store.getState().doc;
+    store.getState().switchScreen('screen_other');
+    expect(currentScreen(store.getState()).id).toBe('screen_other');
+    expect(store.getState().doc).toBe(before);
+    expect(store.getState().past).toHaveLength(0);
+    expect(() => store.getState().switchScreen('missing')).toThrow();
+    expect(store.getState().currentScreenId).toBe('screen_other');
+  });
+  it('tracks the current screen outside the document and safely follows import and history', () => {
+    const store = createEditorStore();
+    const original = store.getState().doc;
+    expect(currentScreen(store.getState()).id).toBe('screen_main');
+    expect(() => screenById(original, 'missing')).toThrow('Screen 不存在');
+    const other = structuredClone(original); other.screens[0].id = 'screen_other';
+    store.getState().importJson(JSON.stringify(other));
+    expect(store.getState().currentScreenId).toBe('screen_other');
+    expect(store.getState().doc).not.toHaveProperty('currentScreenId');
+    store.getState().undo(); expect(store.getState().currentScreenId).toBe('screen_main');
+    store.getState().redo(); expect(store.getState().currentScreenId).toBe('screen_other');
+    store.getState().restoreLocal(original); expect(store.getState().currentScreenId).toBe('screen_main');
+  });
   it.each(['minecraft:checkbox', 'minecraft:cycle-button'] as const)('upgrades %s with its creation and does not downgrade on deletion or panel changes', type => {
     const old = emptyProject(); old.schemaVersion = '0.3.0'; const store = createEditorStore(old);
     store.getState().add(type); const added = store.getState().doc;

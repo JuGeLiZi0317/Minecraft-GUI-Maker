@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { displayText } from '../domain/model';
 import { parseProject, type GuiNode, type TextSpec } from '../domain/schema';
 import { useExportDraft } from '../exports/useExportDraft';
-import { editorStore } from '../editor/store';
+import { editorStore, screenById } from '../editor/store';
 
 export const editableText = (node: GuiNode): string | null => {
   if (node.type === 'minecraft:button') return displayText(node.props.message);
@@ -18,6 +18,7 @@ const replaceDisplay = (text: TextSpec, value: string): TextSpec => text.kind ==
 export function InlineTextEditor({ node, left, top, width, height, zoom, close }: {
   node: GuiNode; left: number; top: number; width: number; height: number; zoom: number; close: () => void;
 }) {
+  const screenId = useRef(editorStore.getState().currentScreenId).current;
   const [draft, setDraft] = useState(editableText(node) ?? '');
   const [error, setError] = useState('');
   const field = useRef<HTMLInputElement>(null);
@@ -37,8 +38,10 @@ export function InlineTextEditor({ node, left, top, width, height, zoom, close }
   const validate = () => {
     if (done.current) return;
     if (composing.current) throw new Error('请先完成输入法组合输入再保存文字');
-    const copy = structuredClone(editorStore.getState().doc);
-    copy.screens[0].nodes = copy.screens[0].nodes.map(n => n.id === node.id ? change(n) : n);
+    const state = editorStore.getState();
+    if (state.currentScreenId !== screenId) throw new Error('Screen 已切换，无法提交旧草稿');
+    const copy = structuredClone(state.doc);
+    screenById(copy, screenId).nodes = screenById(copy, screenId).nodes.map(n => n.id === node.id ? change(n) : n);
     parseProject(JSON.stringify(copy));
   };
   const save = () => {

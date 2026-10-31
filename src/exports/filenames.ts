@@ -14,3 +14,10 @@ const suffix: Record<ExportKind, string> = { project: '.json', design: '.png', i
 export function exportFilename(name: string, kind: ExportKind): string {
   return `${safeExportStem(name)}${suffix[kind]}`;
 }
+
+/** Screen derivatives are display files only. The stable ID prevents collisions after name sanitizing. */
+export function screenExportFilename(name: string, screenName: string, screenId: string, kind: 'design' | 'reference' | 'background'): string {
+  const trimBytes = (value: string, limit: number) => { const encoder = new TextEncoder(); let result = ''; for (const char of value) { if (encoder.encode(result + char).length > limit) break; result += char; } return result || 'screen'; };
+  const base = trimBytes(safeExportStem(name), 72), title = trimBytes(safeExportStem(screenName), 48), stable = safeExportStem(screenId);
+  return `${base}.${title}--${stable}${suffix[kind]}`;
+}

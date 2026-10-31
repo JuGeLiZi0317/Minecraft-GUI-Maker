@@ -95,4 +95,27 @@ describe('D frozen export contract', () => {
     await expect(buildBundle(snapshot)).rejects.toThrow('上限');
     expect(() => addPngMetadata(new Uint8Array(10), {})).toThrow('无效');
   });
+  it('exports every real Screen from one 0.12.0 snapshot with stable derivative names and bindings', async () => {
+    const doc = emptyProject(); doc.schemaVersion = '0.12.0'; doc.project.name = '多屏/项目';
+    doc.screens[0].nodes.push(createNode('minecraft:button', 'node_main'));
+    const second = structuredClone(doc.screens[0]); second.id = 'screen_settings'; second.title = { kind: 'literal', value: '同名' }; second.nodes = [createNode('minecraft:string-widget', 'node_settings')]; second.behaviors = [];
+    const third = structuredClone(doc.screens[0]); third.id = 'screen_help'; third.title = { kind: 'literal', value: '同名' }; third.nodes = [createNode('minecraft:fill', 'node_help')]; third.behaviors = [];
+    doc.screens[0].screenTargets = [{ id: 'target_settings', name: '设置', boundScreenId: second.id }, { id: 'target_future', name: '未来页面' }];
+    doc.screens.push(second, third);
+    const calls: string[] = [], renderer = async (_snapshot: unknown, _reference: unknown, scale: number, screenId: string) => { calls.push(`${screenId}:${scale}`); return new Uint8Array([screenId.length, scale]); };
+    const bundle = await buildBundle(beginExport(doc), renderer as never);
+    expect(calls).toEqual(['screen_main:1', 'screen_main:4', 'screen_settings:1', 'screen_settings:4', 'screen_help:1', 'screen_help:4']);
+    expect(bundle.manifest.version).toBe('0.8.0'); expect(bundle.manifest.screens).toHaveLength(3);
+    const names = bundle.files.map(file => file.name); expect(new Set(names.map(name => name.toLowerCase())).size).toBe(names.length);
+    expect(names).toEqual(expect.arrayContaining([expect.stringContaining('--screen_settings.png'), expect.stringContaining('--screen_help.png')]));
+    const specFile = bundle.files.find(file => file.name.endsWith('.implementation.json'))!;
+    const spec = JSON.parse(new TextDecoder().decode(specFile.bytes));
+    expect(spec.designIntent.screens.map((item: { screen: { id: string } }) => item.screen.id)).toEqual(['screen_main', 'screen_settings', 'screen_help']);
+    expect(spec.designIntent.screens[0].screenTargets).toEqual(expect.arrayContaining([expect.objectContaining({ id: 'target_settings', bindingStatus: 'bound', boundScreenId: 'screen_settings' }), expect.objectContaining({ id: 'target_future', bindingStatus: 'unbound' })]));
+    for (const file of bundle.manifest.files) expect(file.sha256).toBe(await sha256(bundle.files.find(item => item.name === file.name)!.bytes));
+  });
+  it('rejects a multi-Screen batch atomically when any Screen renderer fails', async () => {
+    const doc = emptyProject(); doc.schemaVersion = '0.12.0'; const second = structuredClone(doc.screens[0]); second.id = 'screen_second'; doc.screens.push(second);
+    await expect(buildBundle(beginExport(doc), (async (_snapshot: unknown, _reference: unknown, _scale: number, screenId: string) => { if (screenId === 'screen_second') throw new Error('second failed'); return new Uint8Array([1]); }) as never)).rejects.toThrow('second failed');
+  });
 });

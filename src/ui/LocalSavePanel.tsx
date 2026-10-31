@@ -5,7 +5,7 @@ import { editorStore } from '../editor/store';
 import { useDismissOutside } from './useDismissOutside';
 import { exportFilename } from '../exports/filenames';
 
-export function LocalSavePanel({ notify }: { notify: (text: string, error?: boolean) => void }) {
+export function LocalSavePanel({ notify, onBackup }: { notify: (text: string, error?: boolean) => void; onBackup: () => void }) {
   const state = useStore(localSession.status);
   const blocked = useStore(editorStore, s => s.blocked);
   const [picked, setPicked] = useState('');
@@ -16,9 +16,15 @@ export function LocalSavePanel({ notify }: { notify: (text: string, error?: bool
   useEffect(() => { if (exceptional) setOpen(true); }, [state.phase, exceptional]);
   const selected = state.copies.some(c => c.localId === picked) ? picked : state.localId ?? '';
   return <div ref={root} className={`local-save-panel ${exceptional ? 'save-warning' : ''}`}>
-    <button className="save-toggle" aria-label="本地保存状态和副本" aria-expanded={open} aria-controls="local-save-menu" onClick={() => setOpen(!open)}><span className={`save-dot ${state.phase}`}/><span data-testid="save-status" aria-live="polite">{state.message}</span><span className="save-menu-label">本地副本与保存说明</span><span aria-hidden="true">{open ? '▴' : '▾'}</span></button>
+    <button className="save-toggle" aria-label="本地保存状态和副本" aria-expanded={open} aria-controls="local-save-menu" title={state.message} onClick={() => setOpen(!open)}><span className={`save-dot ${state.phase}`}/><span data-testid="save-status" aria-live="polite">{state.message}</span><span className="save-menu-label">本地副本与保存说明</span><span aria-hidden="true">{open ? '▴' : '▾'}</span></button>
     <div id="local-save-menu" className="save-popover" hidden={!open}>
-    <p className="save-detail">{state.message}</p>
+    <strong className="save-popover-title">本地副本与保存</strong>
+    {exceptional && <div className={`save-alert ${state.phase}`} aria-live="assertive">
+      <strong>{state.phase === 'error' ? '保存失败' : state.phase === 'conflict' ? '保存冲突' : state.phase === 'readonly' ? '只读' : '需要恢复'}</strong>
+      <p>{state.message}</p>
+      <div className="save-alert-actions"><button onClick={onBackup}>下载 JSON 备份</button></div>
+    </div>}
+    {!exceptional && <p className="save-detail">{state.message}</p>}
     <div className="save-summary">
       <button disabled={!!blocked || state.phase === 'saving'} onClick={() => void localSession.flush()}>立即保存</button>
       {state.phase === 'error' && <button onClick={() => void localSession.retry()}>重试本地保存</button>}

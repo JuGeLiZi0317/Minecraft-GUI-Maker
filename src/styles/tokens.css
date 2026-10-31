@@ -1,0 +1,103 @@
+/* Design tokens: neutral graphite + amber. Dark is the product default. */
+:root {
+  --font-ui: "Segoe UI Variable", "Segoe UI", "Microsoft YaHei UI", "Microsoft YaHei", system-ui, sans-serif;
+  --font-mono: "Cascadia Mono", "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+
+  --fs-10: 10px;
+  --fs-11: 11px;
+  --fs-12: 12px;
+  --fs-13: 13px;
+  --fs-15: 15px;
+
+  --radius-1: 3px;
+  --radius-2: 4px;
+  --radius-3: 6px;
+  --radius-4: 8px;
+
+  --dur: 120ms;
+  --ease: cubic-bezier(.2, .7, .2, 1);
+
+  --bg-app: #0d0f12;
+  --bg-panel: #14171b;
+  --bg-raised: #1a1e23;
+  --bg-input: #0a0c0f;
+  --bg-hover: #20252b;
+  --bg-active: #262b32;
+
+  --line-subtle: #24282f;
+  --line: #333941;
+  --line-strong: #454c56;
+
+  --text-1: #e9e6df;
+  --text-2: #b4b0a7;
+  --text-3: #8b877e;
+  --text-disabled: #5e5a53;
+
+  --accent: #f0b45c;
+  --accent-hover: #f6c477;
+  --accent-press: #d99a3f;
+  --accent-ink: #221604;
+  --accent-soft: #2a2114;
+  --accent-line: #5c4524;
+
+  --danger: #e8837a;
+  --danger-soft: #2b1918;
+  --danger-line: #6b3a36;
+
+  --canvas-mat: #080a0c;
+  --canvas-design: #1c2634;
+  --canvas-line: #3c424a;
+  --canvas-grid: rgba(240, 180, 92, .17);
+  --canvas-ruler: #0b0e11;
+  --canvas-ruler-line: #2a2f36;
+  --canvas-ruler-text: #8b877e;
+  --canvas-ruler-tick: #3a4048;
+
+  --shadow-overlay: 0 16px 40px rgba(0, 0, 0, .55), 0 0 0 1px rgba(255, 255, 255, .02);
+  --shadow-popover: 0 12px 32px rgba(0, 0, 0, .5);
+
+  color-scheme: dark;
+}
+
+:root[data-theme="light"] {
+  --bg-app: #f1efe9;
+  --bg-panel: #fbfaf7;
+  --bg-raised: #ffffff;
+  --bg-input: #ffffff;
+  --bg-hover: #eae7e1;
+  --bg-active: #e2ded6;
+
+  --line-subtle: #e1ded8;
+  --line: #cecac2;
+  --line-strong: #b5b0a6;
+
+  --text-1: #1e1c18;
+  --text-2: #4d4a43;
+  --text-3: #6b675e;
+  --text-disabled: #9a958b;
+
+  --accent: #8a560c;
+  --accent-hover: #734708;
+  --accent-press: #5e3905;
+  --accent-ink: #ffffff;
+  --accent-soft: #f6ebd9;
+  --accent-line: #d8b98a;
+
+  --danger: #a83a31;
+  --danger-soft: #fbe9e7;
+  --danger-line: #dcb3ae;
+
+  --canvas-mat: #e4e1da;
+  --canvas-design: #1c2634;
+  --canvas-line: #3c424a;
+  --canvas-grid: rgba(240, 180, 92, .2);
+  --canvas-ruler: #f3f1ec;
+  --canvas-ruler-line: #d9d5cc;
+  --canvas-ruler-text: #6b675e;
+  --canvas-ruler-tick: #b5b0a6;
+
+  --shadow-overlay: 0 16px 40px rgba(20, 16, 10, .2), 0 0 0 1px rgba(20, 16, 10, .05);
+  --shadow-popover: 0 12px 32px rgba(20, 16, 10, .16);
+
+  color-scheme: light;
+}

@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react';
 import { useStore } from 'zustand';
 import { guiScalePreview, type GuiScalePreview } from '../domain/guiScale';
-import { editorStore } from '../editor/store';
+import { currentScreen, editorStore } from '../editor/store';
 import { PANEL_STYLE, NATIVE_PANEL_16, NATIVE_PANEL_32, type PanelStyle } from '../domain/panel';
 import { useDismissOutside } from './useDismissOutside';
 
@@ -9,10 +9,10 @@ export function ScreenSettings({ preview, setPreview, notify, open, setOpen }: {
   preview: GuiScalePreview | null; setPreview: (value: GuiScalePreview | null) => void; notify: (text: string, error?: boolean) => void;
   open: boolean; setOpen: (open: boolean) => void;
 }) {
-  const size = useStore(editorStore, s => s.doc.screens[0].designSize);
+  const size = useStore(editorStore, s => currentScreen(s).designSize);
   const root = useRef<HTMLDetailsElement>(null);
   useDismissOutside(root, open, () => setOpen(false));
-  const background = useStore(editorStore, s => s.doc.screens[0].background);
+  const background = useStore(editorStore, s => currentScreen(s).background);
   const busy = useStore(editorStore, s => !!s.gesture || !!s.blocked);
   const [resolution, setResolution] = useState('1920x1080'), [level, setLevel] = useState(0), [unicode, setUnicode] = useState(false);
   const [fw, fh] = resolution.split('x').map(Number);
@@ -23,7 +23,7 @@ export function ScreenSettings({ preview, setPreview, notify, open, setOpen }: {
     if (preview) setPreview(guiScalePreview(w, h, requested, force));
   };
   return <details ref={root} className="screen-settings" open={open} onToggle={e => setOpen(e.currentTarget.open)}><summary onClick={e => { e.preventDefault(); setOpen(!open); }}>设计区与游戏 GUI Scale <span>{size.width} × {size.height} GUI px{preview ? ' · 只读预览中' : ''}</span></summary>
-    <fieldset disabled={busy}><p>设计区宽高可在右侧属性栏的「画布尺寸」中调整。</p>
+    <fieldset disabled={busy}><div className="screen-settings-heading"><strong>设计区与游戏 GUI Scale</strong><button type="button" className="popover-close" aria-label="关闭设计区与游戏 GUI Scale 设置" onClick={() => setOpen(false)}>✕</button></div><p>设计区宽高可在右侧属性栏的「画布尺寸」中调整。</p>
     <div className="screen-settings-row"><label>设计区底板<select aria-label="设计区底板" disabled={!!preview} value={background.kind === 'none' ? 'none' : background.style} onChange={e => {
       try { editorStore.getState().setPanel(e.target.value !== 'none', e.target.value as PanelStyle); notify('设计区底板已更新 · 可撤销'); } catch (error) { notify((error as Error).message, true); }
     }}><option value="none">无底板</option><option value={NATIVE_PANEL_16}>Panel · 发射器纹理衍生 16×</option>{background.kind === 'panel' && background.style === NATIVE_PANEL_32 && <option disabled value={NATIVE_PANEL_32}>旧项目：32× Panel（只读兼容）</option>}{background.kind === 'panel' && background.style === PANEL_STYLE && <option disabled value={PANEL_STYLE}>旧项目：自绘 Panel（只读兼容）</option>}</select></label></div>

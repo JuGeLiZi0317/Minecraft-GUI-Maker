@@ -59,29 +59,32 @@ export const behaviorSchema = z.union([
 export type Behavior = z.infer<typeof behaviorSchema>;
 export type BehaviorAction = z.infer<typeof behaviorActionSchema>;
 export const actionsOf = (rule: Behavior): BehaviorAction[] => 'actions' in rule ? rule.actions : [rule.action];
-export const screenTargetSchema = z.strictObject({ id, name: z.string().min(1).max(128).refine(value => value.trim().length > 0, '名称不能为空') });
+export const screenTargetSchema = z.strictObject({ id, name: z.string().min(1).max(128).refine(value => value.trim().length > 0, '名称不能为空'), boundScreenId: id.optional() });
 export type ScreenTarget = z.infer<typeof screenTargetSchema>;
 
 // F0 allows only the explicit rule subset; variables, assets and node event references remain unsupported.
 export const projectSchema = z.strictObject({
-  format: z.literal('minecraft-gui-maker'), schemaVersion: z.enum(['0.1.0', '0.2.0', '0.3.0', '0.4.0', '0.5.0', '0.6.0', '0.7.0', '0.8.0', '0.9.0', '0.10.0', '0.11.0']),
+  format: z.literal('minecraft-gui-maker'), schemaVersion: z.enum(['0.1.0', '0.2.0', '0.3.0', '0.4.0', '0.5.0', '0.6.0', '0.7.0', '0.8.0', '0.9.0', '0.10.0', '0.11.0', '0.12.0', '0.13.0']),
   catalogVersion: z.literal(CATALOG_VERSION),
   target: z.strictObject({ edition: z.literal(TARGET.edition), minecraft: z.literal(TARGET.minecraft),
     loader: z.strictObject({ id: z.literal('neoforge'), version: z.literal(TARGET.loader.version) }), java: z.literal(21) }),
   project: z.strictObject({ id, name: z.string().min(1), revision: integer }),
+  entryScreenId: id.optional(),
   screens: z.array(z.strictObject({ id, title: textSchema, base: z.literal('screen'),
     designSize: z.strictObject({ width: integer.positive(), height: integer.positive(), unit: z.literal('gui-px') }),
     placement: z.literal('center'), background: z.discriminatedUnion('kind', [z.strictObject({ kind: z.literal('none') }), z.strictObject({ kind: z.literal('panel'), style: z.enum([PANEL_STYLE, NATIVE_PANEL_16, NATIVE_PANEL_32]), bounds: boundsSchema.optional() })]),
     nodes: z.array(nodeSchema).max(1000), variables: z.array(z.never()).max(0), behaviors: z.array(behaviorSchema).max(200), screenTargets: z.array(screenTargetSchema).max(100).optional(),
-  })).length(1),
+  })).min(1).max(100),
   assets: z.array(z.never()).max(0),
   extensions: z.record(z.string().regex(/^[a-z][a-z0-9-]*(\.[a-z][a-z0-9-]*)+$/), z.json()).optional(),
 }).superRefine((doc, ctx) => {
+  if (doc.schemaVersion === '0.13.0' ? !doc.entryScreenId || !doc.screens.some(screen => screen.id === doc.entryScreenId) : doc.entryScreenId !== undefined) ctx.addIssue({ code: 'custom', path: ['entryScreenId'], message: 'entryScreenId 需要 schema 0.13.0 且必须引用真实 Screen；0.13.0 必须指定入口' });
   const seen = new Set<string>();
   const unique = (value: string, path: (string | number)[]) => {
     if (seen.has(value)) ctx.addIssue({ code: 'custom', path, message: 'ID 必须全局唯一' });
     seen.add(value);
   };
+  if (!['0.12.0', '0.13.0'].includes(doc.schemaVersion) && doc.screens.length !== 1) ctx.addIssue({ code: 'custom', path: ['screens'], message: '多 Screen 需要 schema 0.12.0' });
   unique(doc.project.id, ['project', 'id']);
   doc.screens.forEach((screen, si) => {
     const sp = ['screens', si];
@@ -90,7 +93,7 @@ export const projectSchema = z.strictObject({
       if (doc.schemaVersion === '0.2.0' && screen.background.style !== PANEL_STYLE) ctx.addIssue({ code: 'custom', path: [...sp, 'background'], message: '用户提供的 Panel 纹理需要 schema 0.3.0' });
       if (screen.background.bounds) {
         const b = screen.background.bounds;
-        if (!['0.9.0', '0.10.0', '0.11.0'].includes(doc.schemaVersion)) ctx.addIssue({ code: 'custom', path: [...sp, 'background', 'bounds'], message: 'Panel 独立几何需要 schema 0.9.0' });
+        if (!['0.9.0', '0.10.0', '0.11.0', '0.12.0', '0.13.0'].includes(doc.schemaVersion)) ctx.addIssue({ code: 'custom', path: [...sp, 'background', 'bounds'], message: 'Panel 独立几何需要 schema 0.9.0' });
         if (b.w < PANEL_MIN_SIZE || b.h < PANEL_MIN_SIZE || b.x + b.w > screen.designSize.width || b.y + b.h > screen.designSize.height) ctx.addIssue({ code: 'custom', path: [...sp, 'background', 'bounds'], message: 'Panel 最小 8×8 且必须位于设计区内' });
       }
       if (screen.designSize.width < PANEL_MIN_SIZE || screen.designSize.height < PANEL_MIN_SIZE) ctx.addIssue({ code: 'custom', path: [...sp, 'designSize'], message: 'Panel 宽高均需至少 8 GUI px' });
@@ -99,11 +102,11 @@ export const projectSchema = z.strictObject({
     screen.nodes.forEach((node, ni) => {
       const np = [...sp, 'nodes', ni];
       unique(node.id, [...np, 'id']);
-      if (node.type === 'minecraft:creative-tab' && (!['0.10.0', '0.11.0'].includes(doc.schemaVersion) || node.bounds.w !== 26 || node.bounds.h !== 32)) ctx.addIssue({ code: 'custom', path: np, message: 'CreativeTab 需要 schema 0.10.0 和固定 26×32 尺寸' });
-      if ((node.type === 'minecraft:checkbox' || node.type === 'minecraft:cycle-button') && !['0.4.0', '0.5.0', '0.6.0', '0.7.0', '0.8.0', '0.9.0', '0.10.0', '0.11.0'].includes(doc.schemaVersion)) {
+      if (node.type === 'minecraft:creative-tab' && (!['0.10.0', '0.11.0', '0.12.0', '0.13.0'].includes(doc.schemaVersion) || node.bounds.w !== 26 || node.bounds.h !== 32)) ctx.addIssue({ code: 'custom', path: np, message: 'CreativeTab 需要 schema 0.10.0 和固定 26×32 尺寸' });
+      if ((node.type === 'minecraft:checkbox' || node.type === 'minecraft:cycle-button') && !['0.4.0', '0.5.0', '0.6.0', '0.7.0', '0.8.0', '0.9.0', '0.10.0', '0.11.0', '0.12.0', '0.13.0'].includes(doc.schemaVersion)) {
         ctx.addIssue({ code: 'custom', path: [...np, 'type'], message: '此组件需要 schema 0.4.0' });
       }
-      if (node.type !== 'minecraft:fill' && node.type !== 'minecraft:creative-tab' && node.props.textShadow !== undefined && !['0.5.0', '0.6.0', '0.7.0', '0.8.0', '0.9.0', '0.10.0', '0.11.0'].includes(doc.schemaVersion)) {
+      if (node.type !== 'minecraft:fill' && node.type !== 'minecraft:creative-tab' && node.props.textShadow !== undefined && !['0.5.0', '0.6.0', '0.7.0', '0.8.0', '0.9.0', '0.10.0', '0.11.0', '0.12.0', '0.13.0'].includes(doc.schemaVersion)) {
         ctx.addIssue({ code: 'custom', path: [...np, 'props', 'textShadow'], message: '文字阴影需要 schema 0.5.0' });
       }
       if (node.type === 'minecraft:cycle-button') {
@@ -130,7 +133,7 @@ export const projectSchema = z.strictObject({
     screen.nodes.forEach((node, index) => {
       if (node.type !== 'minecraft:creative-tab') return;
       const { groupId, contentIds } = node.props, path = [...sp, 'nodes', index, 'props'];
-      if ((groupId !== undefined || contentIds !== undefined) && doc.schemaVersion !== '0.11.0') ctx.addIssue({ code: 'custom', path, message: '标签组需要 schema 0.11.0' });
+      if ((groupId !== undefined || contentIds !== undefined) && !['0.11.0', '0.12.0', '0.13.0'].includes(doc.schemaVersion)) ctx.addIssue({ code: 'custom', path, message: '标签组需要 schema 0.11.0' });
       if (!groupId && contentIds?.length) ctx.addIssue({ code: 'custom', path, message: '关联内容需要标签组' });
       if (groupId) groups.set(groupId, (groups.get(groupId) ?? 0) + (node.props.selected ? 1 : 0));
       if (new Set(contentIds ?? []).size !== (contentIds?.length ?? 0)) ctx.addIssue({ code: 'custom', path, message: '关联内容不能重复' });
@@ -142,13 +145,13 @@ export const projectSchema = z.strictObject({
       }
     });
     for (const count of groups.values()) if (count !== 1) ctx.addIssue({ code: 'custom', path: [...sp, 'nodes'], message: '每个标签组必须有且仅有一个初始选中标签' });
-    if (screen.screenTargets !== undefined && !['0.7.0', '0.8.0', '0.9.0', '0.10.0', '0.11.0'].includes(doc.schemaVersion)) ctx.addIssue({ code: 'custom', path: [...sp, 'screenTargets'], message: 'Screen 目标声明需要 schema 0.7.0' });
-    screen.screenTargets?.forEach((target, index) => unique(target.id, [...sp, 'screenTargets', index, 'id']));
+    if (screen.screenTargets !== undefined && !['0.7.0', '0.8.0', '0.9.0', '0.10.0', '0.11.0', '0.12.0', '0.13.0'].includes(doc.schemaVersion)) ctx.addIssue({ code: 'custom', path: [...sp, 'screenTargets'], message: 'Screen 目标声明需要 schema 0.7.0' });
+    screen.screenTargets?.forEach((target, index) => { unique(target.id, [...sp, 'screenTargets', index, 'id']); if (target.boundScreenId !== undefined && (!['0.12.0', '0.13.0'].includes(doc.schemaVersion) || !doc.screens.some(item => item.id === target.boundScreenId))) ctx.addIssue({ code: 'custom', path: [...sp, 'screenTargets', index, 'boundScreenId'], message: '绑定需要 0.12.0 且必须指向真实 Screen' }); });
     screen.behaviors.forEach((rule, index) => {
       const path = [...sp, 'behaviors', index]; unique(rule.id, [...path, 'id']);
-      if (!['0.6.0', '0.7.0', '0.8.0', '0.9.0', '0.10.0', '0.11.0'].includes(doc.schemaVersion)) ctx.addIssue({ code: 'custom', path, message: '行为规则需要 schema 0.6.0' });
-      if ('actions' in rule && !['0.8.0', '0.9.0', '0.10.0', '0.11.0'].includes(doc.schemaVersion)) ctx.addIssue({ code: 'custom', path, message: '有序动作需要 schema 0.8.0' });
-      if ((rule.event.type === 'rectangle-click' || actionsOf(rule).some(a => a.type === 'open_screen')) && !['0.7.0', '0.8.0', '0.9.0', '0.10.0', '0.11.0'].includes(doc.schemaVersion)) ctx.addIssue({ code: 'custom', path, message: 'F1 行为需要 schema 0.7.0' });
+      if (!['0.6.0', '0.7.0', '0.8.0', '0.9.0', '0.10.0', '0.11.0', '0.12.0', '0.13.0'].includes(doc.schemaVersion)) ctx.addIssue({ code: 'custom', path, message: '行为规则需要 schema 0.6.0' });
+      if ('actions' in rule && !['0.8.0', '0.9.0', '0.10.0', '0.11.0', '0.12.0', '0.13.0'].includes(doc.schemaVersion)) ctx.addIssue({ code: 'custom', path, message: '有序动作需要 schema 0.8.0' });
+      if ((rule.event.type === 'rectangle-click' || actionsOf(rule).some(a => a.type === 'open_screen')) && !['0.7.0', '0.8.0', '0.9.0', '0.10.0', '0.11.0', '0.12.0', '0.13.0'].includes(doc.schemaVersion)) ctx.addIssue({ code: 'custom', path, message: 'F1 行为需要 schema 0.7.0' });
       const source = screen.nodes.find(n => n.id === rule.event.sourceId);
       const required = rule.event.type === 'button-click' ? 'minecraft:button' : rule.event.type === 'checkbox-change' ? 'minecraft:checkbox' : 'minecraft:fill';
       if (!source || source.type !== required) ctx.addIssue({ code: 'custom', path: [...path, 'event', 'sourceId'], message: '事件来源不存在或类型不匹配' });

@@ -32,8 +32,10 @@ async function encode(canvas: HTMLCanvasElement): Promise<Uint8Array> {
   return new Uint8Array(await blob.arrayBuffer());
 }
 /** Square padded sheet; content starts at (0, 0), one pixel per GUI unit. */
-export async function renderPanelTexture(snapshot: ExportSnapshot, reference: ExportReference): Promise<Uint8Array> {
-  const screen = snapshot.document.screens[0], { width, height } = screen.designSize;
+export async function renderPanelTexture(snapshot: ExportSnapshot, reference: ExportReference, screenId = snapshot.document.screens[0].id): Promise<Uint8Array> {
+  const screen = snapshot.document.screens.find(item => item.id === screenId);
+  if (!screen) throw new Error(`导出 Screen 不存在：${screenId}`);
+  const { width, height } = screen.designSize;
   if (screen.background.kind !== 'panel') throw new Error('当前设计未启用 Panel');
   const side = panelTextureSide(width, height); assertPngSize(side, side);
   const canvas = document.createElement('canvas'); canvas.width = side; canvas.height = side;
@@ -55,8 +57,10 @@ export function addPngMetadata(bytes: Uint8Array, metadata: unknown): Uint8Array
   result.set(bytes.slice(0, end)); result.set(chunk, end); result.set(bytes.slice(end), end + chunk.length);
   return result;
 }
-export async function renderDesignPng(snapshot: ExportSnapshot, reference: ExportReference, pixelRatio = 1, visual?: VisualSnapshot, font: FontChoice = fontSession.get()): Promise<Uint8Array> {
-  const screen = snapshot.document.screens[0], { width, height } = screen.designSize;
+export async function renderDesignPng(snapshot: ExportSnapshot, reference: ExportReference, pixelRatio = 1, visual?: VisualSnapshot, font: FontChoice = fontSession.get(), screenId = snapshot.document.screens[0].id): Promise<Uint8Array> {
+  const screen = snapshot.document.screens.find(item => item.id === screenId);
+  if (!screen) throw new Error(`导出 Screen 不存在：${screenId}`);
+  const { width, height } = screen.designSize;
   if (!Number.isInteger(pixelRatio) || pixelRatio < 1 || pixelRatio > 4) throw new Error('PNG参考图倍率无效');
   assertPngSize(width * pixelRatio, height * pixelRatio);
   const canvas = document.createElement('canvas'); canvas.width = width * pixelRatio; canvas.height = height * pixelRatio;

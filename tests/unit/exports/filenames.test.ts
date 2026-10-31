@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { exportFilename, safeExportStem } from '../../../src/exports/filenames';
+import { exportFilename, safeExportStem, screenExportFilename } from '../../../src/exports/filenames';
 import { buildZip, ZIP_DATA_LIMIT } from '../../../src/exports/zip';
 import type { ExportFile } from '../../../src/exports/bundle';
 
@@ -22,5 +22,11 @@ describe('export filenames and ZIP bounds', () => {
   it('checks session changes during packaging before returning a blob', async () => {
     let calls = 0;
     await expect(buildZip([{ name: 'a.json', label: '', mime: '', bytes: new Uint8Array([1]) }], () => { if (++calls > 1) throw Error('session changed'); })).rejects.toThrow('session changed');
+  });
+  it('uses stable Screen IDs to avoid collisions and bounds long UTF-8 names', () => {
+    const a = screenExportFilename('项目'.repeat(100), '同名'.repeat(100), 'screen_a', 'design');
+    const b = screenExportFilename('项目'.repeat(100), '同名'.repeat(100), 'screen_b', 'design');
+    expect(a).not.toBe(b); expect(a).toContain('--screen_a.png'); expect(new TextEncoder().encode(a).length).toBeLessThanOrEqual(255);
+    expect(a).not.toMatch(/[\\/]/);
   });
 });

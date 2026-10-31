@@ -1,6 +1,6 @@
-import { useEffect, useState, useSyncExternalStore, type RefObject } from 'react';
+import { useEffect, useRef, useState, useSyncExternalStore, type RefObject } from 'react';
 import { useStore } from 'zustand';
-import { editorStore } from '../editor/store';
+import { currentScreen, editorStore } from '../editor/store';
 import { actionsOf, type Behavior, type BehaviorAction, type GuiNode, type ScreenTarget } from '../domain/schema';
 import { displayText } from '../domain/model';
 import { CATALOG } from '../domain/catalog';
@@ -27,13 +27,15 @@ function TextWidthHint({ text, node }: { text: string; node: GuiNode | undefined
   return <small role="status">{width > node.bounds.w ? '文字可能超出目标宽度，预览可能截断' : '文字宽度未超出目标'}（浏览器近似；不改变组件尺寸，游戏效果待验证）。</small>;
 }
 
-export function BehaviorPanel({ preview, setPreview, mode, setMode, canClick, triggerRef, close, notify }: { preview: BehaviorPreview | null; setPreview: (value: BehaviorPreview | null) => void; mode: boolean; setMode: (value: boolean) => void; canClick: boolean; triggerRef: RefObject<((id: string) => void) | null>; close: () => void; notify: (message: string, error?: boolean) => void }) {
+export function BehaviorPanel({ preview, setPreview, mode, setMode, canClick, triggerRef, onBeginPreview, onResetPreview, onOpenScreen, close, notify }: { preview: BehaviorPreview | null; setPreview: (value: BehaviorPreview | null) => void; mode: boolean; setMode: (value: boolean) => void; canClick: boolean; triggerRef: RefObject<((id: string) => void) | null>; onBeginPreview: () => void; onResetPreview: () => void; onOpenScreen: (screenId: string) => void; close: () => void; notify: (message: string, error?: boolean) => void }) {
   const doc = useStore(editorStore, s => s.doc), blocked = useStore(editorStore, s => s.blocked), gesture = useStore(editorStore, s => s.gesture), selected = useStore(editorStore, s => s.selected);
-  const screen = doc.screens[0], nodes = screen.nodes, screens = screen.screenTargets ?? [];
+  const screen = useStore(editorStore, currentScreen), nodes = screen.nodes, screens = screen.screenTargets ?? [];
+  const screenId = useStore(editorStore, s => s.currentScreenId);
   const [draft, setDraft] = useState<Draft | null>(null), [targetDraft, setTargetDraft] = useState<ScreenTarget | null>(null), [navigation, setNavigation] = useState<string | null>(null), [collapsed, setCollapsed] = useState(false);
-  useEffect(() => { setPreview(null); setMode(false); setNavigation(null); }, [doc, setPreview, setMode]);
+  const previousDocument = useRef(doc);
+  useEffect(() => { if (previousDocument.current !== doc) { previousDocument.current = doc; setPreview(null); setMode(false); setNavigation(null); } }, [doc, setPreview, setMode]);
   useEffect(() => () => { triggerRef.current = null; }, [triggerRef]);
-  const ids = () => new Set([doc.project.id, screen.id, ...nodes.map(n => n.id), ...screen.behaviors.map(r => r.id), ...screens.map(t => t.id)]);
+  const ids = () => new Set([doc.project.id, ...doc.screens.flatMap(item => [item.id, ...item.nodes.map(n => n.id), ...item.behaviors.map(r => r.id), ...(item.screenTargets ?? []).map(t => t.id)])]);
   const create = () => {
     const used = ids(); let i = 1; while (used.has(`rule_${i}`)) i++;
     const chosen = nodes.find(n => n.id === selected), eventType: EventType = chosen?.type === 'minecraft:fill' ? 'rectangle-click' : chosen?.type === 'minecraft:checkbox' ? 'checkbox-change' : sources(nodes, 'button-click').length ? 'button-click' : sources(nodes, 'checkbox-change').length ? 'checkbox-change' : 'rectangle-click';
@@ -42,12 +44,14 @@ export function BehaviorPanel({ preview, setPreview, mode, setMode, canClick, tr
   };
   const save = () => {
     if (!draft) return;
+    if (editorStore.getState().currentScreenId !== screenId) { notify('Screen 已切换，请重新编辑行为', true); return; }
     const event: Behavior['event'] = { type: draft.eventType, sourceId: draft.sourceId };
     const actions: BehaviorAction[] = draft.actions.map(a => a.actionType === 'set-text' ? { type: 'set-text', targetId: a.targetId, text: a.text } : a.actionType === 'set-visible' ? { type: 'set-visible', targetId: a.targetId, visible: a.visible } : { type: 'open_screen', targetScreenId: a.targetId });
     const rule: Behavior = draft.ordered || actions.length > 1 ? { id: draft.id, event, actions } : { id: draft.id, event, action: actions[0] };
     try { editorStore.getState().saveBehavior(rule); setDraft(null); notify('行为规则已保存'); } catch (error) { notify((error as Error).message, true); }
   };
   const simulate = (source: GuiNode) => {
+    if (editorStore.getState().currentScreenId !== screenId) return;
     if (source.type === 'minecraft:creative-tab') {
       if (!source.props.groupId || !(preview?.[source.id]?.visible ?? source.state.visible)) return;
       const next = structuredClone(preview ?? {}); for (const n of nodes) if (n.type === 'minecraft:creative-tab' && n.props.groupId === source.props.groupId) next[n.id] = { ...next[n.id], tabSelected: n.id === source.id };
@@ -66,19 +70,25 @@ export function BehaviorPanel({ preview, setPreview, mode, setMode, canClick, tr
       else next[a.targetId] = { ...next[a.targetId], ...(a.type === 'set-text' ? { text: a.text } : { visible: a.visible }) };
       }
     }
-    setPreview(next); setNavigation(destination); notify(destination ? '已模拟导航意图；没有切换 Screen' : '已模拟触发；仅预览状态改变');
+    setPreview(next); setNavigation(destination);
+    if (destination) {
+      const target = screens.find(item => item.id === destination);
+      if (!target?.boundScreenId) { notify(`导航目标 ${destination} 尚未绑定真实 Screen`, true); return; }
+      onOpenScreen(target.boundScreenId); notify(`已打开 ${target.name}（${target.boundScreenId}）；仅行为预览会话变更`); return;
+    }
+    notify('已模拟触发；仅预览状态改变');
   };
   triggerRef.current = id => { const source = nodes.find(n => n.id === id); if (source) simulate(source); };
-  const reset = () => { setPreview(null); setMode(false); setNavigation(null); };
+  const reset = () => { setPreview(null); setMode(false); setNavigation(null); onResetPreview(); };
   return <section className="behavior-panel" style={collapsed ? { width: 'auto' } : undefined} role="dialog" aria-label="行为" data-testid="behavior-panel">
     <div className="export-panel-heading"><strong>行为 · F2 原型</strong><button onClick={() => setCollapsed(!collapsed)}>{collapsed ? '展开行为面板' : '收起行为面板'}</button><button aria-label="关闭行为" onClick={() => { reset(); close(); }}>✕</button></div>
     <div hidden={collapsed}>
     <p>每条规则包含一个事件和按顺序执行的动作。被规则引用的组件不能删除；请先修改或删除规则。</p>
     <fieldset disabled={!!blocked || !!gesture || mode}>
-      <strong>目标 Screen 声明</strong><p>仅声明 ID 和名称，不创建画布或实现切换。</p>
-      {screens.map(target => <div className="behavior-rule" key={target.id}><span>{target.id} · {target.name}</span><button onClick={() => setTargetDraft(target)}>重命名 {target.id}</button><button onClick={() => { try { editorStore.getState().deleteScreenTarget(target.id); } catch (e) { notify((e as Error).message, true); } }}>删除目标 {target.id}</button></div>)}
+      <strong>目标 Screen 声明</strong><p>规则仍引用声明 ID；显式绑定真实 Screen 后，行为测试才会切换。</p>
+      {screens.map(target => <div className="behavior-rule" key={target.id}><span>{target.id} · {target.name} · {target.boundScreenId ? `已绑定 ${target.boundScreenId}` : '未绑定'}</span><button onClick={() => setTargetDraft(target)}>重命名 {target.id}</button><button onClick={() => { try { editorStore.getState().deleteScreenTarget(target.id); } catch (e) { notify((e as Error).message, true); } }}>删除目标 {target.id}</button></div>)}
       <button onClick={() => { const used = ids(); let i = 1; while (used.has(`screen_${i}`)) i++; setTargetDraft({ id: `screen_${i}`, name: '' }); }}>新增 Screen 目标</button>
-      {targetDraft && <div className="behavior-editor"><strong>目标 ID：{targetDraft.id}</strong><label>显示名称<input aria-label="Screen 目标名称" maxLength={128} value={targetDraft.name} onChange={e => setTargetDraft({ ...targetDraft, name: e.target.value })}/></label><button disabled={!targetDraft.name.trim()} onClick={() => { try { editorStore.getState().saveScreenTarget({ ...targetDraft, name: targetDraft.name.trim() }); setTargetDraft(null); notify('Screen 目标已保存'); } catch (e) { notify((e as Error).message, true); } }}>保存 Screen 目标</button><button onClick={() => setTargetDraft(null)}>取消目标编辑</button></div>}
+      {targetDraft && <div className="behavior-editor"><strong>目标 ID：{targetDraft.id}</strong><label>显示名称<input aria-label="Screen 目标名称" maxLength={128} value={targetDraft.name} onChange={e => setTargetDraft({ ...targetDraft, name: e.target.value })}/></label>{['0.12.0', '0.13.0'].includes(doc.schemaVersion) && <label>绑定真实 Screen<select aria-label="绑定真实 Screen" value={targetDraft.boundScreenId ?? ''} onChange={e => setTargetDraft({ ...targetDraft, ...(e.target.value ? { boundScreenId: e.target.value } : { boundScreenId: undefined }) })}><option value="">保持未绑定</option>{doc.screens.map(item => <option key={item.id} value={item.id}>{displayText(item.title)} · {item.id}</option>)}</select></label>}<button disabled={!targetDraft.name.trim()} onClick={() => { try { editorStore.getState().saveScreenTarget({ ...targetDraft, name: targetDraft.name.trim() }); setTargetDraft(null); notify('Screen 目标已保存'); } catch (e) { notify((e as Error).message, true); } }}>保存 Screen 目标</button><button onClick={() => setTargetDraft(null)}>取消目标编辑</button></div>}
       <button onClick={create}>新增规则</button>
       {screen.behaviors.map(rule => <div className="behavior-rule" key={rule.id}><span>{rule.id}：{rule.event.sourceId} / {rule.event.type} → {actionsOf(rule).map(a => `${a.type === 'open_screen' ? a.targetScreenId : a.targetId} / ${a.type}`).join(' → ')}</span><button onClick={() => setDraft(fromRule(rule))}>编辑 {rule.id}</button><button onClick={() => editorStore.getState().deleteBehavior(rule.id)}>删除 {rule.id}</button></div>)}
       {draft && <div className="behavior-editor">
@@ -92,7 +102,7 @@ export function BehaviorPanel({ preview, setPreview, mode, setMode, canClick, tr
           return <div className="behavior-action" key={index}><strong>动作 {index + 1}</strong>
             <label>动作<select aria-label={`行为动作${suffix}`} value={action.actionType} onChange={e => { const actionType = e.target.value as ActionType; change({ actionType, targetId: actionType === 'open_screen' ? screens[0]?.id ?? '' : targets(nodes, actionType)[0]?.id ?? '' }); }}><option value="set-text">设置 StringWidget 文本</option><option value="set-visible">设置组件可见性</option><option value="open_screen">打开目标 Screen（声明）</option></select></label>
             <label>{action.actionType === 'open_screen' ? '目标 Screen' : '目标组件'}<select aria-label={`${action.actionType === 'open_screen' ? '目标 Screen' : '目标组件'}${suffix}`} value={action.targetId} onChange={e => change({ targetId: e.target.value })}><option value="">请选择</option>{action.actionType === 'open_screen' ? screens.map(t => <option key={t.id} value={t.id}>{t.id} · {t.name}</option>) : targets(nodes, action.actionType).map(n => <option key={n.id} value={n.id}>{label(n)}</option>)}</select></label>
-            {action.actionType === 'set-text' ? <><label>新文本<input aria-label={`行为文本${suffix}`} maxLength={4096} value={action.text} onChange={e => change({ text: e.target.value })}/></label><TextWidthHint text={action.text} node={nodes.find(n => n.id === action.targetId)}/></> : action.actionType === 'set-visible' ? <label>可见性<select aria-label={`行为可见性${suffix}`} value={String(action.visible)} onChange={e => change({ visible: e.target.value === 'true' })}><option value="true">显示</option><option value="false">隐藏</option></select></label> : <p>只记录导航意图，目标 Screen 由开发者创建和切换。</p>}
+            {action.actionType === 'set-text' ? <><label>新文本<input aria-label={`行为文本${suffix}`} maxLength={4096} value={action.text} onChange={e => change({ text: e.target.value })}/></label><TextWidthHint text={action.text} node={nodes.find(n => n.id === action.targetId)}/></> : action.actionType === 'set-visible' ? <label>可见性<select aria-label={`行为可见性${suffix}`} value={String(action.visible)} onChange={e => change({ visible: e.target.value === 'true' })}><option value="true">显示</option><option value="false">隐藏</option></select></label> : <p>已绑定目标可在行为测试中打开；未绑定目标仍是实现意图。</p>}
             <button type="button" aria-label={`上移动作 ${index + 1}`} disabled={index === 0} onClick={() => move(-1)}>上移</button><button type="button" aria-label={`下移动作 ${index + 1}`} disabled={index === draft.actions.length - 1} onClick={() => move(1)}>下移</button><button type="button" aria-label={`删除动作 ${index + 1}`} disabled={draft.actions.length === 1} onClick={() => setDraft({ ...draft, actions: draft.actions.filter((_, i) => i !== index), ordered: true })}>删除动作</button>
           </div>;
         })}
@@ -100,11 +110,11 @@ export function BehaviorPanel({ preview, setPreview, mode, setMode, canClick, tr
         <button disabled={!draft.sourceId || draft.actions.some(a => !a.targetId)} onClick={save}>保存规则</button><button onClick={() => setDraft(null)}>取消编辑</button>
       </div>}
     </fieldset>
-    <div><strong>测试行为</strong><p>模拟触发仅改变临时状态；导航只显示目标，不切换 Screen。</p>
-      <button disabled={!canClick || !!gesture} aria-pressed={mode} onClick={() => { if (mode) reset(); else { setPreview({}); setNavigation(null); setMode(true); } }}>{mode ? '退出画布行为测试' : '开始画布行为测试'}</button>
+    <div><strong>测试行为</strong><p>模拟只改变临时会话状态；已绑定的 open_screen 会切换到对应真实 Screen。</p>
+      <button disabled={!canClick || !!gesture} aria-pressed={mode} onClick={() => { if (mode) reset(); else { onBeginPreview(); setPreview({}); setNavigation(null); setMode(true); } }}>{mode ? '退出画布行为测试' : '开始画布行为测试'}</button>
       {nodes.filter(n => n.type === 'minecraft:button' || n.type === 'minecraft:checkbox' || n.type === 'minecraft:fill' || (n.type === 'minecraft:creative-tab' && !!n.props.groupId)).map(n => <button key={n.id} onClick={() => simulate(n)}>模拟触发 {n.id}{n.type === 'minecraft:checkbox' ? `（${(preview?.[n.id]?.checked ?? n.props.selected) ? '已勾选' : '未勾选'}）` : ''}</button>)}
       <button onClick={reset}>重置预览</button>
-      {preview && <div data-testid="behavior-preview" role="status">预览中：{JSON.stringify(preview)}{navigation && ` · 导航意图：${navigation}（${screens.find(t => t.id === navigation)?.name ?? ''}）；未切换 Screen`}</div>}
+      {preview && <div data-testid="behavior-preview" role="status">预览中：{JSON.stringify(preview)}{navigation && (screens.find(t => t.id === navigation)?.boundScreenId ? ` · 导航目标：${navigation}（${screens.find(t => t.id === navigation)?.name ?? ''}）` : ` · 导航意图：${navigation}（${screens.find(t => t.id === navigation)?.name ?? ''}）；未切换 Screen`)}</div>}
     </div>
     </div>
   </section>;

@@ -1,6 +1,6 @@
 import { exportProject, parseProject, type GuiProject } from '../domain/schema';
 
-export const EXPORT_CONTRACT = 'minecraft-gui-maker-export/0.6.0' as const;
+export const EXPORT_CONTRACT = 'minecraft-gui-maker-export/0.7.0' as const;
 export function deepFreeze<T>(value: T): T {
   if (value && typeof value === 'object') {
     for (const child of Object.values(value)) deepFreeze(child);
@@ -8,11 +8,12 @@ export function deepFreeze<T>(value: T): T {
   }
   return value;
 }
-export function beginExport(document: GuiProject, identity = { exportId: crypto.randomUUID(), createdAt: new Date().toISOString() }) {
+export function beginExport(document: GuiProject, identity = { exportId: crypto.randomUUID(), createdAt: new Date().toISOString() }, selectedScreenId = document.screens[0].id) {
   const copy = parseProject(JSON.stringify(structuredClone(document)));
+  if (!copy.screens.some(screen => screen.id === selectedScreenId)) throw new Error(`导出 Screen 不存在：${selectedScreenId}`);
   const projectJson = exportProject(copy) + '\n';
   parseProject(projectJson);
-  return deepFreeze({ contract: EXPORT_CONTRACT, ...identity, document: copy, projectJson });
+  return deepFreeze({ contract: EXPORT_CONTRACT, ...identity, selectedScreenId, document: copy, projectJson });
 }
 export type ExportSnapshot = ReturnType<typeof beginExport>;
 export async function sha256(bytes: Uint8Array): Promise<string> {
