@@ -83,12 +83,13 @@ test('W1-A real multi-Screen ZIP contains authority, native agent contract, cons
   await info.attach('production-ZIP-transport', { body: `Exact app-generated download Blob saved by test harness. Browser download URL: ${download.url()}. Disk saveAs not asserted; cancellation remains SUSPENDING.`, contentType: 'text/plain' });
   const entries = unpack(bytes), manifestFile = [...entries.keys()].find(k => k.endsWith('.manifest.json'))!;
   const manifest = JSON.parse(entries.get(manifestFile)!.toString()), authority = JSON.parse(entries.get(manifest.authority.file)!.toString());
-  expect(authority).toEqual(before); expect(authority.schemaVersion).toBe('0.15.0'); expect(manifest.screens).toHaveLength(2);
+  expect(authority).toEqual(before); expect(authority.schemaVersion).toBe('0.17.0'); expect(manifest.screens).toHaveLength(2);
   for (const file of manifest.files) expect(createHash('sha256').update(entries.get(file.name)!).digest('hex')).toBe(file.sha256);
   for (const screen of manifest.screens) { const png = entries.get(screen.designImage.name)!; expect(png.readUInt32BE(16)).toBe(320); expect(png.readUInt32BE(20)).toBe(180); }
   const spec = JSON.parse(entries.get([...entries.keys()].find(k => k.endsWith('.implementation.json'))!)!.toString());
-  expect(spec.version).toBe('0.5.0'); expect(spec.designIntent.screens[1].nodes[0].properties.text.key).toBe('gui.w1.description');
-  expect(spec.designIntent.widgetContracts.multiLineTextWidget.shadow).toContain('textShadow=true');
+  expect(spec.version).toBe('0.7.0'); expect(spec.designIntent.screens[1].nodes[0].properties.text.key).toBe('gui.w1.description');
+  expect(spec.designIntent.widgetContracts.multiLineTextWidget.shadow).toContain('props.textShadow is explicit');
+  expect(spec.designIntent.widgetContracts.multiLineTextWidget.shadow).toContain('no presumed native shadow setter');
   const prompt = entries.get([...entries.keys()].find(k => k.endsWith('.prompt.md'))!)!.toString(); expect(prompt).toContain('NEVER call setSize'); expect(prompt).toContain('PENDING');
   expect(await current(page)).toEqual(before); expect(await page.getByTestId('history-count').textContent()).toBe(history);
   await page.getByRole('button', { name: '关闭导出结果' }).click(); await page.screenshot({ path: info.outputPath('W1-multi-screen.png') });

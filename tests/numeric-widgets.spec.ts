@@ -118,12 +118,12 @@ test('W1-B production multi-Screen ZIP preserves design snapshot, typed events a
   const f = navigationFixture(); f.s.getState().renameProject('W1-B Numeric controls'); await page.goto('/'); await importDoc(page, f.s.getState().doc);
   const before = await read(page); await page.getByRole('button', { name: '交互预览', exact: true }).click(); await page.getByLabel(`数值输入 ${f.input}`, { exact: true }).fill('.15'); await page.getByLabel(`数值输入 ${f.input}`, { exact: true }).press('Enter');
   const download = page.waitForEvent('download'); await page.getByRole('button', { name: '一键导出 ZIP', exact: true }).click(); await download;
-  const bytes = Buffer.from(await page.evaluate(() => (window as any).numericZip)); const dir = resolve('outputs/W1-B'); await mkdir(dir, { recursive: true }); await writeFile(resolve(dir, `W1-B-multi-screen-${info.project.name}.zip`), bytes);
+  const bytes = Buffer.from(await page.evaluate(() => (window as any).numericZip)); const dir = info.outputPath('delivery'); await mkdir(dir, { recursive: true }); await writeFile(resolve(dir, `W1-B-multi-screen-${info.project.name}.zip`), bytes);
   const files = unpack(bytes), manifest = JSON.parse(files.get([...files.keys()].find(k => k.endsWith('.manifest.json'))!)!.toString()), authority = JSON.parse(files.get(manifest.authority.file)!.toString());
-  expect(authority).toEqual(before); expect(authority.schemaVersion).toBe('0.16.0'); expect(manifest.version).toBe('0.10.0'); expect(manifest.screens).toHaveLength(2);
+  expect(authority).toEqual(before); expect(authority.schemaVersion).toBe('0.17.0'); expect(manifest.version).toBe('0.12.0'); expect(manifest.screens).toHaveLength(2);
   for (const file of manifest.files) expect(createHash('sha256').update(files.get(file.name)!).digest('hex')).toBe(file.sha256);
   expect(manifest.screens[0].numericControls[0].initialValue).toBe(.05);
-  const spec = JSON.parse(files.get([...files.keys()].find(k => k.endsWith('.implementation.json'))!)!.toString()); expect(spec.version).toBe('0.5.0'); expect(spec.designIntent.numericEvents).toHaveLength(3);
+  const spec = JSON.parse(files.get([...files.keys()].find(k => k.endsWith('.implementation.json'))!)!.toString()); expect(spec.version).toBe('0.7.0'); expect(spec.designIntent.numericEvents).toHaveLength(3);
   const prompt = files.get([...files.keys()].find(k => k.endsWith('.prompt.md'))!)!.toString(); expect(prompt).toContain('setFilter'); expect(prompt).toContain('no F2 numeric dataflow'); expect(prompt).toContain('return true');
   for (const screen of manifest.screens) { const png = files.get(screen.designImage.name)!; expect(png.readUInt32BE(16)).toBe(320); expect(png.readUInt32BE(20)).toBe(180); }
   await page.getByRole('button', { name: '关闭导出结果' }).click(); await page.getByRole('button', { name: '交互预览', exact: true }).click();

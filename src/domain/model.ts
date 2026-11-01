@@ -26,6 +26,8 @@ export function createNode(type: NodeType, id: string, position = { x: 16, y: 16
   const bounds = { ...position, ...CATALOG[type].size };
   const visible = { visible: true };
   switch (type) {
+    case 'minecraft:radio-group':
+    case 'minecraft:dropdown': return { id, type, bounds, source: { ...CATALOG[type].source }, state: { ...visible, enabled: true }, props: { name: literal('Choice'), color: '#FF404040', textShadow: false, options: [{ id: 'option_1', label: literal('One'), disabled: false }, { id: 'option_2', label: literal('Two'), disabled: false }, { id: 'option_3', label: literal('Three'), disabled: false }], initialSelectedOptionId: 'option_1', ...(type === 'minecraft:radio-group' ? { orientation: 'vertical' as const } : { visibleRows: 5 }) }, events: { change: 'selection-change' } } as GuiNode;
     case 'minecraft:numeric-input': return { id, type, bounds, source: { ...CATALOG[type].source }, state: { ...visible, enabled: true }, props: { color: '#FF404040', name: literal('Number'), min: 0, max: 100, step: 1, initialValue: 0, numericType: 'integer', format: { decimals: 0, unit: '' }, textShadow: false, bordered: true, editable: true, commitPolicy: 'enter-or-blur', errorMessage: '数值无效' }, events: { commit: 'numeric-commit' } };
     case 'minecraft:slider': return { id, type, bounds, source: { ...CATALOG[type].source }, state: { ...visible, enabled: true }, props: { color: '#FF404040', name: literal('Value'), min: 0, max: 100, step: 1, initialValue: 50, numericType: 'integer', format: { decimals: 0, unit: '' }, textShadow: false, showValue: true }, events: { change: 'slider-change' } };
     case 'minecraft:multi-line-text-widget': return { id, type, bounds, source: { ...CATALOG[type].source }, state: visible, props: { text: literal('Multi-line text\n说明文字'), color: '#FF404040', maxWidth: 150, maxRows: 4, align: 'center', textShadow: false }, events: {} };
@@ -49,6 +51,6 @@ export function constrainBounds(bounds: Bounds, type: NodeType, screen: { width:
 
 export function upgradeTextStyleEdit(doc: GuiProject) {
   if (doc.runtimePolicy || doc.screens.some(s => s.nodes.some(n => n.type !== 'minecraft:creative-tab' && n.type !== 'minecraft:fill' && ((n.type !== 'minecraft:string-widget' && n.type !== 'minecraft:multi-line-text-widget' && n.props.color !== undefined) || ((n.type === 'minecraft:multi-line-text-widget' || n.type === 'minecraft:slider') && !n.props.textShadow))))) {
-    doc.schemaVersion = '0.17.0'; doc.entryScreenId ??= doc.screens[0].id; doc.screenTabGroups ??= [];
+    if (doc.schemaVersion !== '0.18.0') doc.schemaVersion = '0.17.0'; doc.entryScreenId ??= doc.screens[0].id; doc.screenTabGroups ??= [];
   }
 }

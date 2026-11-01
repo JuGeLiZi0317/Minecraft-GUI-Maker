@@ -69,7 +69,7 @@ describe('W1-B strict document and export integration', () => {
   it('exports typed unbound events, native responsibilities and all-screen snapshot atomically', async () => {
     const store = createEditorStore(); store.getState().add('minecraft:numeric-input'); store.getState().addScreen(); store.getState().add('minecraft:slider');
     const snapshot = beginExport(store.getState().doc), ref = await referenceFor(snapshot), render = async () => new Uint8Array([1]);
-    const bundle = await buildBundle(snapshot, render, render); expect(bundle.manifest.versions.implementationSpecification).toBe('0.6.0');
+    const bundle = await buildBundle(snapshot, render, render); expect(bundle.manifest.versions.implementationSpecification).toBe('0.7.0');
     const specFile = bundle.files.find(f => f.name.endsWith('.implementation.json'))!, spec = JSON.parse(new TextDecoder().decode(specFile.bytes));
     expect(spec.designIntent.numericEvents.map((e: { type: string }) => e.type)).toEqual(['numeric-commit', 'slider-change']);
     expect(spec.designIntent.screens[1].nodes[0].sourcePath).toBe('/screens/1/nodes/0'); expect(spec.designIntent.widgetContracts.numeric.scale).toBe(1e6);

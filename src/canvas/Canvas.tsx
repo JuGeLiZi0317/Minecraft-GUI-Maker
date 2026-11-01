@@ -1,4 +1,7 @@
 import { memo, useEffect, useRef, useState, type DragEvent } from 'react';
+import { SelectionPreview } from './SelectionPreview';
+import { isSelectionNode, selectionMinimum } from '../domain/selection';
+import { drawSelectionWidget } from '../render/selectionWidgets';
 import { NumericPreview } from './NumericPreview';
 import { isNumericNode, drawNumericWidget } from '../render/numericWidgets';
 import type { NumericState } from '../domain/numeric';
@@ -61,15 +64,16 @@ const NodeDrawing = memo(function NodeDrawing({ node, bounds, onDown, onEdit, as
   if (id && asset?.sprite) { try { raster = cache.get(id, asset.sprite, node.type === 'minecraft:checkbox' ? 17 : w, node.type === 'minecraft:checkbox' ? 17 : h); } catch (error) { renderError = (error as Error).message; } }
   const unbordered = node.type === 'minecraft:edit-box' && !node.props.bordered;
   const textureError = !!(resourceActive && id && (asset?.error || renderError));
-  return <Group x={bounds.x} y={bounds.y} opacity={node.state.visible ? ('enabled' in node.state && !node.state.enabled && !raster && node.type !== 'minecraft:checkbox' && !isNumericNode(node) ? 0.45 : 1) : 0.22}
+  return <Group x={bounds.x} y={bounds.y} opacity={node.state.visible ? ('enabled' in node.state && !node.state.enabled && !raster && node.type !== 'minecraft:checkbox' && !isNumericNode(node) && !isSelectionNode(node) ? 0.45 : 1) : 0.22}
     onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}
     onPointerDown={e => onDown(e, node.id, 'move')} onDblClick={e => { e.cancelBubble = true; onEdit(node.id); }}>
     <Rect width={w} height={h} fill={isNumericNode(node) ? 'rgba(0,0,0,0.001)' : node.type === 'minecraft:checkbox' ? 'rgba(0,0,0,0.001)' : raster || unbordered ? 'rgba(0,0,0,0.001)' : fill} stroke={node.type === 'minecraft:checkbox' || raster || unbordered ? undefined : stroke} strokeWidth={0.6} />
+    {isSelectionNode(node) && <Shape listening={false} sceneFunc={context => drawSelectionWidget(context._context, node, w, h, font.family)}/>}
     {isNumericNode(node) && <Shape listening={false} sceneFunc={context => drawNumericWidget(context._context, node, w, h, font.family, assets, cache, { state: numericState, hovered, focused, overlay: numericOverlay, resourceActive })}/>}
     {node.type === 'minecraft:creative-tab' && !raster && <Shape listening={false} sceneFunc={context => drawCreativeTabFallback(context._context, node.props.selected)}/>}
     {node.type === 'minecraft:checkbox' && !raster && <Shape listening={false} sceneFunc={context => drawCheckboxFallback(context._context, node.props.selected)}/>}
     {raster && <Shape listening={false} sceneFunc={context => { const ctx = context._context; ctx.save(); ctx.imageSmoothingEnabled = false; ctx.drawImage(raster, 0, 0); ctx.restore(); }} />}
-    {node.type !== 'minecraft:fill' && node.type !== 'minecraft:creative-tab' && <Shape listening={false} sceneFunc={context => drawPreviewText(context._context, node, w, h, font.family, panel)}/>}
+    {!isSelectionNode(node) && node.type !== 'minecraft:fill' && node.type !== 'minecraft:creative-tab' && <Shape listening={false} sceneFunc={context => drawPreviewText(context._context, node, w, h, font.family, panel)}/>}
     {node.type === 'minecraft:checkbox' && <Shape listening={false} sceneFunc={context => { const ctx = context._context, layout = previewCheckboxLayout(ctx, node, font.family); if (layout.overflow || layout.truncated) { ctx.save(); ctx.font = '7px sans-serif'; ctx.textBaseline = 'top'; ctx.fillStyle = '#e8b86a'; ctx.fillText(layout.truncated ? '文字预览已截断' : '文字超出参考边界', 0, Math.max(h, 17) + 2); ctx.restore(); } }}/>}
     {textureError && <Group listening={false}>
       <Rect x={Math.max(0, w - 7 / zoom)} y={0} width={7 / zoom} height={7 / zoom} fill={C.danger} opacity={0.9}/>
@@ -316,7 +320,7 @@ export function Canvas({ numericPreviewEpoch, screenPositions, setScreenPosition
     const bounds = node.bounds, visibleInGroup = tabVisibility(currentScreen(state).nodes, editSelection);
     const peers = currentScreen(state).nodes.filter(item => item.id !== id && item.state.visible && visibleInGroup(item.id)).map(item => ({ id: item.id, bounds: item.bounds }));
     pointer.current = { pointerId, x, y, mode, resizeEdge, bounds: { ...bounds }, zoom: view.zoom, panX: view.panX, panY: view.panY, screenId: state.currentScreenId, peers,
-      min: CATALOG[node.type].min, spacingCandidates: mode === 'move' ? equalSpacingCandidates(bounds, peers, currentScreen(state).designSize) : undefined };
+      min: isSelectionNode(node) ? selectionMinimum(node) : CATALOG[node.type].min, spacingCandidates: mode === 'move' ? equalSpacingCandidates(bounds, peers, currentScreen(state).designSize) : undefined };
     setAlignmentGuides({}); setSpacingMark(null);
   };
   // Stable callback keeps the other 299 drawings untouched during a single-node drag.
@@ -501,6 +505,7 @@ export function Canvas({ numericPreviewEpoch, screenPositions, setScreenPosition
       </Layer>}
       {!preview && <Rulers width={size.width} height={size.height} origin={origin} zoom={renderZoom} design={screen.designSize} theme={theme}/>}
     </Stage>
+    {(interaction || behaviorMode) && !preview && <SelectionPreview key={`selection:${screen.id}:${numericPreviewEpoch}`} screenId={screen.id} design={screen.designSize} nodes={renderNodes.filter(isSelectionNode).filter(node => (behaviorPreview?.[node.id]?.visible ?? (managed.has(node.id) ? true : node.state.visible)) && visibleInGroup(node.id))} origin={origin} zoom={renderZoom} family={font.family}/>}
     {(interaction || behaviorMode) && !preview && <NumericPreview key={`${screen.id}:${numericPreviewEpoch}`} screenId={screen.id} nodes={renderNodes.filter(isNumericNode).filter(node => (behaviorPreview?.[node.id]?.visible ?? (managed.has(node.id) ? true : node.state.visible)) && visibleInGroup(node.id))} origin={origin} zoom={renderZoom} family={font.family} onVisualChange={setNumericRuntime}/>}
     {editingNode && !preview && !readOnly && <InlineTextEditor key={editingNode.id} node={editingNode} left={origin.x + editingNode.bounds.x * view.zoom}
       top={origin.y + editingNode.bounds.y * view.zoom} width={editingNode.bounds.w * view.zoom} height={editingNode.bounds.h * view.zoom}

@@ -4,6 +4,8 @@ export const TARGET = {
 } as const;
 export const CATALOG_VERSION = 'mc-1.21.1-neoforge-21.1.244-audit-1' as const;
 export const CATALOG = {
+  'minecraft:radio-group': { label: 'Radio Group', subtitle: '互斥单选复合控件', glyph: '◉', size: { w: 140, h: 60 }, min: { w: 20, h: 20 }, source: { category: 'vanilla-widget', className: 'net.minecraft.client.gui.components.AbstractButton' }, construction: 'custom AbstractButton children + mutual exclusion coordinator', evidence: 'AbstractButton.java:23-65; ContainerEventHandler.java:24-115' },
+  'minecraft:dropdown': { label: 'Dropdown', subtitle: 'Screen根级单选浮层', glyph: '▾', size: { w: 140, h: 20 }, min: { w: 20, h: 20 }, source: { category: 'vanilla-widget', className: 'net.minecraft.client.gui.components.AbstractWidget' }, construction: 'custom trigger + Screen-owned overlay and input controller', evidence: 'AbstractWidget.java; Screen.java; ContainerEventHandler.java; CommandSuggestions.java' },
   'minecraft:numeric-input': {
     label: 'Numeric Input', subtitle: 'EditBox 数值校验与提交', glyph: '#', size: { w: 120, h: 20 }, min: { w: 12, h: 12 },
     source: { category: 'vanilla-widget', className: 'net.minecraft.client.gui.components.EditBox' },

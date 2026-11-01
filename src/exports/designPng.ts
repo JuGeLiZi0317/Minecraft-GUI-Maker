@@ -3,6 +3,8 @@ import type { ExportReference, ExportSnapshot } from './snapshot';
 import { panelBounds, panelRects, panelSource, panelTextureSide, type PanelStyle } from '../domain/panel';
 import { drawNativePanel, getPanelImage, isTextureStyle } from '../render/panelTexture';
 import { beforePanel, drawCreativeTabFallback, spriteForNode, SpriteRasterCache } from '../render/spritePreview';
+import { isSelectionNode } from '../domain/selection';
+import { drawSelectionWidget } from '../render/selectionWidgets';
 import { isNumericNode, drawNumericWidget } from '../render/numericWidgets';
 import { tabManaged, tabVisibility } from '../domain/tabGroups';
 import { screenNavigationSelected } from '../domain/screenTabNavigation';
@@ -78,6 +80,7 @@ export async function renderDesignPng(snapshot: ExportSnapshot, reference: Expor
       const node = selected === null || original.type !== 'minecraft:creative-tab' ? original : { ...original, props: { ...original.props, selected } };
       if ((!managed.has(node.id) && !node.state.visible) || !visibleInGroup(node.id)) return;
       const { x, y, w, h } = node.bounds;
+      if (isSelectionNode(node)) { ctx.save(); ctx.translate(x, y); drawSelectionWidget(ctx, node, w, h, font.family); ctx.restore(); return; }
       if (isNumericNode(node)) {
         ctx.save(); ctx.translate(x, y); drawNumericWidget(ctx, node, w, h, font.family, visual?.entries ?? {}, visual?.cache ?? new SpriteRasterCache(), { resourceActive: visual?.active }); ctx.restore(); return;
       }

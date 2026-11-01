@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { CATALOG, CATALOG_VERSION, TARGET } from './catalog';
 import { PANEL_MIN_SIZE, PANEL_STYLE, NATIVE_PANEL_16, NATIVE_PANEL_32 } from './panel';
+import { selectionError, isSelectionNode } from './selection';
 import { numericError } from './numeric';
 
 const integer = z.number().int().min(0).max(Number.MAX_SAFE_INTEGER);
@@ -18,7 +19,10 @@ const base = { id, bounds: boundsSchema };
 const widgetState = z.strictObject({ visible: z.boolean(), enabled: z.boolean() });
 const emptyEvents = z.strictObject({});
 const numericProps = { min: z.number().finite(), max: z.number().finite(), step: z.number().finite(), initialValue: z.number().finite(), numericType: z.enum(['integer', 'decimal']), format: z.strictObject({ decimals: z.number().int().min(0).max(6), unit: z.string().max(32) }), name: textSchema };
+const selectionProps = { name: textSchema, color, textShadow: z.boolean(), options: z.array(z.strictObject({ id, label: textSchema, disabled: z.boolean() })).min(1).max(100), initialSelectedOptionId: id };
 export const nodeSchema = z.discriminatedUnion('type', [
+  z.strictObject({ ...base, type: z.literal('minecraft:radio-group'), source: widgetSource, state: widgetState, props: z.strictObject({ ...selectionProps, orientation: z.enum(['vertical', 'horizontal']) }), events: z.strictObject({ change: z.literal('selection-change') }) }),
+  z.strictObject({ ...base, type: z.literal('minecraft:dropdown'), source: widgetSource, state: widgetState, props: z.strictObject({ ...selectionProps, visibleRows: z.number().int().min(1).max(12) }), events: z.strictObject({ change: z.literal('selection-change') }) }),
   z.strictObject({ ...base, type: z.literal('minecraft:numeric-input'), source: widgetSource, state: widgetState,
     props: z.strictObject({ ...numericProps, color: color.optional(), textShadow: z.boolean(), bordered: z.boolean(), editable: z.boolean(), commitPolicy: z.literal('enter-or-blur'), errorMessage: z.string().min(1).max(256) }), events: z.strictObject({ commit: z.literal('numeric-commit') }) }),
   z.strictObject({ ...base, type: z.literal('minecraft:slider'), source: widgetSource, state: widgetState,
@@ -74,7 +78,7 @@ export type ScreenTabGroup = z.infer<typeof screenTabGroupSchema>;
 
 // F0 allows only the explicit rule subset; variables, assets and node event references remain unsupported.
 export const projectSchema = z.strictObject({
-  format: z.literal('minecraft-gui-maker'), schemaVersion: z.enum(['0.1.0', '0.2.0', '0.3.0', '0.4.0', '0.5.0', '0.6.0', '0.7.0', '0.8.0', '0.9.0', '0.10.0', '0.11.0', '0.12.0', '0.13.0', '0.14.0', '0.15.0', '0.16.0', '0.17.0']),
+  format: z.literal('minecraft-gui-maker'), schemaVersion: z.enum(['0.1.0', '0.2.0', '0.3.0', '0.4.0', '0.5.0', '0.6.0', '0.7.0', '0.8.0', '0.9.0', '0.10.0', '0.11.0', '0.12.0', '0.13.0', '0.14.0', '0.15.0', '0.16.0', '0.17.0', '0.18.0']),
   catalogVersion: z.literal(CATALOG_VERSION),
   target: z.strictObject({ edition: z.literal(TARGET.edition), minecraft: z.literal(TARGET.minecraft),
     loader: z.strictObject({ id: z.literal('neoforge'), version: z.literal(TARGET.loader.version) }), java: z.literal(21) }),
@@ -90,10 +94,10 @@ export const projectSchema = z.strictObject({
   assets: z.array(z.never()).max(0),
   extensions: z.record(z.string().regex(/^[a-z][a-z0-9-]*(\.[a-z][a-z0-9-]*)+$/), z.json()).optional(),
 }).superRefine((doc, ctx) => {
-  if (doc.runtimePolicy && doc.schemaVersion !== '0.17.0') ctx.addIssue({ code: 'custom', path: ['runtimePolicy'], message: '运行策略需要 Schema 0.17.0' });
-  if (['0.14.0', '0.15.0', '0.16.0', '0.17.0'].includes(doc.schemaVersion) && doc.screenTabGroups === undefined) ctx.addIssue({ code: 'custom', path: ['screenTabGroups'], message: 'CreativeTab Screen 导航组需要 Schema 0.14.0 项目级 screenTabGroups' });
-  if (!['0.13.0', '0.14.0', '0.15.0', '0.16.0', '0.17.0'].includes(doc.schemaVersion) ? doc.entryScreenId !== undefined : !doc.entryScreenId || !doc.screens.some(screen => screen.id === doc.entryScreenId)) ctx.addIssue({ code: 'custom', path: ['entryScreenId'], message: 'entryScreenId 需要 schema 0.13.0 或更高且必须引用真实 Screen；0.13.0+ 必须指定入口' });
-  if (!['0.14.0', '0.15.0', '0.16.0', '0.17.0'].includes(doc.schemaVersion) && doc.screenTabGroups !== undefined) ctx.addIssue({ code: 'custom', path: ['screenTabGroups'], message: '项目级 CreativeTab Screen 导航组需要 schema 0.14.0' });
+  if (doc.runtimePolicy && !['0.17.0', '0.18.0'].includes(doc.schemaVersion)) ctx.addIssue({ code: 'custom', path: ['runtimePolicy'], message: '运行策略需要 Schema 0.17.0' });
+  if (['0.14.0', '0.15.0', '0.16.0', '0.17.0', '0.18.0'].includes(doc.schemaVersion) && doc.screenTabGroups === undefined) ctx.addIssue({ code: 'custom', path: ['screenTabGroups'], message: 'CreativeTab Screen 导航组需要 Schema 0.14.0 项目级 screenTabGroups' });
+  if (!['0.13.0', '0.14.0', '0.15.0', '0.16.0', '0.17.0', '0.18.0'].includes(doc.schemaVersion) ? doc.entryScreenId !== undefined : !doc.entryScreenId || !doc.screens.some(screen => screen.id === doc.entryScreenId)) ctx.addIssue({ code: 'custom', path: ['entryScreenId'], message: 'entryScreenId 需要 schema 0.13.0 或更高且必须引用真实 Screen；0.13.0+ 必须指定入口' });
+  if (!['0.14.0', '0.15.0', '0.16.0', '0.17.0', '0.18.0'].includes(doc.schemaVersion) && doc.screenTabGroups !== undefined) ctx.addIssue({ code: 'custom', path: ['screenTabGroups'], message: '项目级 CreativeTab Screen 导航组需要 schema 0.14.0' });
   const seen = new Set<string>();
   const unique = (value: string, path: (string | number)[]) => {
     if (seen.has(value)) ctx.addIssue({ code: 'custom', path, message: 'ID 必须全局唯一' });
@@ -113,7 +117,7 @@ export const projectSchema = z.strictObject({
       if (!doc.screens.some(screen => screen.id === tab.targetScreenId)) ctx.addIssue({ code: 'custom', path: ['screenTabGroups', gi, 'tabs', ti, 'targetScreenId'], message: '标签目标必须引用真实 Screen' });
     });
   });
-  if (!['0.12.0', '0.13.0', '0.14.0', '0.15.0', '0.16.0', '0.17.0'].includes(doc.schemaVersion) && doc.screens.length !== 1) ctx.addIssue({ code: 'custom', path: ['screens'], message: '多 Screen 需要 schema 0.12.0' });
+  if (!['0.12.0', '0.13.0', '0.14.0', '0.15.0', '0.16.0', '0.17.0', '0.18.0'].includes(doc.schemaVersion) && doc.screens.length !== 1) ctx.addIssue({ code: 'custom', path: ['screens'], message: '多 Screen 需要 schema 0.12.0' });
   unique(doc.project.id, ['project', 'id']);
   doc.screens.forEach((screen, si) => {
     const sp = ['screens', si];
@@ -122,7 +126,7 @@ export const projectSchema = z.strictObject({
       if (doc.schemaVersion === '0.2.0' && screen.background.style !== PANEL_STYLE) ctx.addIssue({ code: 'custom', path: [...sp, 'background'], message: '用户提供的 Panel 纹理需要 schema 0.3.0' });
       if (screen.background.bounds) {
         const b = screen.background.bounds;
-        if (!['0.9.0', '0.10.0', '0.11.0', '0.12.0', '0.13.0', '0.14.0', '0.15.0', '0.16.0', '0.17.0'].includes(doc.schemaVersion)) ctx.addIssue({ code: 'custom', path: [...sp, 'background', 'bounds'], message: 'Panel 独立几何需要 schema 0.9.0' });
+        if (!['0.9.0', '0.10.0', '0.11.0', '0.12.0', '0.13.0', '0.14.0', '0.15.0', '0.16.0', '0.17.0', '0.18.0'].includes(doc.schemaVersion)) ctx.addIssue({ code: 'custom', path: [...sp, 'background', 'bounds'], message: 'Panel 独立几何需要 schema 0.9.0' });
         if (b.w < PANEL_MIN_SIZE || b.h < PANEL_MIN_SIZE || b.x + b.w > screen.designSize.width || b.y + b.h > screen.designSize.height) ctx.addIssue({ code: 'custom', path: [...sp, 'background', 'bounds'], message: 'Panel 最小 8×8 且必须位于设计区内' });
       }
       if (screen.designSize.width < PANEL_MIN_SIZE || screen.designSize.height < PANEL_MIN_SIZE) ctx.addIssue({ code: 'custom', path: [...sp, 'designSize'], message: 'Panel 宽高均需至少 8 GUI px' });
@@ -131,19 +135,24 @@ export const projectSchema = z.strictObject({
     screen.nodes.forEach((node, ni) => {
       const np = [...sp, 'nodes', ni];
       unique(node.id, [...np, 'id']);
+      if (isSelectionNode(node)) {
+        if (doc.schemaVersion !== '0.18.0') ctx.addIssue({ code: 'custom', path: np, message: '选择控件需要 Schema 0.18.0' });
+        const error = selectionError(node.props); if (error) ctx.addIssue({ code: 'custom', path: [...np, 'props'], message: error });
+        if (node.type === 'minecraft:radio-group' && (node.props.orientation === 'vertical' ? node.bounds.h : node.bounds.w) < node.props.options.length * 20) ctx.addIssue({ code: 'custom', path: [...np, 'bounds'], message: '单选组每个选项至少需要20px布局空间' });
+      }
       if (node.type === 'minecraft:numeric-input' || node.type === 'minecraft:slider') {
-        if (!['0.16.0', '0.17.0'].includes(doc.schemaVersion)) ctx.addIssue({ code: 'custom', path: np, message: '数值控件需要 Schema 0.16.0' });
+        if (!['0.16.0', '0.17.0', '0.18.0'].includes(doc.schemaVersion)) ctx.addIssue({ code: 'custom', path: np, message: '数值控件需要 Schema 0.16.0' });
         const error = numericError(node.props);
         if (error) ctx.addIssue({ code: 'custom', path: [...np, 'props'], message: error });
       }
       if (node.type === 'minecraft:multi-line-text-widget') {
-        if (!['0.15.0', '0.16.0', '0.17.0'].includes(doc.schemaVersion)) ctx.addIssue({ code: 'custom', path: np, message: 'MultiLineTextWidget 需要 schema 0.15.0' });
+        if (!['0.15.0', '0.16.0', '0.17.0', '0.18.0'].includes(doc.schemaVersion)) ctx.addIssue({ code: 'custom', path: np, message: 'MultiLineTextWidget 需要 schema 0.15.0' });
         if (node.bounds.w !== node.props.maxWidth || node.bounds.h !== node.props.maxRows * 9) ctx.addIssue({ code: 'custom', path: [...np, 'bounds'], message: '多行文本预留区必须等于 maxWidth × (maxRows × 9)，不是原生测量尺寸' });
         const text = node.props.text.kind === 'literal' ? node.props.text.value : node.props.text.fallback;
         if (text.length > 4096) ctx.addIssue({ code: 'custom', path: [...np, 'props', 'text'], message: '多行文本最多 4096 UTF-16 单元' });
       }
       if (node.type === 'minecraft:creative-tab' && (node.props.tabMode !== undefined || node.props.navigationGroupId !== undefined || node.props.navigationTabId !== undefined)) {
-        if (!['0.14.0', '0.15.0', '0.16.0', '0.17.0'].includes(doc.schemaVersion)) ctx.addIssue({ code: 'custom', path: [...np, 'props', 'tabMode'], message: 'Screen 导航标签需要 schema 0.14.0' });
+        if (!['0.14.0', '0.15.0', '0.16.0', '0.17.0', '0.18.0'].includes(doc.schemaVersion)) ctx.addIssue({ code: 'custom', path: [...np, 'props', 'tabMode'], message: 'Screen 导航标签需要 schema 0.14.0' });
         if (node.props.tabMode !== 'screen-navigation' || !node.props.navigationGroupId || !node.props.navigationTabId || node.props.groupId !== undefined || node.props.contentIds !== undefined) ctx.addIssue({ code: 'custom', path: [...np, 'props'], message: 'Screen 导航模式必须引用项目级组和标签 ID，且不能携带 H2-B 内容组字段' });
         const group = navigationGroups.find(item => item.id === node.props.navigationGroupId);
         if (!group || !group.tabs.some(tab => tab.id === node.props.navigationTabId)) ctx.addIssue({ code: 'custom', path: [...np, 'props', 'navigationGroupId'], message: 'CreativeTab 导航组或标签不存在' });
@@ -151,12 +160,12 @@ export const projectSchema = z.strictObject({
         if (screenNavigationInstances.has(identity)) ctx.addIssue({ code: 'custom', path: [...np, 'props'], message: '同一 Screen 内导航组的标签实例不能重复' });
         screenNavigationInstances.add(identity);
       }
-      if (node.type === 'minecraft:creative-tab' && (!['0.10.0', '0.11.0', '0.12.0', '0.13.0', '0.14.0', '0.15.0', '0.16.0', '0.17.0'].includes(doc.schemaVersion) || node.bounds.w !== 26 || node.bounds.h !== 32)) ctx.addIssue({ code: 'custom', path: np, message: 'CreativeTab 需要 schema 0.10.0 和固定 26×32 尺寸' });
-      if ((node.type === 'minecraft:checkbox' || node.type === 'minecraft:cycle-button') && !['0.4.0', '0.5.0', '0.6.0', '0.7.0', '0.8.0', '0.9.0', '0.10.0', '0.11.0', '0.12.0', '0.13.0', '0.14.0', '0.15.0', '0.16.0', '0.17.0'].includes(doc.schemaVersion)) {
+      if (node.type === 'minecraft:creative-tab' && (!['0.10.0', '0.11.0', '0.12.0', '0.13.0', '0.14.0', '0.15.0', '0.16.0', '0.17.0', '0.18.0'].includes(doc.schemaVersion) || node.bounds.w !== 26 || node.bounds.h !== 32)) ctx.addIssue({ code: 'custom', path: np, message: 'CreativeTab 需要 schema 0.10.0 和固定 26×32 尺寸' });
+      if ((node.type === 'minecraft:checkbox' || node.type === 'minecraft:cycle-button') && !['0.4.0', '0.5.0', '0.6.0', '0.7.0', '0.8.0', '0.9.0', '0.10.0', '0.11.0', '0.12.0', '0.13.0', '0.14.0', '0.15.0', '0.16.0', '0.17.0', '0.18.0'].includes(doc.schemaVersion)) {
         ctx.addIssue({ code: 'custom', path: [...np, 'type'], message: '此组件需要 schema 0.4.0' });
       }
-      if (doc.schemaVersion !== '0.17.0' && ((node.type !== 'minecraft:fill' && node.type !== 'minecraft:string-widget' && node.type !== 'minecraft:multi-line-text-widget' && 'color' in node.props && node.props.color !== undefined) || ((node.type === 'minecraft:multi-line-text-widget' || node.type === 'minecraft:slider') && !node.props.textShadow))) ctx.addIssue({ code: 'custom', path: np, message: '自定义文字颜色/多行与滑块阴影选项需要 Schema 0.17.0' });
-      if (node.type !== 'minecraft:fill' && node.type !== 'minecraft:creative-tab' && node.props.textShadow !== undefined && !['0.5.0', '0.6.0', '0.7.0', '0.8.0', '0.9.0', '0.10.0', '0.11.0', '0.12.0', '0.13.0', '0.14.0', '0.15.0', '0.16.0', '0.17.0'].includes(doc.schemaVersion)) {
+      if (!['0.17.0', '0.18.0'].includes(doc.schemaVersion) && ((node.type !== 'minecraft:fill' && node.type !== 'minecraft:string-widget' && node.type !== 'minecraft:multi-line-text-widget' && 'color' in node.props && node.props.color !== undefined) || ((node.type === 'minecraft:multi-line-text-widget' || node.type === 'minecraft:slider') && !node.props.textShadow))) ctx.addIssue({ code: 'custom', path: np, message: '自定义文字颜色/多行与滑块阴影选项需要 Schema 0.17.0' });
+      if (node.type !== 'minecraft:fill' && node.type !== 'minecraft:creative-tab' && node.props.textShadow !== undefined && !['0.5.0', '0.6.0', '0.7.0', '0.8.0', '0.9.0', '0.10.0', '0.11.0', '0.12.0', '0.13.0', '0.14.0', '0.15.0', '0.16.0', '0.17.0', '0.18.0'].includes(doc.schemaVersion)) {
         ctx.addIssue({ code: 'custom', path: [...np, 'props', 'textShadow'], message: '文字阴影需要 schema 0.5.0' });
       }
       if (node.type === 'minecraft:cycle-button') {
@@ -176,7 +185,7 @@ export const projectSchema = z.strictObject({
         ctx.addIssue({ code: 'custom', path: [...np, 'props', 'value'], message: '输入值超过 maxLength（UTF-16）' });
       }
       for (const key of Object.keys(node.events)) {
-        if (node.type === 'minecraft:numeric-input' || node.type === 'minecraft:slider') continue;
+        if (isSelectionNode(node) || node.type === 'minecraft:numeric-input' || node.type === 'minecraft:slider') continue;
         ctx.addIssue({ code: 'custom', path: [...np, 'events', key], message: '节点 events 暂不支持引用；请使用 F0 规则' });
       }
     });
@@ -184,7 +193,7 @@ export const projectSchema = z.strictObject({
     screen.nodes.forEach((node, index) => {
       if (node.type !== 'minecraft:creative-tab') return;
       const { groupId, contentIds } = node.props, path = [...sp, 'nodes', index, 'props'];
-      if ((groupId !== undefined || contentIds !== undefined) && !['0.11.0', '0.12.0', '0.13.0', '0.14.0', '0.15.0', '0.16.0', '0.17.0'].includes(doc.schemaVersion)) ctx.addIssue({ code: 'custom', path, message: '标签组需要 schema 0.11.0' });
+      if ((groupId !== undefined || contentIds !== undefined) && !['0.11.0', '0.12.0', '0.13.0', '0.14.0', '0.15.0', '0.16.0', '0.17.0', '0.18.0'].includes(doc.schemaVersion)) ctx.addIssue({ code: 'custom', path, message: '标签组需要 schema 0.11.0' });
       if (!groupId && contentIds?.length) ctx.addIssue({ code: 'custom', path, message: '关联内容需要标签组' });
       if (groupId) groups.set(groupId, (groups.get(groupId) ?? 0) + (node.props.selected ? 1 : 0));
       if (new Set(contentIds ?? []).size !== (contentIds?.length ?? 0)) ctx.addIssue({ code: 'custom', path, message: '关联内容不能重复' });
@@ -196,13 +205,13 @@ export const projectSchema = z.strictObject({
       }
     });
     for (const count of groups.values()) if (count !== 1) ctx.addIssue({ code: 'custom', path: [...sp, 'nodes'], message: '每个标签组必须有且仅有一个初始选中标签' });
-    if (screen.screenTargets !== undefined && !['0.7.0', '0.8.0', '0.9.0', '0.10.0', '0.11.0', '0.12.0', '0.13.0', '0.14.0', '0.15.0', '0.16.0', '0.17.0'].includes(doc.schemaVersion)) ctx.addIssue({ code: 'custom', path: [...sp, 'screenTargets'], message: 'Screen 目标声明需要 schema 0.7.0' });
-    screen.screenTargets?.forEach((target, index) => { unique(target.id, [...sp, 'screenTargets', index, 'id']); if (target.boundScreenId !== undefined && (!['0.12.0', '0.13.0', '0.14.0', '0.15.0', '0.16.0', '0.17.0'].includes(doc.schemaVersion) || !doc.screens.some(item => item.id === target.boundScreenId))) ctx.addIssue({ code: 'custom', path: [...sp, 'screenTargets', index, 'boundScreenId'], message: '绑定需要 0.12.0 且必须指向真实 Screen' }); });
+    if (screen.screenTargets !== undefined && !['0.7.0', '0.8.0', '0.9.0', '0.10.0', '0.11.0', '0.12.0', '0.13.0', '0.14.0', '0.15.0', '0.16.0', '0.17.0', '0.18.0'].includes(doc.schemaVersion)) ctx.addIssue({ code: 'custom', path: [...sp, 'screenTargets'], message: 'Screen 目标声明需要 schema 0.7.0' });
+    screen.screenTargets?.forEach((target, index) => { unique(target.id, [...sp, 'screenTargets', index, 'id']); if (target.boundScreenId !== undefined && (!['0.12.0', '0.13.0', '0.14.0', '0.15.0', '0.16.0', '0.17.0', '0.18.0'].includes(doc.schemaVersion) || !doc.screens.some(item => item.id === target.boundScreenId))) ctx.addIssue({ code: 'custom', path: [...sp, 'screenTargets', index, 'boundScreenId'], message: '绑定需要 0.12.0 且必须指向真实 Screen' }); });
     screen.behaviors.forEach((rule, index) => {
       const path = [...sp, 'behaviors', index]; unique(rule.id, [...path, 'id']);
-      if (!['0.6.0', '0.7.0', '0.8.0', '0.9.0', '0.10.0', '0.11.0', '0.12.0', '0.13.0', '0.14.0', '0.15.0', '0.16.0', '0.17.0'].includes(doc.schemaVersion)) ctx.addIssue({ code: 'custom', path, message: '行为规则需要 schema 0.6.0' });
-      if ('actions' in rule && !['0.8.0', '0.9.0', '0.10.0', '0.11.0', '0.12.0', '0.13.0', '0.14.0', '0.15.0', '0.16.0', '0.17.0'].includes(doc.schemaVersion)) ctx.addIssue({ code: 'custom', path, message: '有序动作需要 schema 0.8.0' });
-      if ((rule.event.type === 'rectangle-click' || actionsOf(rule).some(a => a.type === 'open_screen')) && !['0.7.0', '0.8.0', '0.9.0', '0.10.0', '0.11.0', '0.12.0', '0.13.0', '0.14.0', '0.15.0', '0.16.0', '0.17.0'].includes(doc.schemaVersion)) ctx.addIssue({ code: 'custom', path, message: 'F1 行为需要 schema 0.7.0' });
+      if (!['0.6.0', '0.7.0', '0.8.0', '0.9.0', '0.10.0', '0.11.0', '0.12.0', '0.13.0', '0.14.0', '0.15.0', '0.16.0', '0.17.0', '0.18.0'].includes(doc.schemaVersion)) ctx.addIssue({ code: 'custom', path, message: '行为规则需要 schema 0.6.0' });
+      if ('actions' in rule && !['0.8.0', '0.9.0', '0.10.0', '0.11.0', '0.12.0', '0.13.0', '0.14.0', '0.15.0', '0.16.0', '0.17.0', '0.18.0'].includes(doc.schemaVersion)) ctx.addIssue({ code: 'custom', path, message: '有序动作需要 schema 0.8.0' });
+      if ((rule.event.type === 'rectangle-click' || actionsOf(rule).some(a => a.type === 'open_screen')) && !['0.7.0', '0.8.0', '0.9.0', '0.10.0', '0.11.0', '0.12.0', '0.13.0', '0.14.0', '0.15.0', '0.16.0', '0.17.0', '0.18.0'].includes(doc.schemaVersion)) ctx.addIssue({ code: 'custom', path, message: 'F1 行为需要 schema 0.7.0' });
       const source = screen.nodes.find(n => n.id === rule.event.sourceId);
       const required = rule.event.type === 'button-click' ? 'minecraft:button' : rule.event.type === 'checkbox-change' ? 'minecraft:checkbox' : 'minecraft:fill';
       if (!source || source.type !== required) ctx.addIssue({ code: 'custom', path: [...path, 'event', 'sourceId'], message: '事件来源不存在或类型不匹配' });

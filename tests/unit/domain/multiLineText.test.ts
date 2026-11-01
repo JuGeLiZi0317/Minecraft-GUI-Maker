@@ -101,14 +101,14 @@ describe('W1-A MultiLineTextWidget', () => {
     const store = fixture(); store.getState().addScreen(); store.getState().add('minecraft:multi-line-text-widget');
     const doc = store.getState().doc, snapshot = beginExport(doc), ref = await referenceFor(snapshot);
     const spec = buildSpecification(snapshot, ref, 'project.json'), prompt = buildPrompt(spec);
-    expect(spec.version).toBe('0.6.0'); expect(spec.facts.gameRuntimeVerified).toBe(false);
+    expect(spec.version).toBe('0.7.0'); expect(spec.facts.gameRuntimeVerified).toBe(false);
     expect(spec.designIntent.widgetContracts.multiLineTextWidget?.geometry).toContain('NEVER call setSize');
     expect(spec.designIntent.screens[1].nodes[0].sourcePath).toBe('/screens/1/nodes/0');
     expect(prompt).toContain('setMaxRows'); expect(prompt).toContain('PENDING');
     const render = async () => new Uint8Array([1]);
     const bundle = await buildBundle(snapshot, render, render);
     expect(bundle.manifest.screens).toHaveLength(2); expect(bundle.manifest.reference.documentSha256).toBe(ref.documentSha256);
-    expect(bundle.manifest.versions.implementationSpecification).toBe('0.6.0');
+    expect(bundle.manifest.versions.implementationSpecification).toBe('0.7.0');
     await expect(buildBundle(snapshot, async (_s, _r, _p, id) => { if (id === doc.screens[1].id) throw new Error('W1 render failure'); return render(); }, render)).rejects.toThrow('W1 render failure');
   });
 });

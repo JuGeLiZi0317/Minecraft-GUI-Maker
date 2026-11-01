@@ -117,6 +117,7 @@ export function drawPreviewText(ctx: CanvasRenderingContext2D, node: GuiNode, w:
     ctx.save(); ctx.font = `9px ${family}`; ctx.textBaseline = 'top'; ctx.textAlign = 'left'; ctx.fillStyle = rgba(node.props.color ?? '#FFE0E0E0');
     layout.lines.forEach((line, i) => shadowText(ctx, line, layout.textX, layout.textY + i * layout.lineHeight, node.props.textShadow ?? false, panel ? '#101010' : '#383838')); ctx.restore(); return;
   }
+  if (node.type === 'minecraft:radio-group' || node.type === 'minecraft:dropdown') return;
   const text = node.type === 'minecraft:button' ? displayText(node.props.message) : node.type === 'minecraft:string-widget' ? displayText(node.props.text) : node.type === 'minecraft:cycle-button' ? cycleLabel(node) : node.props.value || (node.props.hint ? displayText(node.props.hint) : '');
   const align = node.type === 'minecraft:button' || node.type === 'minecraft:cycle-button' ? 'center' : node.type === 'minecraft:string-widget' ? node.props.align : 'left';
   const padding = node.type === 'minecraft:edit-box' ? 4 : 0;

@@ -106,7 +106,7 @@ describe('D frozen export contract', () => {
     const calls: string[] = [], renderer = async (_snapshot: unknown, _reference: unknown, scale: number, screenId: string) => { calls.push(`${screenId}:${scale}`); return new Uint8Array([screenId.length, scale]); };
     const bundle = await buildBundle(beginExport(doc), renderer as never);
     expect(calls).toEqual(['screen_main:1', 'screen_main:4', 'screen_settings:1', 'screen_settings:4', 'screen_help:1', 'screen_help:4']);
-    expect(bundle.manifest.version).toBe('0.11.0'); expect(bundle.manifest.screens).toHaveLength(3);
+    expect(bundle.manifest.version).toBe('0.12.0'); expect(bundle.manifest.screens).toHaveLength(3);
     const names = bundle.files.map(file => file.name); expect(new Set(names.map(name => name.toLowerCase())).size).toBe(names.length);
     expect(names).toEqual(expect.arrayContaining([expect.stringContaining('--screen_settings.png'), expect.stringContaining('--screen_help.png')]));
     const specFile = bundle.files.find(file => file.name.endsWith('.implementation.json'))!;

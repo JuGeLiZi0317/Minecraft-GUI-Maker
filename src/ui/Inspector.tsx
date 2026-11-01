@@ -9,6 +9,8 @@ import { currentScreen, screenById, editorStore } from '../editor/store';
 import { useExportDraft } from '../exports/useExportDraft';
 import { fontSession, previewCheckboxLayout } from '../render/previewFont';
 import { multiLineLayout, type MultiLineTextNode } from '../render/multiLineText';
+import { SelectionFields } from './SelectionFields';
+import { isSelectionNode } from '../domain/selection';
 import { numericError, type NumericConfig } from '../domain/numeric';
 import { isNumericNode, type NumericNode } from '../render/numericWidgets';
 
@@ -256,7 +258,7 @@ function PanelGeometry({ notify, readOnly }: { notify: (message: string, error?:
     const values = Object.fromEntries(Object.entries(draft).map(([k, v]) => [k, v.trim() ? Number(v) : NaN])) as typeof current;
     const copy = structuredClone(state.doc), bg = screenById(copy, state.currentScreenId).background;
     if (bg.kind !== 'panel') throw new Error('请先启用 Panel');
-    bg.bounds = values; if (!['0.10.0', '0.11.0', '0.12.0', '0.13.0', '0.14.0', '0.15.0', '0.16.0', '0.17.0'].includes(copy.schemaVersion)) copy.schemaVersion = '0.9.0'; parseProject(JSON.stringify(copy));
+    bg.bounds = values; if (!['0.10.0', '0.11.0', '0.12.0', '0.13.0', '0.14.0', '0.15.0', '0.16.0', '0.17.0', '0.18.0'].includes(copy.schemaVersion)) copy.schemaVersion = '0.9.0'; parseProject(JSON.stringify(copy));
   };
   const commit = () => { if (changed()) editorStore.getState().setPanelBounds(Object.fromEntries(Object.entries(draft).map(([k, v]) => [k, Number(v)])) as typeof current); };
   useExportDraft({ validate, commit });
@@ -313,6 +315,7 @@ export function Inspector({ notify, readOnly = false, emptyControls, editTabs, s
           <summary><span>外观与文案</span></summary>
           <div className="section-body">
           {node.type !== 'minecraft:fill' && node.type !== 'minecraft:creative-tab' && checkbox('文字阴影', node.props.textShadow ?? false, v => { const next = structuredClone(node); next.props.textShadow = v; return next; })}
+          {isSelectionNode(node) && <SelectionFields key={JSON.stringify([node.id, node.props.name, node.props.options, node.props.initialSelectedOptionId, node.type === 'minecraft:radio-group' ? node.props.orientation : node.props.visibleRows])} node={node} update={update}/>}
           {isNumericNode(node) && <>
             <TextFields label="控件名称" value={node.props.name} commit={(v, dry) => update(n => { if (isNumericNode(n)) n.props.name = v; return n; }, dry)}/>
             <NumericConstraints key={JSON.stringify([node.id, node.props.min, node.props.max, node.props.step, node.props.initialValue, node.props.numericType, node.props.format])} node={node} update={update}/>
