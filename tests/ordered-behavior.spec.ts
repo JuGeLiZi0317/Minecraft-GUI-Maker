@@ -37,7 +37,7 @@ test('two tabs execute ordered cross-node actions, reset, persist and export ZIP
   await page.evaluate(() => (document.activeElement as HTMLElement)?.blur()); await page.keyboard.press('Control+z'); expect((await read()).screens[0].behaviors).toHaveLength(1); await page.keyboard.press('Control+Shift+z'); expect(await read()).toEqual(saved);
   await expect(page.getByTestId('save-status')).toContainText('已保存'); const stored = await database(page), history = await page.getByTestId('history-count').textContent();
   const host = page.getByTestId('canvas-host'); const point = async (x: number, y: number) => host.evaluate((el, p) => { const r = el.getBoundingClientRect(), z = Number((el as HTMLElement).dataset.zoom); return { x: r.x + Number((el as HTMLElement).dataset.originX) + p.x * z, y: r.y + Number((el as HTMLElement).dataset.originY) + p.y * z }; }, { x, y });
-  await panel.getByRole('button', { name: '开始画布行为测试' }).click(); await panel.getByRole('button', { name: '收起行为面板' }).click();
+  await page.getByRole('button', { name: '交互预览', exact: true }).click(); await panel.getByRole('button', { name: '收起行为面板' }).click();
   let p = await point(25, 20); await page.mouse.click(p.x, p.y); await panel.getByRole('button', { name: '展开行为面板' }).click();
   let state = await panel.getByTestId('behavior-preview').textContent(); expect(state).toContain('"node_3":{"visible":true'); expect(state).toContain('"node_5":{"visible":false');
   await panel.getByRole('button', { name: '收起行为面板' }).click(); p = await point(180, 20); await page.mouse.click(p.x, p.y); await panel.getByRole('button', { name: '展开行为面板' }).click();

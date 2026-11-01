@@ -52,6 +52,7 @@ export function ExportPanel({ batch, busy, error, downloadZip, generate, current
       {busy && <div className="export-busy" aria-label="正在生成导出文件"><span/><span/><span/></div>}
       {error && <div className="export-error">本批未生成：{error}</div>}
       {batch && <>
+        {nodes.some(node => node.type === 'minecraft:numeric-input' || node.type === 'minecraft:slider') && <p className="field-note">数值事件为未绑定意图：相同配置不等于已绑定。不会自动联动控件或执行业务；需游戏实现者提供消费者。</p>}
         <div className="export-snapshot">
           <span className="export-chip snapshot">同一快照</span>
           <span className="export-chip">REV {batch.reference.revision}</span>

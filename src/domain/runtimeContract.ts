@@ -8,6 +8,7 @@ export const NAVIGATION_LIFECYCLE = {
   unboundTarget: 'no-real-navigation',
   historyStack: 'none', pageCache: 'none', crossScreenState: 'none',
   escapeAndSystemBack: 'unspecified-by-project; implementer-must-decide-explicitly',
+  creativeTabScreenNavigation: 'project-level-ordered-screenTabGroups; stable-tab-and-screen-ids; derive-selected-from-current-screen; click-is-directed-open-screen-with-new-target-instance',
 } as const;
 export const RENDERING_CONTRACT = {
   nativeScreenBackground: 'unspecified; world blur/default/clear must be chosen explicitly by implementer',

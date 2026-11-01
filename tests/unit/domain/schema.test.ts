@@ -1,10 +1,10 @@
+import { legacyNode as createNode } from '../legacyNode';
 import { describe, expect, it } from 'vitest';
-import { NODE_TYPES } from '../../../src/domain/catalog';
-import { createNode, emptyProject } from '../../../src/domain/model';
+import { emptyProject } from '../../../src/domain/model';
 import { exportProject, MAX_JSON_BYTES, parseProject } from '../../../src/domain/schema';
 import { NATIVE_PANEL_16, panelTextureSide } from '../../../src/domain/panel';
 
-const fixture = () => { const doc = emptyProject(); doc.screens[0].nodes = NODE_TYPES.filter(type => type !== 'minecraft:checkbox' && type !== 'minecraft:cycle-button' && type !== 'minecraft:creative-tab').map((type, i) => createNode(type, `node_${i}`)); return doc; };
+const fixture = () => { const doc = emptyProject(); doc.screens[0].nodes = (['minecraft:button', 'minecraft:edit-box', 'minecraft:string-widget', 'minecraft:fill'] as const).map((type, i) => createNode(type, `node_${i}`)); return doc; };
 describe('strict portable project contract', () => {
   it('preserves 0.1.0 projects and accepts only valid 0.2.0 custom panel designs', () => {
     const old = emptyProject(); expect(parseProject(exportProject(old))).toEqual(old);

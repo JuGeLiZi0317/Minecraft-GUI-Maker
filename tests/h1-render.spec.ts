@@ -46,7 +46,7 @@ test('interaction preview is isolated from the document and history', async ({ p
   await page.evaluate(async json => { const path = '/src/editor/store.ts'; const { editorStore } = await import(/* @vite-ignore */ path); editorStore.setState({ doc: JSON.parse(json), selected: null }); }, JSON.stringify(doc));
   const host = page.getByTestId('canvas-host');
   const before = await page.getByTestId('project-json').textContent(), history = await page.getByTestId('history-count').textContent();
-  await page.getByText('模式', { exact: true }).click(); await page.getByRole('button', { name: '交互预览', exact: true }).click();
+  await page.getByRole('button', { name: '交互预览', exact: true }).click();
   const point = async (x: number, y: number) => host.evaluate((element, p) => { const r = element.getBoundingClientRect(), z = Number(element.getAttribute('data-zoom')); return { x: r.x + Number(element.getAttribute('data-origin-x')) + p.x * z, y: r.y + Number(element.getAttribute('data-origin-y')) + p.y * z }; }, { x, y });
   const check = await point(25, 25), cycle = await point(40, 68);
   const beforeImage = await host.locator('canvas').first().screenshot();
@@ -58,8 +58,8 @@ test('interaction preview is isolated from the document and history', async ({ p
   await page.mouse.move(cycle.x, cycle.y); await page.mouse.wheel(0, 50);
   expect(await page.getByTestId('project-json').textContent()).toBe(before);
   expect(await page.getByTestId('history-count').textContent()).toBe(history);
-  await page.getByText('模式', { exact: true }).click(); await page.getByRole('button', { name: '交互预览', exact: true }).click();
-  await page.getByText('模式', { exact: true }).click(); await expect(page.getByRole('button', { name: '交互预览', exact: true })).toHaveAttribute('aria-pressed', 'false');
+  await page.getByRole('button', { name: '交互预览', exact: true }).click();
+  await expect(page.getByRole('button', { name: '交互预览', exact: true })).toHaveAttribute('aria-pressed', 'false');
 });
 
 test('checkbox inspector reports reference, screen and preview-budget overflow without rejecting the data', async ({ page }) => {
@@ -103,10 +103,10 @@ test('checkbox uses decoded synthetic sprite pixels for focus and selected combi
   const pixel = () => host.evaluate(element => { const c = element.querySelector('canvas')!, d = c.width / c.getBoundingClientRect().width, z = Number(element.getAttribute('data-zoom')); return Array.from(c.getContext('2d')!.getImageData(Math.floor((Number(element.getAttribute('data-origin-x')) + 22.5 * z) * d), Math.floor((Number(element.getAttribute('data-origin-y')) + 22.5 * z) * d), 1, 1).data); });
   await page.mouse.move(coords.x, coords.y);
   await expect.poll(pixel).toEqual([160, 0, 0, 255]); // hover alone is not focus
-  await page.getByText('模式', { exact: true }).click(); await page.getByRole('button', { name: '交互预览', exact: true }).click();
+  await page.getByRole('button', { name: '交互预览', exact: true }).click();
   await page.mouse.click(coords.x, coords.y); await expect.poll(pixel).toEqual([160, 160, 0, 255]);
   await page.mouse.click(coords.x, coords.y); await expect.poll(pixel).toEqual([0, 160, 0, 255]);
-  await page.getByText('模式', { exact: true }).click(); await page.getByRole('button', { name: '交互预览', exact: true }).click();
+  await page.getByRole('button', { name: '交互预览', exact: true }).click();
   await page.evaluate(async () => { const path = '/src/editor/store.ts'; const { editorStore } = await import(/* @vite-ignore */ path); const state = editorStore.getState(), next = structuredClone(state.doc); next.screens[0].nodes[0].props.selected = true; editorStore.setState({ doc: next }); });
   await expect.poll(pixel).toEqual([0, 0, 160, 255]);
 });

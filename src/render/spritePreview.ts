@@ -4,6 +4,8 @@ import type { GuiNode } from '../domain/schema';
 
 export type DecodedSprite = { image: ImageBitmap; scaling: Scaling };
 export function spriteForNode(node: GuiNode, hovered = false, focused = false): string | null {
+  if (node.type === 'minecraft:numeric-input') return node.props.bordered ? focused ? GUI_SPRITES[4] : GUI_SPRITES[3] : null;
+  if (node.type === 'minecraft:slider') return 'minecraft:widget/slider';
   if (node.type === 'minecraft:creative-tab') return `minecraft:container/creative_inventory/tab_top_${node.props.selected ? 'selected' : 'unselected'}_${node.props.column}`;
   if (node.type === 'minecraft:button' || node.type === 'minecraft:cycle-button') return !node.state.enabled ? GUI_SPRITES[2] : hovered || focused ? GUI_SPRITES[1] : GUI_SPRITES[0];
   if (node.type === 'minecraft:checkbox') return CHECKBOX_SPRITES[(node.props.selected ? 2 : 0) + (focused ? 1 : 0)];

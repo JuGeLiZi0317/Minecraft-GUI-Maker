@@ -4,9 +4,9 @@ test('new project preserves the previous local copy and menu modes remain isolat
   await page.goto('/'); await page.getByRole('button', { name: '添加 Checkbox', exact: true }).click();
   await expect(page.getByTestId('save-status')).toContainText('本地已保存');
   const before = JSON.parse((await page.getByTestId('project-json').textContent())!);
-  await page.getByText('模式', { exact: true }).click(); await page.getByRole('button', { name: '交互预览' }).click();
+  await page.getByRole('button', { name: '交互预览', exact: true }).click();
   expect(JSON.parse((await page.getByTestId('project-json').textContent())!)).toEqual(before);
-  await page.getByText('模式', { exact: true }).click(); await page.getByRole('button', { name: '交互预览' }).click();
+  await page.getByRole('button', { name: '交互预览', exact: true }).click();
   await page.getByText('视图', { exact: true }).click(); await page.getByLabel('编辑器菜单').getByText('资源包检查', { exact: true }).hover(); await page.getByRole('button', { name: '选择已有资源包' }).click(); await expect(page.getByRole('region', { name: '资源包检查' })).toBeVisible();
   await page.getByRole('button', { name: '关闭资源包检查' }).click();
   await page.getByText('文件', { exact: true }).click(); await page.getByRole('button', { name: '新的GUI项目' }).click();

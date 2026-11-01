@@ -3,11 +3,12 @@ import { expect, test } from '@playwright/test';
 test('a bound F2 open_screen switches real screens only inside behavior preview', async ({ page }) => {
   await page.goto('/');
   await page.getByRole('button', { name: '添加 Button', exact: true }).click();
-  const sourceId = await page.getByLabel('当前 Screen').inputValue();
-  await page.getByRole('button', { name: '新增 Screen', exact: true }).click();
-  const destinationId = await page.getByLabel('当前 Screen').inputValue();
+  const sourceId = await page.getByLabel('当前画布', { exact: true }).inputValue();
+  await page.getByRole('button', { name: '新增画布', exact: true }).click();
+  const destinationId = await page.getByLabel('当前画布', { exact: true }).inputValue();
   expect(destinationId).not.toBe(sourceId);
-  await page.getByLabel('当前 Screen').selectOption(sourceId);
+  await page.getByLabel('项目入口 Screen').selectOption(sourceId);
+  await page.getByLabel('当前画布', { exact: true }).selectOption(sourceId);
 
   await page.getByRole('button', { name: '行为', exact: true }).click();
   let panel = page.getByTestId('behavior-panel');
@@ -21,16 +22,16 @@ test('a bound F2 open_screen switches real screens only inside behavior preview'
 
   const jsonBefore = await page.getByTestId('project-json').textContent();
   const historyBefore = await page.getByTestId('history-count').textContent();
-  await panel.getByRole('button', { name: '开始画布行为测试' }).click();
+  await page.getByRole('button', { name: '交互预览', exact: true }).click();
   await panel.getByRole('button', { name: '模拟触发 node_1' }).click();
-  await expect(page.getByLabel('当前 Screen')).toHaveValue(destinationId);
+  await expect(page.getByLabel('当前画布', { exact: true })).toHaveValue(destinationId);
   panel = page.getByTestId('behavior-panel');
   await expect(panel.getByTestId('behavior-preview')).toBeVisible();
   expect(await page.getByTestId('project-json').textContent()).toBe(jsonBefore);
   expect(await page.getByTestId('history-count').textContent()).toBe(historyBefore);
 
   await panel.getByRole('button', { name: '重置预览' }).click();
-  await expect(page.getByLabel('当前 Screen')).toHaveValue(sourceId);
+  await expect(page.getByLabel('当前画布', { exact: true })).toHaveValue(sourceId);
   await expect(page.getByTestId('behavior-preview')).toHaveCount(0);
   expect(await page.getByTestId('project-json').textContent()).toBe(jsonBefore);
 });

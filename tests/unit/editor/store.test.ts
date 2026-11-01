@@ -70,11 +70,11 @@ describe('document transactions', () => {
   it.each(['minecraft:checkbox', 'minecraft:cycle-button'] as const)('upgrades %s with its creation and does not downgrade on deletion or panel changes', type => {
     const old = emptyProject(); old.schemaVersion = '0.3.0'; const store = createEditorStore(old);
     store.getState().add(type); const added = store.getState().doc;
-    expect(added.schemaVersion).toBe('0.4.0'); expect(store.getState().past).toHaveLength(1);
+    expect(added.schemaVersion).toBe('0.17.0'); expect(store.getState().past).toHaveLength(1);
     store.getState().undo(); expect(store.getState().doc).toEqual(old);
     store.getState().redo(); expect(store.getState().doc).toEqual(added);
-    store.getState().deleteSelected(); expect(store.getState().doc.schemaVersion).toBe('0.4.0');
-    store.getState().setPanel(true); expect(store.getState().doc.schemaVersion).toBe('0.4.0');
+    store.getState().deleteSelected(); expect(store.getState().doc.schemaVersion).toBe('0.17.0');
+    store.getState().setPanel(true); expect(store.getState().doc.schemaVersion).toBe('0.17.0');
   });
   it('enabling a panel upgrades only that edit, supports undo, redo and rejects an invalid resize atomically', () => {
     const store = createEditorStore(), before = store.getState().doc;

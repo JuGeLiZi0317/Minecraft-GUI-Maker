@@ -1,5 +1,6 @@
+import { legacyNode as createNode } from '../legacyNode';
 import { describe, expect, it } from 'vitest';
-import { createNode, emptyProject } from '../../../src/domain/model';
+import { emptyProject } from '../../../src/domain/model';
 import { parseProject, projectSchema } from '../../../src/domain/schema';
 
 describe('H1 draft schema', () => {

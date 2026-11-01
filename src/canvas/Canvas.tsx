@@ -1,24 +1,29 @@
 import { memo, useEffect, useRef, useState, type DragEvent } from 'react';
+import { NumericPreview } from './NumericPreview';
+import { isNumericNode, drawNumericWidget } from '../render/numericWidgets';
+import type { NumericState } from '../domain/numeric';
 import { Group, Layer, Rect, Shape, Stage, Text } from 'react-konva';
 import type { KonvaEventObject } from 'konva/lib/Node';
 import { useStore } from 'zustand';
-import { NODE_TYPES, type NodeType } from '../domain/catalog';
+import { CATALOG, NODE_TYPES, type NodeType } from '../domain/catalog';
 import type { Bounds, GuiNode, GuiScreen } from '../domain/schema';
 import { displayText } from '../domain/model';
 import { currentScreen, editorStore } from '../editor/store';
 import { editableText, InlineTextEditor } from './InlineTextEditor';
 import type { GuiScalePreview } from '../domain/guiScale';
 import { tabManaged, tabVisibility } from '../domain/tabGroups';
+import { screenNavigationSelected } from '../domain/screenTabNavigation';
 import { panelBounds, panelRects } from '../domain/panel';
 import { drawNativePanel, getPanelImage, isTextureStyle, panelPreviewRaster } from '../render/panelTexture';
-import { CHECKBOX_SPRITES, CREATIVE_TAB_SPRITES, GUI_SPRITES, type LayeredResources } from '../resources/layered';
+import { CHECKBOX_SPRITES, SLIDER_SPRITES, CREATIVE_TAB_SPRITES, GUI_SPRITES, type LayeredResources } from '../resources/layered';
 import { beforePanel, drawCreativeTabFallback, SpriteRasterCache, spriteForNode, type DecodedSprite } from '../render/spritePreview';
 import { drawCheckboxFallback, drawPreviewText, previewCheckboxLayout, type FontChoice } from '../render/previewFont';
 import type { BehaviorPreview } from '../ui/BehaviorPanel';
-import { alignBounds, type AlignmentGuides } from './smartAlignment';
+import { alignBounds, alignResizeBounds, equalSpacingCandidates, resolveEqualSpacing, type AlignmentGuides, type SpacingCandidate, type SpacingMark } from './smartAlignment';
 
 export type View = { zoom: number; panX: number; panY: number; tool: 'select' | 'pan' };
-type Props = { screenPositions: Record<string, {x: number; y: number}>; setScreenPositions: (update: (previous: Record<string, {x: number; y: number}>) => Record<string, {x: number; y: number}>) => void; onSelectScreen: (id: string) => void; view: View; setView: (view: View) => void; preview?: GuiScalePreview | null; readOnly?: boolean; behaviorPreview?: BehaviorPreview | null; behaviorMode?: boolean; interaction: boolean; onBehaviorTrigger?: (id: string) => void; editTabs?: Record<string, string>; grid: { visible: boolean; spacing: number }; alignment: { guides: boolean; snap: boolean }; resources: LayeredResources; resourceGeneration: number; font: FontChoice; theme: 'dark' | 'light' };
+type ResizeEdge = 'left' | 'right' | 'top' | 'bottom' | 'top-left' | 'bottom-right';
+type Props = { numericPreviewEpoch: number; screenPositions: Record<string, {x: number; y: number}>; setScreenPositions: (update: (previous: Record<string, {x: number; y: number}>) => Record<string, {x: number; y: number}>) => void; onSelectScreen: (id: string) => void; view: View; setView: (view: View) => void; preview?: GuiScalePreview | null; readOnly?: boolean; behaviorPreview?: BehaviorPreview | null; behaviorMode?: boolean; interaction: boolean; onBehaviorTrigger?: (id: string) => void; editTabs?: Record<string, string>; grid: { visible: boolean; spacing: number }; alignment: { guides: boolean; snap: boolean }; resources: LayeredResources; resourceGeneration: number; font: FontChoice; theme: 'dark' | 'light' };
 type PreviewAsset = { sprite?: DecodedSprite; error?: string };
 
 const C = {
@@ -30,7 +35,7 @@ const C = {
   line: '#333941',
   design: '#1c2634',
   designLine: '#3c424a',
-  grid: 'rgba(240, 180, 92, 0.17)',
+  grid: 'rgba(64, 165, 230, 0.65)',
   danger: '#e8837a',
   dangerSoft: 'rgba(43, 25, 24, 0.92)',
   ruler: '#0b0e11',
@@ -39,26 +44,28 @@ const C = {
   rulerTick: '#3a4048',
   mono: 'Cascadia Mono, Consolas, monospace',
 } as const;
+const NO_SCREEN_TAB_GROUPS: import('../domain/schema').ScreenTabGroup[] = [];
 const rgba = (color: string) => `rgba(${parseInt(color.slice(3, 5), 16)},${parseInt(color.slice(5, 7), 16)},${parseInt(color.slice(7, 9), 16)},${parseInt(color.slice(1, 3), 16) / 255})`;
 
-const NodeDrawing = memo(function NodeDrawing({ node, bounds, onDown, onEdit, assets, cache, resourceActive, focused, selected, font, panel, zoom }: {
-  node: GuiNode; bounds: Bounds; onDown: (e: KonvaEventObject<PointerEvent>, id: string, mode: 'move' | 'resize') => void;
-  onEdit: (id: string) => void; assets: Record<string, PreviewAsset>; cache: SpriteRasterCache; resourceActive: boolean; focused: boolean; selected: boolean; font: FontChoice; panel: boolean; zoom: number;
+const NodeDrawing = memo(function NodeDrawing({ node, bounds, onDown, onEdit, assets, cache, resourceActive, focused, selected, font, panel, zoom, numericState, numericOverlay = false }: {
+  node: GuiNode; bounds: Bounds; onDown: (e: KonvaEventObject<PointerEvent>, id: string, mode: 'move' | 'resize', edge?: ResizeEdge) => void;
+  numericState?: NumericState; numericOverlay?: boolean; onEdit: (id: string) => void; assets: Record<string, PreviewAsset>; cache: SpriteRasterCache; resourceActive: boolean; focused: boolean; selected: boolean; font: FontChoice; panel: boolean; zoom: number;
 }) {
   const [hovered, setHovered] = useState(false);
   const { w, h } = bounds;
   const fill = node.type === 'minecraft:fill' ? rgba(node.props.color)
     : node.type === 'minecraft:button' || node.type === 'minecraft:cycle-button' ? '#314354' : node.type === 'minecraft:edit-box' || node.type === 'minecraft:checkbox' ? '#151e2b' : 'rgba(255,255,255,0.01)';
   const stroke = node.type === 'minecraft:button' || node.type === 'minecraft:cycle-button' || node.type === 'minecraft:checkbox' ? '#5a7185' : node.type === 'minecraft:edit-box' && node.props.bordered ? '#5a7185' : undefined;
-  const id = spriteForNode(node, hovered, focused);
+  const id = isNumericNode(node) ? null : spriteForNode(node, hovered, focused);
   const asset = id ? assets[id] : undefined; let raster: HTMLCanvasElement | null = null; let renderError = '';
   if (id && asset?.sprite) { try { raster = cache.get(id, asset.sprite, node.type === 'minecraft:checkbox' ? 17 : w, node.type === 'minecraft:checkbox' ? 17 : h); } catch (error) { renderError = (error as Error).message; } }
   const unbordered = node.type === 'minecraft:edit-box' && !node.props.bordered;
   const textureError = !!(resourceActive && id && (asset?.error || renderError));
-  return <Group x={bounds.x} y={bounds.y} opacity={node.state.visible ? ('enabled' in node.state && !node.state.enabled && !raster && node.type !== 'minecraft:checkbox' ? 0.45 : 1) : 0.22}
+  return <Group x={bounds.x} y={bounds.y} opacity={node.state.visible ? ('enabled' in node.state && !node.state.enabled && !raster && node.type !== 'minecraft:checkbox' && !isNumericNode(node) ? 0.45 : 1) : 0.22}
     onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}
     onPointerDown={e => onDown(e, node.id, 'move')} onDblClick={e => { e.cancelBubble = true; onEdit(node.id); }}>
-    <Rect width={w} height={h} fill={node.type === 'minecraft:checkbox' ? 'rgba(0,0,0,0.001)' : raster || unbordered ? 'rgba(0,0,0,0.001)' : fill} stroke={node.type === 'minecraft:checkbox' || raster || unbordered ? undefined : stroke} strokeWidth={0.6} />
+    <Rect width={w} height={h} fill={isNumericNode(node) ? 'rgba(0,0,0,0.001)' : node.type === 'minecraft:checkbox' ? 'rgba(0,0,0,0.001)' : raster || unbordered ? 'rgba(0,0,0,0.001)' : fill} stroke={node.type === 'minecraft:checkbox' || raster || unbordered ? undefined : stroke} strokeWidth={0.6} />
+    {isNumericNode(node) && <Shape listening={false} sceneFunc={context => drawNumericWidget(context._context, node, w, h, font.family, assets, cache, { state: numericState, hovered, focused, overlay: numericOverlay, resourceActive })}/>}
     {node.type === 'minecraft:creative-tab' && !raster && <Shape listening={false} sceneFunc={context => drawCreativeTabFallback(context._context, node.props.selected)}/>}
     {node.type === 'minecraft:checkbox' && !raster && <Shape listening={false} sceneFunc={context => drawCheckboxFallback(context._context, node.props.selected)}/>}
     {raster && <Shape listening={false} sceneFunc={context => { const ctx = context._context; ctx.save(); ctx.imageSmoothingEnabled = false; ctx.drawImage(raster, 0, 0); ctx.restore(); }} />}
@@ -73,12 +80,14 @@ const NodeDrawing = memo(function NodeDrawing({ node, bounds, onDown, onEdit, as
   </Group>;
 });
 
-function OtherScreen({ screen, assets, cache, resources, font, zoom, select, selectOnLeft }: { screen: GuiScreen; assets: Record<string, PreviewAsset>; cache: SpriteRasterCache; resources: LayeredResources; font: FontChoice; zoom: number; select: () => void; selectOnLeft: boolean }) {
+function OtherScreen({ screen, assets, cache, resources, font, zoom, select, selectOnLeft, screenTabGroups = [] }: { screen: GuiScreen; assets: Record<string, PreviewAsset>; cache: SpriteRasterCache; resources: LayeredResources; font: FontChoice; zoom: number; select: () => void; selectOnLeft: boolean; screenTabGroups?: import('../domain/schema').ScreenTabGroup[] }) {
   const [image, setImage] = useState<HTMLImageElement | null>(null);
   const style = screen.background.kind === 'panel' ? screen.background.style : null;
   useEffect(() => { let active = true; setImage(null); if (style && isTextureStyle(style)) void getPanelImage(style).then(value => { if (active) setImage(value); }).catch(() => {}); return () => { active = false; }; }, [style]);
   const bounds = panelBounds(screen), managed = tabManaged(screen.nodes), visible = tabVisibility(screen.nodes);
-  const draw = (node: GuiNode) => {
+  const draw = (original: GuiNode) => {
+    const selected = screenNavigationSelected(original, screen.id, screenTabGroups);
+    const node: GuiNode = selected === null || original.type !== 'minecraft:creative-tab' ? original : { ...original, props: { ...original.props, selected } };
     const shown = managed.has(node.id) ? visible(node.id) : node.state.visible;
     const item = shown ? node : { ...node, state: { ...node.state, visible: false } } as GuiNode;
     return <NodeDrawing key={node.id} node={item} bounds={item.bounds} onDown={() => {}} onEdit={() => {}} assets={assets} cache={cache} resourceActive={!!resources.baseName} focused={false} selected={false} font={font} panel={screen.background.kind === 'panel'} zoom={zoom}/>;
@@ -143,7 +152,7 @@ function Rulers({ width, height, origin, zoom, design, theme }: { width: number;
   </Layer>;
 }
 
-export function Canvas({ screenPositions, setScreenPositions, onSelectScreen, view, setView, preview = null, readOnly = false, behaviorPreview = null, behaviorMode = false, interaction, onBehaviorTrigger, editTabs = {}, grid, alignment, resources, resourceGeneration, font, theme }: Props) {
+export function Canvas({ numericPreviewEpoch, screenPositions, setScreenPositions, onSelectScreen, view, setView, preview = null, readOnly = false, behaviorPreview = null, behaviorMode = false, interaction, onBehaviorTrigger, editTabs = {}, grid, alignment, resources, resourceGeneration, font, theme }: Props) {
   const chrome = theme === 'light' ? { bg: '#f3f1ec', line: '#d9d5cc', text: '#4d4a43' } : { bg: C.ruler, line: C.line, text: C.text2 };
   const host = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState({ width: 800, height: 540 });
@@ -155,17 +164,24 @@ export function Canvas({ screenPositions, setScreenPositions, onSelectScreen, vi
   const [interactionValues, setInteractionValues] = useState<Record<string, boolean | string>>({});
   const [interactionFocus, setInteractionFocus] = useState<string | null>(null);
   const [alignmentGuides, setAlignmentGuides] = useState<AlignmentGuides>({});
-  useEffect(() => { setInteractionValues({}); setInteractionFocus(null); if (interaction || behaviorPreview) setEditingId(null); }, [interaction, behaviorPreview]);
+  const [spacingMark, setSpacingMark] = useState<SpacingMark | null>(null);
+  const currentScreenId = useStore(editorStore, s => s.currentScreenId);
+  useEffect(() => { setInteractionValues({}); setInteractionFocus(null); if (interaction || behaviorPreview) setEditingId(null); }, [interaction, currentScreenId]);
   const screen = useStore(editorStore, s => currentScreen(s));
+  const [numericRuntime, setNumericRuntime] = useState<Record<string, NumericState>>({});
+  useEffect(() => { setNumericRuntime({}); }, [numericPreviewEpoch, screen.id, interaction, behaviorMode]);
   const screens = useStore(editorStore, s => s.doc.screens);
+  const screenTabGroupsState = useStore(editorStore, s => s.doc.screenTabGroups);
+  const screenTabGroups = screenTabGroupsState ?? NO_SCREEN_TAB_GROUPS;
   const hasCreativeTab = screens.some(item => item.nodes.some(node => node.type === 'minecraft:creative-tab'));
   const hasCheckbox = screens.some(item => item.nodes.some(node => node.type === 'minecraft:checkbox'));
+  const hasSlider = screens.some(item => item.nodes.some(node => node.type === 'minecraft:slider'));
   const cache = useRef(new SpriteRasterCache()).current;
   useEffect(() => {
     let active = true; const decoded: ImageBitmap[] = []; cache.clear(); setAssets({});
     if (!resources.baseName) { setAssetBusy(false); return () => { active = false; }; }
     setAssetBusy(true);
-    void Promise.all([...GUI_SPRITES, ...(hasCheckbox ? CHECKBOX_SPRITES : []), ...(hasCreativeTab ? CREATIVE_TAB_SPRITES : [])].map(async id => {
+    void Promise.all([...GUI_SPRITES, ...(hasSlider ? SLIDER_SPRITES : []), ...(hasCheckbox ? CHECKBOX_SPRITES : []), ...(hasCreativeTab ? CREATIVE_TAB_SPRITES : [])].map(async id => {
       const result = await resources.sprite(id);
       if (result.status !== 'valid') return [id, { error: `${result.status}：${result.diagnostic}` }] as const;
       try {
@@ -176,7 +192,7 @@ export function Canvas({ screenPositions, setScreenPositions, onSelectScreen, vi
       } catch (error) { return [id, { error: `invalid：PNG 解码失败：${(error as Error).message}` }] as const; }
     })).then(values => { if (active) { setAssets(Object.fromEntries(values)); setAssetBusy(false); } });
     return () => { active = false; cache.clear(); decoded.forEach(bitmap => bitmap.close()); };
-  }, [resources, resourceGeneration, cache, hasCheckbox, hasCreativeTab]);
+  }, [resources, resourceGeneration, cache, hasCheckbox, hasCreativeTab, hasSlider]);
   const panel = panelBounds(screen);
   const panelStyle = screen.background.kind === 'panel' ? screen.background.style : null;
   useEffect(() => {
@@ -189,8 +205,8 @@ export function Canvas({ screenPositions, setScreenPositions, onSelectScreen, vi
   const selectedNode = screen.nodes.find(n => n.id === selected);
   useEffect(() => { setEditingId(id => id === selected ? id : null); }, [selected]);
   useEffect(() => { setEditingId(null); setInteractionValues({}); setInteractionFocus(null); }, [screen.id]);
-  const pointer = useRef<null | { pointerId: number; x: number; y: number; zoom: number; mode: 'move' | 'resize' | 'pan'; bounds?: Bounds; panX: number; panY: number; screenId?: string; peers?: { id: string; bounds: Bounds }[]; xKey?: string; yKey?: string }>(null);
-  useEffect(() => { if (pointer.current) { pointer.current = null; editorStore.getState().cancelGesture(); } setAlignmentGuides({}); }, [screen.id]);
+  const pointer = useRef<null | { pointerId: number; x: number; y: number; zoom: number; mode: 'move' | 'resize' | 'pan'; resizeEdge?: ResizeEdge; bounds?: Bounds; panX: number; panY: number; screenId?: string; peers?: { id: string; bounds: Bounds }[]; min?: { w: number; h: number }; spacingCandidates?: SpacingCandidate[]; xKey?: string; yKey?: string; spacingKey?: string }>(null);
+  useEffect(() => { if (pointer.current) { pointer.current = null; editorStore.getState().cancelGesture(); } setAlignmentGuides({}); setSpacingMark(null); }, [screen.id]);
   const fit = preview ? Math.max(0.01, Math.min(Math.max(1, size.width - 48) / preview.framebufferWidth, Math.max(1, size.height - 110) / preview.framebufferHeight)) : 1;
   const frame = preview ? { x: (size.width - preview.framebufferWidth * fit) / 2, y: (size.height - preview.framebufferHeight * fit) / 2,
     w: preview.framebufferWidth * fit, h: preview.framebufferHeight * fit } : null;
@@ -201,9 +217,10 @@ export function Canvas({ screenPositions, setScreenPositions, onSelectScreen, vi
   const basis = { width: first.designSize.width, height: first.designSize.height, dx: activePosition.x, dy: activePosition.y };
   const origin = frame && preview ? { x: frame.x + Math.floor((preview.logicalWidth - screen.designSize.width) / 2) * renderZoom,
     y: frame.y + Math.floor((preview.logicalHeight - screen.designSize.height) / 2) * renderZoom }
+    : interaction || behaviorMode ? { x: Math.floor((size.width - screen.designSize.width * view.zoom) / 2), y: Math.floor((size.height - screen.designSize.height * view.zoom) / 2) }
     : { x: Math.floor((size.width - basis.width * view.zoom) / 2) + view.panX + basis.dx * view.zoom,
       y: Math.floor((size.height - basis.height * view.zoom) / 2) + view.panY + basis.dy * view.zoom };
-  const current = useRef({ view, setView, size, screen, editingId, preview, readOnly, interaction, basis, alignment }); current.current = { view, setView, size, screen, editingId, preview, readOnly, interaction, basis, alignment };
+  const current = useRef({ view, setView, size, screen, editingId, preview, readOnly, interaction, basis, alignment, origin }); current.current = { view, setView, size, screen, editingId, preview, readOnly, interaction, basis, alignment, origin };
   const header = (item: GuiScreen) => <Group y={-22 / renderZoom} draggable={!preview && !readOnly && !behaviorMode && !interaction && !gesture && view.tool !== 'pan'}
     onPointerDown={e => { if (e.evt.button === 0 && view.tool !== 'pan') e.cancelBubble = true; }}
     onDragEnd={e => { e.cancelBubble = true; const dx = e.target.x(), dy = e.target.y() + 22 / renderZoom; e.target.position({ x: 0, y: -22 / renderZoom }); if (Math.abs(dx) + Math.abs(dy) > 0.5) setScreenPositions(previous => ({ ...previous, [item.id]: { x: positions[item.id].x + dx, y: positions[item.id].y + dy } })); }}
@@ -218,7 +235,7 @@ export function Canvas({ screenPositions, setScreenPositions, onSelectScreen, vi
     observer.observe(host.current!); return () => observer.disconnect();
   }, []);
   useEffect(() => {
-    const cancel = () => { pointer.current = null; setAlignmentGuides({}); editorStore.getState().cancelGesture(); };
+    const cancel = () => { pointer.current = null; setAlignmentGuides({}); setSpacingMark(null); editorStore.getState().cancelGesture(); };
     const move = (e: PointerEvent) => {
       const p = pointer.current; if (!p || p.pointerId !== e.pointerId) return;
       const dx = e.clientX - p.x, dy = e.clientY - p.y;
@@ -228,17 +245,37 @@ export function Canvas({ screenPositions, setScreenPositions, onSelectScreen, vi
         if (state.currentScreenId !== p.screenId) { cancel(); return; }
         const design = currentScreen(state).designSize;
         const raw = p.mode === 'move' ? { ...p.bounds, x: p.bounds.x + dx / p.zoom, y: p.bounds.y + dy / p.zoom }
-          : { ...p.bounds, w: Math.min(design.width - p.bounds.x, p.bounds.w + dx / p.zoom), h: Math.min(design.height - p.bounds.y, p.bounds.h + dy / p.zoom) };
+          : (() => {
+            const edge = p.resizeEdge ?? 'bottom-right';
+            const min = p.min ?? { w: 1, h: 1 };
+            const changeX = Math.round(dx / p.zoom), changeY = Math.round(dy / p.zoom);
+            if (edge === 'left') { const right = p.bounds!.x + p.bounds!.w, x = Math.max(0, Math.min(right - min.w, p.bounds!.x + changeX)); return { ...p.bounds!, x, w: right - x }; }
+            if (edge === 'right') return { ...p.bounds!, w: Math.max(min.w, Math.min(design.width - p.bounds!.x, p.bounds!.w + changeX)) };
+            if (edge === 'top') { const bottom = p.bounds!.y + p.bounds!.h, y = Math.max(0, Math.min(bottom - min.h, p.bounds!.y + changeY)); return { ...p.bounds!, y, h: bottom - y }; }
+            if (edge === 'bottom') return { ...p.bounds!, h: Math.max(min.h, Math.min(design.height - p.bounds!.y, p.bounds!.h + changeY)) };
+            if (edge === 'top-left') {
+              const right = p.bounds!.x + p.bounds!.w, bottom = p.bounds!.y + p.bounds!.h;
+              const x = Math.max(0, Math.min(right - min.w, p.bounds!.x + changeX)), y = Math.max(0, Math.min(bottom - min.h, p.bounds!.y + changeY));
+              return { ...p.bounds!, x, y, w: right - x, h: bottom - y };
+            }
+            return { ...p.bounds!, w: Math.max(min.w, Math.min(design.width - p.bounds!.x, p.bounds!.w + changeX)), h: Math.max(min.h, Math.min(design.height - p.bounds!.y, p.bounds!.h + changeY)) };
+          })();
         if (p.mode === 'move' && p.peers) {
           const aligned = alignBounds(raw, design, p.peers, p.zoom, { snap: current.current.alignment.snap, guides: current.current.alignment.guides, previous: { xKey: p.xKey, yKey: p.yKey } });
           p.xKey = aligned.guides.xKey; p.yKey = aligned.guides.yKey; setAlignmentGuides(aligned.guides);
+          const spaced = resolveEqualSpacing(aligned.bounds, p.spacingCandidates ?? [], p.zoom, { snap: current.current.alignment.snap, guides: current.current.alignment.guides,
+            blockedAxes: [aligned.guides.xKey ? 'x' : null, aligned.guides.yKey ? 'y' : null].filter((axis): axis is 'x' | 'y' => axis !== null), previousKey: p.spacingKey });
+          p.spacingKey = spaced.key; setSpacingMark(spaced.mark ?? null); editorStore.getState().previewBounds(spaced.bounds);
+        } else if (p.mode === 'resize' && p.peers && p.min) {
+          const aligned = alignResizeBounds(raw, design, p.peers, p.zoom, { snap: current.current.alignment.snap, guides: current.current.alignment.guides, min: p.min, edge: p.resizeEdge, previous: { xKey: p.xKey, yKey: p.yKey } });
+          p.xKey = aligned.guides.xKey; p.yKey = aligned.guides.yKey; setAlignmentGuides(aligned.guides); setSpacingMark(null);
           editorStore.getState().previewBounds(aligned.bounds);
-        } else editorStore.getState().previewBounds(raw);
+        } else { setSpacingMark(null); editorStore.getState().previewBounds(raw); }
       }
     };
     const end = (e: PointerEvent) => {
       if (pointer.current?.pointerId !== e.pointerId) return;
-      move(e); pointer.current = null; setAlignmentGuides({}); editorStore.getState().commitGesture();
+      move(e); pointer.current = null; setAlignmentGuides({}); setSpacingMark(null); editorStore.getState().commitGesture();
     };
     const key = (e: KeyboardEvent) => { if (e.key === 'Escape') cancel(); };
     window.addEventListener('pointermove', move); window.addEventListener('pointerup', end);
@@ -246,11 +283,11 @@ export function Canvas({ screenPositions, setScreenPositions, onSelectScreen, vi
     return () => { cancel(); window.removeEventListener('pointermove', move); window.removeEventListener('pointerup', end);
       window.removeEventListener('pointercancel', cancel); window.removeEventListener('blur', cancel); window.removeEventListener('keydown', key); };
   }, []);
-  const begin = (e: KonvaEventObject<PointerEvent>, id: string, mode: 'move' | 'resize') => {
+  const begin = (e: KonvaEventObject<PointerEvent>, id: string, mode: 'move' | 'resize', resizeEdge?: ResizeEdge) => {
     if (preview) return;
     if (e.evt.button !== 0 && e.evt.button !== 2) return;
     e.cancelBubble = true;
-    if (behaviorMode) { if (e.evt.button === 0) onBehaviorTrigger?.(id); return; }
+    if (behaviorMode && e.evt.button === 0) onBehaviorTrigger?.(id);
     if (interaction) {
       if (e.evt.button !== 0) return;
       const node = screen.nodes.find(n => n.id === id);
@@ -275,14 +312,16 @@ export function Canvas({ screenPositions, setScreenPositions, onSelectScreen, vi
     const state = editorStore.getState();
     if (readOnly) { state.select(id); return; }
     state.beginGesture(id);
-    const bounds = currentScreen(state).nodes.find(n => n.id === id)!.bounds;
-    const visibleInGroup = tabVisibility(currentScreen(state).nodes, editSelection);
-    const peers = mode === 'move' ? currentScreen(state).nodes.filter(node => node.id !== id && node.state.visible && visibleInGroup(node.id)).map(node => ({ id: node.id, bounds: node.bounds })) : undefined;
-    pointer.current = { pointerId, x, y, mode, bounds: { ...bounds }, zoom: view.zoom, panX: view.panX, panY: view.panY, screenId: state.currentScreenId, peers };
+    const node = currentScreen(state).nodes.find(n => n.id === id); if (!node) { state.cancelGesture(); return; }
+    const bounds = node.bounds, visibleInGroup = tabVisibility(currentScreen(state).nodes, editSelection);
+    const peers = currentScreen(state).nodes.filter(item => item.id !== id && item.state.visible && visibleInGroup(item.id)).map(item => ({ id: item.id, bounds: item.bounds }));
+    pointer.current = { pointerId, x, y, mode, resizeEdge, bounds: { ...bounds }, zoom: view.zoom, panX: view.panX, panY: view.panY, screenId: state.currentScreenId, peers,
+      min: CATALOG[node.type].min, spacingCandidates: mode === 'move' ? equalSpacingCandidates(bounds, peers, currentScreen(state).designSize) : undefined };
+    setAlignmentGuides({}); setSpacingMark(null);
   };
   // Stable callback keeps the other 299 drawings untouched during a single-node drag.
   const beginRef = useRef(begin); beginRef.current = begin;
-  const stableDown = useRef((e: KonvaEventObject<PointerEvent>, id: string, mode: 'move' | 'resize') => beginRef.current(e, id, mode)).current;
+  const stableDown = useRef((e: KonvaEventObject<PointerEvent>, id: string, mode: 'move' | 'resize', edge?: ResizeEdge) => beginRef.current(e, id, mode, edge)).current;
   const stableEdit = useRef((id: string) => {
     if (current.current.preview || current.current.readOnly) return;
     const state = editorStore.getState(), node = currentScreen(state).nodes.find(n => n.id === id);
@@ -300,8 +339,7 @@ export function Canvas({ screenPositions, setScreenPositions, onSelectScreen, vi
       const px = e.clientX - rect.left, py = e.clientY - rect.top;
       const old = c.view;
       if (c.interaction) {
-        const ox = Math.floor((c.size.width - c.basis.width * old.zoom) / 2) + old.panX + c.basis.dx * old.zoom;
-        const oy = Math.floor((c.size.height - c.basis.height * old.zoom) / 2) + old.panY + c.basis.dy * old.zoom;
+        const ox = c.origin.x, oy = c.origin.y;
         const x = (px - ox) / old.zoom, y = (py - oy) / old.zoom;
         const node = [...c.screen.nodes].reverse().find(n => x >= n.bounds.x && y >= n.bounds.y && x < n.bounds.x + n.bounds.w && y < n.bounds.y + n.bounds.h);
         if (node?.type === 'minecraft:cycle-button' && node.state.enabled && node.state.visible && e.deltaY !== 0) {
@@ -338,7 +376,12 @@ export function Canvas({ screenPositions, setScreenPositions, onSelectScreen, vi
   const editSelection = Object.fromEntries(screen.nodes.filter(n => n.type === 'minecraft:creative-tab' && n.props.groupId && validEditGroups.has(n.props.groupId)).map(n => [n.id, { tabSelected: n.type === 'minecraft:creative-tab' && editTabs[n.props.groupId!] === n.id }]));
   const visualSelection = behaviorPreview ?? (preview ? null : editSelection);
   const visibleInGroup = tabVisibility(screen.nodes, visualSelection), managed = tabManaged(screen.nodes);
-  const renderNodes = screen.nodes.map(node => node.type === 'minecraft:creative-tab' && visualSelection?.[node.id]?.tabSelected !== undefined ? { ...node, props: { ...node.props, selected: visualSelection[node.id].tabSelected! } } : node);
+  const renderNodes = screen.nodes.map(node => {
+    if (node.type !== 'minecraft:creative-tab') return node;
+    const navigationSelected = screenNavigationSelected(node, screen.id, screenTabGroups);
+    if (navigationSelected !== null) return { ...node, props: { ...node.props, selected: navigationSelected } };
+    return visualSelection?.[node.id]?.tabSelected !== undefined ? { ...node, props: { ...node.props, selected: visualSelection[node.id].tabSelected! } } : node;
+  });
   const editingNode = editingId === selected ? screen.nodes.find(n => n.id === editingId) : undefined;
   const drawNode = (original: GuiNode) => { const override = behaviorPreview?.[original.id];
           if (behaviorPreview && (!(override?.visible ?? (managed.has(original.id) ? true : original.state.visible)) || !visibleInGroup(original.id))) return null;
@@ -347,9 +390,10 @@ export function Canvas({ screenPositions, setScreenPositions, onSelectScreen, vi
           if (behaviorPreview && node.type === 'minecraft:string-widget' && override?.text !== undefined) node = { ...node, props: { ...node.props, text: { kind: 'literal', value: override.text } } };
           if (behaviorPreview && node.type === 'minecraft:checkbox' && override?.checked !== undefined) node = { ...node, props: { ...node.props, selected: override.checked } };
           const value = interactionValues[node.id];
-          const shown = interaction && node.type === 'minecraft:checkbox' && typeof value === 'boolean' ? { ...node, props: { ...node.props, selected: value } }
+          const checkedValue = behaviorPreview?.[node.id]?.checked ?? (typeof value === 'boolean' ? value : undefined);
+          const shown = interaction && node.type === 'minecraft:checkbox' && checkedValue !== undefined ? { ...node, props: { ...node.props, selected: checkedValue } }
             : interaction && node.type === 'minecraft:cycle-button' && typeof value === 'string' && node.props.options.some(o => o.id === value) ? { ...node, props: { ...node.props, initialOptionId: value } } : node;
-          return <NodeDrawing key={node.id} node={shown} bounds={gesture?.id === node.id ? gesture.draft : node.bounds} onDown={stableDown} onEdit={interaction ? () => {} : stableEdit} assets={assets} cache={cache} resourceActive={!!resources.baseName} focused={interaction ? interactionFocus === node.id : editingId === node.id} selected={node.id === selected} font={font} panel={screen.background.kind === 'panel'} zoom={renderZoom}/>; };
+          return <NodeDrawing key={node.id} node={shown} numericState={numericRuntime[node.id]} numericOverlay={interaction || behaviorMode} bounds={gesture?.id === node.id ? gesture.draft : node.bounds} onDown={stableDown} onEdit={interaction ? () => {} : stableEdit} assets={assets} cache={cache} resourceActive={!!resources.baseName} focused={interaction ? interactionFocus === node.id : editingId === node.id} selected={node.id === selected} font={font} panel={screen.background.kind === 'panel'} zoom={renderZoom}/>; };
   const chip = (() => {
     if (!b || preview || interaction || behaviorPreview) return null;
     const chipWidth = 112, chipHeight = 18;
@@ -365,6 +409,7 @@ export function Canvas({ screenPositions, setScreenPositions, onSelectScreen, vi
     data-grid-visible={grid.visible && !preview} data-grid-spacing={grid.spacing}
     data-smart-guides={alignment.guides} data-smart-snap={alignment.snap}
     data-alignment-x={alignmentGuides.x ?? ''} data-alignment-y={alignmentGuides.y ?? ''}
+    data-spacing-axis={spacingMark?.axis ?? ''} data-spacing-gap={spacingMark?.gap ?? ''}
     data-gui-scale={preview?.effectiveScale} data-gui-width={preview?.logicalWidth} data-gui-height={preview?.logicalHeight}
     onDragOver={e => e.preventDefault()} onDrop={drop}
     onContextMenu={e => { if (!(e.target instanceof HTMLInputElement)) e.preventDefault(); }}>
@@ -377,8 +422,8 @@ export function Canvas({ screenPositions, setScreenPositions, onSelectScreen, vi
     }}>
       <Layer><Group clipX={frame?.x} clipY={frame?.y} clipWidth={frame?.w} clipHeight={frame?.h}>
         {frame && <Rect x={frame.x} y={frame.y} width={frame.w} height={frame.h} fill="#080a0c" stroke="#6a7d91" strokeWidth={1}/>}
-        {!preview && screens.filter(item => item.id !== screen.id).map(item => <Group key={item.id} x={origin.x + (positions[item.id].x - activePosition.x) * renderZoom} y={origin.y + (positions[item.id].y - activePosition.y) * renderZoom} scaleX={renderZoom} scaleY={renderZoom}>
-          <OtherScreen screen={item} assets={assets} cache={cache} resources={resources} font={font} zoom={renderZoom} select={() => onSelectScreen(item.id)} selectOnLeft={view.tool === 'select'}/>
+        {!preview && !interaction && !behaviorMode && screens.filter(item => item.id !== screen.id).map(item => <Group key={item.id} x={origin.x + (positions[item.id].x - activePosition.x) * renderZoom} y={origin.y + (positions[item.id].y - activePosition.y) * renderZoom} scaleX={renderZoom} scaleY={renderZoom}>
+          <OtherScreen screen={item} assets={assets} cache={cache} resources={resources} font={font} zoom={renderZoom} select={() => onSelectScreen(item.id)} selectOnLeft={view.tool === 'select'} screenTabGroups={screenTabGroups}/>
           {header(item)}
         </Group>)}
         <Group x={origin.x} y={origin.y} scaleX={renderZoom} scaleY={renderZoom} listening={!preview}>
@@ -401,6 +446,24 @@ export function Canvas({ screenPositions, setScreenPositions, onSelectScreen, vi
           if (!raster) { drawNativePanel(ctx, panelImage.image, panel.w, panel.h); return; }
           ctx.save(); ctx.imageSmoothingEnabled = false; ctx.drawImage(raster, 0, 0); ctx.restore();
         }}/>}
+        {renderNodes.filter(node => !beforePanel(node)).map(drawNode)}
+        {b && !preview && !interaction && !behaviorPreview && <Group>
+          <Rect x={b.x} y={b.y} width={b.w} height={b.h} stroke="#080a0c" opacity={0.9} strokeWidth={3 / renderZoom} listening={false}/>
+          <Rect x={b.x} y={b.y} width={b.w} height={b.h} stroke={C.accent} strokeWidth={1.5 / renderZoom} listening={false}/>
+          {!readOnly && selectedNode?.type !== 'minecraft:creative-tab' && <Group>
+            {([
+              { edge: 'left', x: b.x - 4 / renderZoom, y: b.y + b.h / 2 - 4 / renderZoom, cursor: 'ew-resize' },
+              { edge: 'right', x: b.x + b.w - 4 / renderZoom, y: b.y + b.h / 2 - 4 / renderZoom, cursor: 'ew-resize' },
+              { edge: 'top', x: b.x + b.w / 2 - 4 / renderZoom, y: b.y - 4 / renderZoom, cursor: 'ns-resize' },
+              { edge: 'bottom', x: b.x + b.w / 2 - 4 / renderZoom, y: b.y + b.h - 4 / renderZoom, cursor: 'ns-resize' },
+              { edge: 'top-left', x: b.x - 4 / renderZoom, y: b.y - 4 / renderZoom, cursor: 'nwse-resize' },
+              { edge: 'bottom-right', x: b.x + b.w - 4 / renderZoom, y: b.y + b.h - 4 / renderZoom, cursor: 'nwse-resize' },
+            ] as const).map(handle => <Rect key={handle.edge} x={handle.x} y={handle.y} width={8 / renderZoom} height={8 / renderZoom}
+              fill={C.accent} stroke="#221604" strokeWidth={1 / renderZoom} onPointerDown={e => begin(e, selected!, 'resize', handle.edge)}
+              onMouseEnter={e => { const stage = e.target.getStage(); if (stage) stage.container().style.cursor = handle.cursor; }}
+              onMouseLeave={e => { const stage = e.target.getStage(); if (stage) stage.container().style.cursor = 'default'; }}/>)}
+          </Group>}
+        </Group>}
         {grid.visible && !preview && <Shape listening={false} sceneFunc={context => {
           const ctx = context._context, { width, height } = screen.designSize, spacing = grid.spacing;
           const left = Math.max(0, -origin.x / renderZoom), right = Math.min(width, (size.width - origin.x) / renderZoom);
@@ -412,30 +475,33 @@ export function Canvas({ screenPositions, setScreenPositions, onSelectScreen, vi
           for (let y = Math.ceil(top / spacing) * spacing; y <= bottom; y += spacing) { ctx.moveTo(left, y); ctx.lineTo(right, y); }
           ctx.stroke(); ctx.restore();
         }}/>}
-        {renderNodes.filter(node => !beforePanel(node)).map(drawNode)}
-        {b && !preview && !interaction && !behaviorPreview && <Group>
-          <Rect x={b.x} y={b.y} width={b.w} height={b.h} stroke="#080a0c" opacity={0.9} strokeWidth={3 / renderZoom} listening={false}/>
-          <Rect x={b.x} y={b.y} width={b.w} height={b.h} stroke={C.accent} strokeWidth={1.5 / renderZoom} listening={false}/>
-          {!readOnly && selectedNode?.type !== 'minecraft:creative-tab' && <Group>
-            <Rect x={b.x + b.w - 8 / renderZoom} y={b.y + b.h - 8 / renderZoom} width={16 / renderZoom} height={16 / renderZoom} fill="rgba(0,0,0,0.01)" listening={false}/>
-            <Rect x={b.x + b.w - 4 / renderZoom} y={b.y + b.h - 4 / renderZoom} width={7 / renderZoom} height={7 / renderZoom}
-              fill={C.accent} stroke="#221604" strokeWidth={1 / renderZoom} onPointerDown={e => begin(e, selected!, 'resize')}
-              onMouseEnter={e => { const stage = e.target.getStage(); if (stage) stage.container().style.cursor = 'nwse-resize'; }}
-              onMouseLeave={e => { const stage = e.target.getStage(); if (stage) stage.container().style.cursor = 'default'; }}/>
-          </Group>}
-        </Group>}
       </Group>
       {chip && <Group x={chip.x} y={chip.y} listening={false}>
         <Rect width={chip.width} height={chip.height} fill={chrome.bg} opacity={0.96} stroke={chrome.line} strokeWidth={1} cornerRadius={3}/>
         <Text x={6} y={5} text={chip.text} fontSize={9} fontFamily={C.mono} fill={chrome.text}/>
       </Group>}
       </Group></Layer>
-      {!preview && alignment.guides && (alignmentGuides.x !== undefined || alignmentGuides.y !== undefined) && <Layer listening={false}>
+      {!preview && alignment.guides && (alignmentGuides.x !== undefined || alignmentGuides.y !== undefined || !!spacingMark) && <Layer listening={false}>
         {alignmentGuides.x !== undefined && <Rect x={origin.x + alignmentGuides.x * renderZoom - 0.5} y={origin.y} width={1} height={screen.designSize.height * renderZoom} fill="#55d6bd" opacity={0.95}/>}
         {alignmentGuides.y !== undefined && <Rect x={origin.x} y={origin.y + alignmentGuides.y * renderZoom - 0.5} width={screen.designSize.width * renderZoom} height={1} fill="#55d6bd" opacity={0.95}/>}
+        {spacingMark && <Shape listening={false} sceneFunc={context => {
+          const ctx = context._context; ctx.save(); ctx.beginPath(); ctx.lineWidth = 1; ctx.strokeStyle = '#f0b45c';
+          for (const [a, b] of spacingMark.intervals) {
+            if (spacingMark.axis === 'x') { const y = origin.y + spacingMark.cross * renderZoom, x1 = origin.x + a * renderZoom, x2 = origin.x + b * renderZoom;
+              ctx.moveTo(x1, y); ctx.lineTo(x2, y); ctx.moveTo(x1, y - 3); ctx.lineTo(x1, y + 3); ctx.moveTo(x2, y - 3); ctx.lineTo(x2, y + 3);
+            } else { const x = origin.x + spacingMark.cross * renderZoom, y1 = origin.y + a * renderZoom, y2 = origin.y + b * renderZoom;
+              ctx.moveTo(x, y1); ctx.lineTo(x, y2); ctx.moveTo(x - 3, y1); ctx.lineTo(x + 3, y1); ctx.moveTo(x - 3, y2); ctx.lineTo(x + 3, y2);
+            }
+          }
+          ctx.stroke(); ctx.restore();
+        }}/>}
+        {spacingMark && <Group listening={false}>{spacingMark.intervals.map(([a, b], index) => <Text key={`${spacingMark.key}-${index}`} x={spacingMark.axis === 'x' ? origin.x + (a + b) / 2 * renderZoom - 15 : origin.x + spacingMark.cross * renderZoom - 18}
+          y={spacingMark.axis === 'x' ? origin.y + spacingMark.cross * renderZoom - 13 : origin.y + (a + b) / 2 * renderZoom - 5}
+          text={`${spacingMark.gap}px`} fontSize={9} fontFamily={C.mono} fill="#ffd389" listening={false}/>)}</Group>}
       </Layer>}
       {!preview && <Rulers width={size.width} height={size.height} origin={origin} zoom={renderZoom} design={screen.designSize} theme={theme}/>}
     </Stage>
+    {(interaction || behaviorMode) && !preview && <NumericPreview key={`${screen.id}:${numericPreviewEpoch}`} screenId={screen.id} nodes={renderNodes.filter(isNumericNode).filter(node => (behaviorPreview?.[node.id]?.visible ?? (managed.has(node.id) ? true : node.state.visible)) && visibleInGroup(node.id))} origin={origin} zoom={renderZoom} family={font.family} onVisualChange={setNumericRuntime}/>}
     {editingNode && !preview && !readOnly && <InlineTextEditor key={editingNode.id} node={editingNode} left={origin.x + editingNode.bounds.x * view.zoom}
       top={origin.y + editingNode.bounds.y * view.zoom} width={editingNode.bounds.w * view.zoom} height={editingNode.bounds.h * view.zoom}
       zoom={view.zoom} close={() => setEditingId(null)}/>}

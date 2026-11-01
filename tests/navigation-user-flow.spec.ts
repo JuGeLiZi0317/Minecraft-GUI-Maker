@@ -12,7 +12,7 @@ test('Rectangle navigation declaration, isolated canvas click, restore and ZIP',
   const saved = await read(); expect(saved.schemaVersion).toBe('0.7.0'); expect(saved.screens[0].screenTargets).toEqual([{ id: 'screen_1', name: '高级设置' }]);
   expect(saved.screens[0].behaviors[0]).toMatchObject({ event: { type: 'rectangle-click', sourceId: 'node_1' }, action: { type: 'open_screen', targetScreenId: 'screen_1' } });
   expect(saved.screens[0].nodes[0].source.category).toBe('vanilla-draw');
-  const history = await page.getByTestId('history-count').textContent(); await panel.getByRole('button', { name: '开始画布行为测试' }).click();
+  const history = await page.getByTestId('history-count').textContent(); await page.getByRole('button', { name: '交互预览', exact: true }).click();
   const host = page.getByTestId('canvas-host'), point = await host.evaluate(el => { const r = el.getBoundingClientRect(), z = Number((el as HTMLElement).dataset.zoom); return { x: r.x + Number((el as HTMLElement).dataset.originX) + 19 * z, y: r.y + Number((el as HTMLElement).dataset.originY) + 19 * z }; });
   await page.mouse.click(point.x, point.y); await expect(panel.getByTestId('behavior-preview')).toContainText('导航意图：screen_1（高级设置）；未切换 Screen');
   await expect(page.getByRole('button', { name: '选择 node_1' })).toBeDisabled();

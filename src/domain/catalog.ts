@@ -4,6 +4,16 @@ export const TARGET = {
 } as const;
 export const CATALOG_VERSION = 'mc-1.21.1-neoforge-21.1.244-audit-1' as const;
 export const CATALOG = {
+  'minecraft:numeric-input': {
+    label: 'Numeric Input', subtitle: 'EditBox 数值校验与提交', glyph: '#', size: { w: 120, h: 20 }, min: { w: 12, h: 12 },
+    source: { category: 'vanilla-widget', className: 'net.minecraft.client.gui.components.EditBox' },
+    construction: 'constructor + explicit numeric draft/validation/commit adapter', evidence: 'components/EditBox.java:95-138,308-410; neoforge/client/gui/ConfigurationScreen.java:861-905',
+  },
+  'minecraft:slider': {
+    label: 'Slider', subtitle: '原版单值滑块适配', glyph: '↔', size: { w: 150, h: 20 }, min: { w: 9, h: 9 },
+    source: { category: 'vanilla-widget', className: 'net.minecraft.client.gui.components.AbstractSliderButton' },
+    construction: 'subclass + updateMessage/applyValue + quantized keyboard adapter', evidence: 'components/AbstractSliderButton.java:19-151',
+  },
   'minecraft:button': {
     label: 'Button', subtitle: '原版按钮', glyph: '▣', size: { w: 150, h: 20 }, min: { w: 9, h: 9 },
     source: { category: 'vanilla-widget', className: 'net.minecraft.client.gui.components.Button' },
@@ -38,6 +48,11 @@ export const CATALOG = {
     label: 'CreativeTab', subtitle: '顶部标签视觉', glyph: '▱', size: { w: 26, h: 32 }, min: { w: 26, h: 32 },
     source: { category: 'screen-internal', className: 'net.minecraft.client.gui.screens.inventory.CreativeModeInventoryScreen' },
     construction: 'screen-draw', evidence: 'CreativeModeInventoryScreen.java:840-935',
+  },
+  'minecraft:multi-line-text-widget': {
+    label: 'MultiLineTextWidget', subtitle: '原版多行说明文本', glyph: '≡', size: { w: 150, h: 36 }, min: { w: 1, h: 9 },
+    source: { category: 'vanilla-widget', className: 'net.minecraft.client.gui.components.MultiLineTextWidget' },
+    construction: 'constructor + setMaxWidth/setMaxRows/setCentered/setColor', evidence: 'components/MultiLineTextWidget.java:19-78; MultiLineLabel.java:56-139',
   },
 } as const;
 export type NodeType = keyof typeof CATALOG;

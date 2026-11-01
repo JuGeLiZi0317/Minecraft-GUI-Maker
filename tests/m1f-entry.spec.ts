@@ -2,9 +2,9 @@ import { expect, test } from '@playwright/test';
 
 test('entry transaction survives history/reload; preview starts at entry and directed navigation resets target', async ({ page }) => {
   await page.goto('/'); await page.getByRole('button', { name: '添加 Button', exact: true }).click();
-  const first = await page.getByLabel('当前 Screen', { exact: true }).inputValue();
-  await page.getByRole('button', { name: '新增 Screen', exact: true }).click();
-  const second = await page.getByLabel('当前 Screen', { exact: true }).inputValue();
+  const first = await page.getByLabel('当前画布', { exact: true }).inputValue();
+  await page.getByRole('button', { name: '新增画布', exact: true }).click();
+  const second = await page.getByLabel('当前画布', { exact: true }).inputValue();
   await page.getByRole('button', { name: '添加 Checkbox', exact: true }).click();
   await page.getByLabel('项目入口 Screen').selectOption(first);
   const read = async () => JSON.parse((await page.getByTestId('project-json').textContent())!);
@@ -12,16 +12,16 @@ test('entry transaction survives history/reload; preview starts at entry and dir
   await page.getByText('编辑', { exact: true }).click(); await page.getByRole('button', { name: '撤销操作', exact: true }).click(); expect((await read()).entryScreenId).toBeUndefined();
   await page.getByText('编辑', { exact: true }).click(); await page.getByRole('button', { name: '重做操作', exact: true }).click(); expect((await read()).entryScreenId).toBe(first);
   await expect(page.getByTestId('save-status')).toContainText('已保存'); await page.reload(); expect((await read()).entryScreenId).toBe(first);
-  await page.getByLabel('当前 Screen', { exact: true }).selectOption(first);
-  await page.getByRole('button', { name: '删除 Screen', exact: true }).click(); await expect(page.locator('.statusbar')).toContainText('替代入口');
+  await page.getByLabel('当前画布', { exact: true }).selectOption(first);
+  await page.getByRole('button', { name: '删除当前画布', exact: true }).click(); await expect(page.locator('.statusbar')).toContainText('替代入口');
   await page.getByRole('button', { name: '行为', exact: true }).click(); const panel = page.getByTestId('behavior-panel');
   await panel.getByRole('button', { name: '新增 Screen 目标' }).click(); await panel.getByLabel('Screen 目标名称').fill('Next'); await panel.getByLabel('绑定真实 Screen').selectOption(second); await panel.getByRole('button', { name: '保存 Screen 目标' }).click();
   await panel.getByRole('button', { name: '新增规则' }).click(); await panel.getByLabel('行为动作').selectOption('open_screen'); await panel.getByRole('button', { name: '保存规则' }).click();
-  await page.getByLabel('当前 Screen', { exact: true }).selectOption(second);
+  await page.getByLabel('当前画布', { exact: true }).selectOption(second);
   await panel.getByRole('button', { name: '新增 Screen 目标' }).click(); await panel.getByLabel('Screen 目标名称').fill('Reopen'); await panel.getByLabel('绑定真实 Screen').selectOption(second); await panel.getByRole('button', { name: '保存 Screen 目标' }).click();
   await panel.getByRole('button', { name: '新增规则' }).click(); await panel.getByLabel('行为动作').selectOption('open_screen'); await panel.getByRole('button', { name: '保存规则' }).click();
-  const before = await read(); await panel.getByRole('button', { name: '开始画布行为测试' }).click(); await expect(page.getByLabel('当前 Screen', { exact: true })).toHaveValue(first);
-  await panel.getByRole('button', { name: '模拟触发 node_1' }).click(); await expect(page.getByLabel('当前 Screen', { exact: true })).toHaveValue(second);
+  const before = await read(); await page.getByRole('button', { name: '交互预览', exact: true }).click(); await expect(page.getByLabel('当前画布', { exact: true })).toHaveValue(first);
+  await panel.getByRole('button', { name: '模拟触发 node_1' }).click(); await expect(page.getByLabel('当前画布', { exact: true })).toHaveValue(second);
   await expect(panel.getByTestId('behavior-preview')).toHaveText('预览中：{}'); expect(await read()).toEqual(before);
   await panel.getByRole('button', { name: /模拟触发 node_2/ }).click();
   await expect(panel.getByTestId('behavior-preview')).toContainText('预览中：{}');

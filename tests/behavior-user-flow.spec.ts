@@ -20,6 +20,7 @@ test('F0 normal workflow: rule, simulation, reset, save, restore and exports', a
   const saved = await read(); expect(saved.schemaVersion).toBe('0.6.0'); expect(saved.screens[0].behaviors[0]).toMatchObject({ id: 'rule_1', event: { type: 'button-click', sourceId: 'node_1' }, action: { type: 'set-text', targetId: 'node_2', text: '已激活' } });
   await expect(page.getByTestId('save-status')).toContainText('已保存'); const database = await stored(page);
   const history = await page.getByTestId('history-count').textContent(), canvas = page.getByTestId('canvas-host');
+  await page.getByRole('button', { name: '交互预览', exact: true }).click();
   const before = await canvas.screenshot(); await panel.getByRole('button', { name: '模拟触发 node_1' }).click();
   await expect(panel.getByTestId('behavior-preview')).toContainText('已激活'); const after = await canvas.screenshot(); expect(before.equals(after)).toBe(false);
   expect(await read()).toEqual(saved); expect(await page.getByTestId('history-count').textContent()).toBe(history); expect(await stored(page)).toEqual(database);
@@ -48,7 +49,10 @@ test('checkbox change simulates visibility, rule editing and deletion are undoab
   await page.getByRole('button', { name: '行为', exact: true }).click(); const panel = page.getByTestId('behavior-panel'); await panel.getByRole('button', { name: '新增规则' }).click();
   await panel.getByLabel('行为动作').selectOption('set-visible'); await panel.getByLabel('目标组件').selectOption('node_2'); await panel.getByLabel('行为可见性').selectOption('false'); await panel.getByRole('button', { name: '保存规则' }).click();
   const read = async () => JSON.parse((await page.getByTestId('project-json').textContent())!); const original = await read();
-  const before = await page.getByTestId('canvas-host').screenshot(); await panel.getByRole('button', { name: /模拟触发 node_1/ }).click();
+  await page.getByRole('button', { name: '交互预览', exact: true }).click();
+  const host = page.getByTestId('canvas-host'), before = await host.screenshot();
+  const point = await host.evaluate(element => { const rect = element.getBoundingClientRect(), zoom = Number(element.getAttribute('data-zoom')); return { x: rect.x + Number(element.getAttribute('data-origin-x')) + 20 * zoom, y: rect.y + Number(element.getAttribute('data-origin-y')) + 20 * zoom }; });
+  await page.mouse.click(point.x, point.y);
   await expect(panel.getByTestId('behavior-preview')).toContainText('"visible":false'); await expect(panel.getByTestId('behavior-preview')).toContainText('"checked":true');
   expect(before.equals(await page.getByTestId('canvas-host').screenshot())).toBe(false); expect(await read()).toEqual(original);
   await panel.getByRole('button', { name: '重置预览' }).click(); await panel.getByRole('button', { name: '编辑 rule_1' }).click(); await panel.getByLabel('行为可见性').selectOption('true'); await panel.getByRole('button', { name: '保存规则' }).click();

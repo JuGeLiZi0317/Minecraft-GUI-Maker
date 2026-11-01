@@ -1,9 +1,11 @@
 import { displayText } from '../domain/model';
 import type { GuiNode } from '../domain/schema';
 import { checkboxLayout, cycleLabel } from './h1Layout';
+import { multiLineLayout } from './multiLineText';
 
 type Checkbox = Extract<GuiNode, { type: 'minecraft:checkbox' }>;
 const layoutCache = new Map<string, ReturnType<typeof checkboxLayout>>();
+const multiLineCache = new Map<string, ReturnType<typeof multiLineLayout>>();
 export function previewCheckboxLayout(ctx: CanvasRenderingContext2D, node: Checkbox, family: string) {
   // Key uses only the portion used by the capped layout, plus overflow-relevant geometry.
   const text = displayText(node.props.message), prefix = text.slice(0, 1025);
@@ -92,11 +94,27 @@ function shadowText(ctx: CanvasRenderingContext2D, text: string, x: number, y: n
   ctx.fillText(text, x, y);
 }
 export function drawPreviewText(ctx: CanvasRenderingContext2D, node: GuiNode, w: number, h: number, family: string, panel = false) {
+  if (node.type === 'minecraft:numeric-input' || node.type === 'minecraft:slider') return; // Shared numeric renderer owns these nodes.
   if (node.type === 'minecraft:fill' || node.type === 'minecraft:creative-tab') return;
+  if (node.type === 'minecraft:multi-line-text-widget') {
+    const draft = { ...node, props: { ...node.props, maxWidth: w, maxRows: Math.max(1, Math.floor(h / 9)) } };
+    ctx.save(); ctx.font = `9px ${family}`; ctx.textBaseline = 'top'; ctx.textAlign = 'left';
+    const key = JSON.stringify([family, displayText(node.props.text), w, draft.props.maxRows]);
+    let layout = multiLineCache.get(key);
+    if (!layout) {
+      layout = multiLineLayout(draft, value => ctx.measureText(value).width);
+      if (multiLineCache.size >= 128) multiLineCache.delete(multiLineCache.keys().next().value!);
+      multiLineCache.set(key, layout);
+    }
+    ctx.fillStyle = rgba(node.props.color);
+    const shadow = rgba('#' + node.props.color.slice(1, 3) + [3, 5, 7].map(i => Math.floor(parseInt(node.props.color.slice(i, i + 2), 16) / 4).toString(16).padStart(2, '0')).join(''));
+    layout.lines.forEach((line, i) => shadowText(ctx, line, node.props.align === 'center' ? Math.floor(layout.width / 2) - Math.floor(layout.widths[i] / 2) : 0, i * 9, node.props.textShadow, shadow));
+    ctx.restore(); return;
+  }
   if (node.type === 'minecraft:checkbox') {
     const layout = previewCheckboxLayout(ctx, node, family);
     // Preview-only readability treatment: vanilla Checkbox hardcodes light text.
-    ctx.save(); ctx.font = `9px ${family}`; ctx.textBaseline = 'top'; ctx.textAlign = 'left'; ctx.fillStyle = panel ? '#404040' : '#e0e0e0';
+    ctx.save(); ctx.font = `9px ${family}`; ctx.textBaseline = 'top'; ctx.textAlign = 'left'; ctx.fillStyle = rgba(node.props.color ?? '#FFE0E0E0');
     layout.lines.forEach((line, i) => shadowText(ctx, line, layout.textX, layout.textY + i * layout.lineHeight, node.props.textShadow ?? false, panel ? '#101010' : '#383838')); ctx.restore(); return;
   }
   const text = node.type === 'minecraft:button' ? displayText(node.props.message) : node.type === 'minecraft:string-widget' ? displayText(node.props.text) : node.type === 'minecraft:cycle-button' ? cycleLabel(node) : node.props.value || (node.props.hint ? displayText(node.props.hint) : '');
@@ -104,7 +122,7 @@ export function drawPreviewText(ctx: CanvasRenderingContext2D, node: GuiNode, w:
   const padding = node.type === 'minecraft:edit-box' ? 4 : 0;
   ctx.save(); ctx.beginPath(); ctx.rect(0, 0, w, h); ctx.clip();
   ctx.font = `9px ${family}`; ctx.textBaseline = 'middle'; ctx.textAlign = align;
-  ctx.fillStyle = node.type === 'minecraft:string-widget' ? rgba(node.props.color) : '#e0e8f1';
+  ctx.fillStyle = rgba(node.props.color ?? '#FFE0E8F1');
   shadowText(ctx, fitPreviewText(ctx, text, Math.max(0, w - 2 * padding)), align === 'center' ? w / 2 : align === 'right' ? w : padding, h / 2, node.props.textShadow ?? false, node.type === 'minecraft:string-widget' ? rgba('#' + node.props.color.slice(1, 3) + [3, 5, 7].map(i => Math.floor(parseInt(node.props.color.slice(i, i + 2), 16) / 4).toString(16).padStart(2, '0')).join('')) : '#383a3c');
   ctx.restore();
 }

@@ -1,3 +1,5 @@
+import { emptyProject } from '../../../src/domain/model';
+import { legacyNode } from '../legacyNode';
 import { describe, expect, it, vi } from 'vitest';
 import { createNode } from '../../../src/domain/model';
 import { parseProject } from '../../../src/domain/schema';
@@ -9,7 +11,7 @@ import { buildPrompt, buildSpecification } from '../../../src/exports/specificat
 const types = ['minecraft:button', 'minecraft:edit-box', 'minecraft:string-widget', 'minecraft:checkbox', 'minecraft:cycle-button'] as const;
 describe('D-Shadow version and rendering', () => {
   it.each(types)('edits %s atomically and preserves undo, redo and round trip', async type => {
-    const store = createEditorStore(); store.getState().add(type);
+    const initial = emptyProject(); initial.schemaVersion = type === 'minecraft:checkbox' || type === 'minecraft:cycle-button' ? '0.4.0' : '0.1.0'; initial.screens[0].nodes.push(legacyNode(type, 'node_1')); const store = createEditorStore(initial);
     const old = structuredClone(store.getState().doc), id = old.screens[0].nodes[0].id;
     store.getState().updateNode(id, n => { if (n.type !== 'minecraft:fill' && n.type !== 'minecraft:creative-tab') n.props.textShadow = true; return n; });
     const updated = structuredClone(store.getState().doc);
@@ -35,6 +37,6 @@ describe('D-Shadow version and rendering', () => {
   it('never downgrades 0.5 when adding H1 or changing panel', () => {
     const store = createEditorStore(); store.getState().add('minecraft:button');
     store.getState().updateNode('node_1', n => { if (n.type !== 'minecraft:fill' && n.type !== 'minecraft:creative-tab') n.props.textShadow = true; return n; });
-    store.getState().add('minecraft:checkbox'); store.getState().setPanel(true); expect(store.getState().doc.schemaVersion).toBe('0.5.0');
+    store.getState().add('minecraft:checkbox'); store.getState().setPanel(true); expect(store.getState().doc.schemaVersion).toBe('0.17.0');
   });
 });

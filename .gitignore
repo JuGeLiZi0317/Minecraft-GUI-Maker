@@ -24,3 +24,7 @@ docs/validation/panel-sample/
 /docs/**
 !/docs/results/
 !/docs/results/**
+
+# Other docs
+/AGENTS.md
+/CODEX_HANDOFF.md

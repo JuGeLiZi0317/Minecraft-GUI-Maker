@@ -230,3 +230,10 @@
   .canvas-caption { max-width: 52%; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
   .canvas-badge { max-width: 48%; }
 }
+.numeric-live-input { z-index: 3; }
+.numeric-live-input input { width: 100%; height: 100%; border: 0; border-radius: 0; outline-offset: -1px; background: transparent; min-width: 0; }
+.numeric-live-error { display: block; padding: 3px 5px; background: #2b1918; color: #ffb3ad; font: 11px/1.4 sans-serif; min-width: 160px; position: absolute; top: 100%; z-index: 4; }
+.numeric-live-slider { z-index: 3; touch-action: none; cursor: pointer; border-radius: 0; }
+.numeric-live-slider[aria-disabled=true] { cursor: default; }
+.numeric-live-slider:focus-visible { outline: 1px solid #e0e0e0; outline-offset: -1px; }
+.numeric-preview-events { position: absolute; z-index: 3; bottom: 48px; left: 16px; max-width: calc(100% - 32px); background: #121923; color: #b3c5d6; padding: 4px 7px; font: 10px/1.5 monospace; pointer-events: none; }

@@ -1,3 +1,5 @@
+import { emptyProject } from '../../../src/domain/model';
+import { legacyNode } from '../legacyNode';
 import { expect, it } from 'vitest';
 import { createEditorStore } from '../../../src/editor/store';
 import { parseProject } from '../../../src/domain/schema';
@@ -5,7 +7,7 @@ import { beginExport, referenceFor } from '../../../src/exports/snapshot';
 import { buildSpecification, buildPrompt } from '../../../src/exports/specification';
 
 it('explicit entry upgrade is atomic, protected, undoable and never inferred from editor selection', async () => {
-  const store = createEditorStore(); store.getState().add('minecraft:button'); store.getState().addScreen();
+  const initial = emptyProject(); initial.screens[0].nodes.push(legacyNode('minecraft:button', 'node_1')); const store = createEditorStore(initial); store.getState().addScreen();
   const legacy = structuredClone(store.getState().doc), first = legacy.screens[0].id, second = legacy.screens[1].id;
   expect(parseProject(JSON.stringify(legacy))).toEqual(legacy);
   expect(legacy.entryScreenId).toBeUndefined();
@@ -14,7 +16,7 @@ it('explicit entry upgrade is atomic, protected, undoable and never inferred fro
   store.getState().undo(); expect(store.getState().doc).toEqual(legacy); store.getState().redo(); expect(store.getState().doc).toEqual(saved);
   expect(() => store.getState().deleteScreen(first)).toThrow('替代入口');
   store.getState().renameScreen(first, 'Renamed'); expect(store.getState().doc.entryScreenId).toBe(first);
-  store.getState().add('minecraft:checkbox'); expect(store.getState().doc.schemaVersion).toBe('0.13.0');
+  store.getState().add('minecraft:checkbox'); expect(store.getState().doc.schemaVersion).toBe('0.17.0');
   const checkboxId = store.getState().doc.screens[1].nodes[0].id;
   store.getState().saveScreenTarget({ id: 'return_main', name: 'Return', boundScreenId: first });
   store.getState().saveBehavior({ id: 'return_rule', event: { type: 'checkbox-change', sourceId: checkboxId }, action: { type: 'open_screen', targetScreenId: 'return_main' } });

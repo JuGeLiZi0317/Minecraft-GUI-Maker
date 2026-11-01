@@ -1,10 +1,11 @@
-import { useEffect, useRef, useState, useSyncExternalStore, type RefObject } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore, type RefObject } from 'react';
 import { useStore } from 'zustand';
 import { currentScreen, editorStore } from '../editor/store';
 import { actionsOf, type Behavior, type BehaviorAction, type GuiNode, type ScreenTarget } from '../domain/schema';
 import { displayText } from '../domain/model';
 import { CATALOG } from '../domain/catalog';
 import { tabManaged, tabVisibility } from '../domain/tabGroups';
+import { isScreenNavigationTab, navigationTarget } from '../domain/screenTabNavigation';
 import { fontSession } from '../render/previewFont';
 
 export type BehaviorPreview = Record<string, { text?: string; visible?: boolean; checked?: boolean; tabSelected?: boolean }>;
@@ -27,14 +28,13 @@ function TextWidthHint({ text, node }: { text: string; node: GuiNode | undefined
   return <small role="status">{width > node.bounds.w ? '文字可能超出目标宽度，预览可能截断' : '文字宽度未超出目标'}（浏览器近似；不改变组件尺寸，游戏效果待验证）。</small>;
 }
 
-export function BehaviorPanel({ preview, setPreview, mode, setMode, canClick, triggerRef, onBeginPreview, onResetPreview, onOpenScreen, close, notify }: { preview: BehaviorPreview | null; setPreview: (value: BehaviorPreview | null) => void; mode: boolean; setMode: (value: boolean) => void; canClick: boolean; triggerRef: RefObject<((id: string) => void) | null>; onBeginPreview: () => void; onResetPreview: () => void; onOpenScreen: (screenId: string) => void; close: () => void; notify: (message: string, error?: boolean) => void }) {
+export function BehaviorPanel({ preview, setPreview, mode, setMode, canClick, triggerRef, onResetPreview, onOpenScreen, close, notify }: { preview: BehaviorPreview | null; setPreview: (value: BehaviorPreview | null) => void; mode: boolean; setMode: (value: boolean) => void; canClick: boolean; triggerRef: RefObject<((id: string) => void) | null>; onResetPreview: () => void; onOpenScreen: (screenId: string) => void; close: () => void; notify: (message: string, error?: boolean) => void }) {
   const doc = useStore(editorStore, s => s.doc), blocked = useStore(editorStore, s => s.blocked), gesture = useStore(editorStore, s => s.gesture), selected = useStore(editorStore, s => s.selected);
   const screen = useStore(editorStore, currentScreen), nodes = screen.nodes, screens = screen.screenTargets ?? [];
   const screenId = useStore(editorStore, s => s.currentScreenId);
   const [draft, setDraft] = useState<Draft | null>(null), [targetDraft, setTargetDraft] = useState<ScreenTarget | null>(null), [navigation, setNavigation] = useState<string | null>(null), [collapsed, setCollapsed] = useState(false);
   const previousDocument = useRef(doc);
   useEffect(() => { if (previousDocument.current !== doc) { previousDocument.current = doc; setPreview(null); setMode(false); setNavigation(null); } }, [doc, setPreview, setMode]);
-  useEffect(() => () => { triggerRef.current = null; }, [triggerRef]);
   const ids = () => new Set([doc.project.id, ...doc.screens.flatMap(item => [item.id, ...item.nodes.map(n => n.id), ...item.behaviors.map(r => r.id), ...(item.screenTargets ?? []).map(t => t.id)])]);
   const create = () => {
     const used = ids(); let i = 1; while (used.has(`rule_${i}`)) i++;
@@ -53,7 +53,14 @@ export function BehaviorPanel({ preview, setPreview, mode, setMode, canClick, tr
   const simulate = (source: GuiNode) => {
     if (editorStore.getState().currentScreenId !== screenId) return;
     if (source.type === 'minecraft:creative-tab') {
-      if (!source.props.groupId || !(preview?.[source.id]?.visible ?? source.state.visible)) return;
+      if (!(preview?.[source.id]?.visible ?? source.state.visible)) return;
+      if (isScreenNavigationTab(source)) {
+        const target = navigationTarget(source, doc.screenTabGroups ?? []);
+        if (!target) { notify('导航标签目标无效，已阻止切换', true); return; }
+        setPreview({}); setNavigation(target.targetScreenId); onOpenScreen(target.targetScreenId);
+        notify(`已打开 Screen ${target.targetScreenId}；目标局部状态按设计初态重新初始化`); return;
+      }
+      if (!source.props.groupId) return;
       const next = structuredClone(preview ?? {}); for (const n of nodes) if (n.type === 'minecraft:creative-tab' && n.props.groupId === source.props.groupId) next[n.id] = { ...next[n.id], tabSelected: n.id === source.id };
       setPreview(next); setNavigation(null); notify('已切换标签预览；设计初态不变'); return;
     }
@@ -78,10 +85,14 @@ export function BehaviorPanel({ preview, setPreview, mode, setMode, canClick, tr
     }
     notify('已模拟触发；仅预览状态改变');
   };
-  triggerRef.current = id => { const source = nodes.find(n => n.id === id); if (source) simulate(source); };
+  useLayoutEffect(() => {
+    const trigger = (id: string) => { const source = nodes.find(n => n.id === id); if (source) simulate(source); };
+    triggerRef.current = trigger;
+    return () => { if (triggerRef.current === trigger) triggerRef.current = null; };
+  });
   const reset = () => { setPreview(null); setMode(false); setNavigation(null); onResetPreview(); };
   return <section className="behavior-panel" style={collapsed ? { width: 'auto' } : undefined} role="dialog" aria-label="行为" data-testid="behavior-panel">
-    <div className="export-panel-heading"><strong>行为 · F2 原型</strong><button onClick={() => setCollapsed(!collapsed)}>{collapsed ? '展开行为面板' : '收起行为面板'}</button><button aria-label="关闭行为" onClick={() => { reset(); close(); }}>✕</button></div>
+    <div className="export-panel-heading"><strong>行为 · F2 原型</strong><button onClick={() => setCollapsed(!collapsed)}>{collapsed ? '展开行为面板' : '收起行为面板'}</button><button aria-label="关闭行为" onClick={close}>✕</button></div>
     <div hidden={collapsed}>
     <p>每条规则包含一个事件和按顺序执行的动作。被规则引用的组件不能删除；请先修改或删除规则。</p>
     <fieldset disabled={!!blocked || !!gesture || mode}>
@@ -110,10 +121,10 @@ export function BehaviorPanel({ preview, setPreview, mode, setMode, canClick, tr
         <button disabled={!draft.sourceId || draft.actions.some(a => !a.targetId)} onClick={save}>保存规则</button><button onClick={() => setDraft(null)}>取消编辑</button>
       </div>}
     </fieldset>
-    <div><strong>测试行为</strong><p>模拟只改变临时会话状态；已绑定的 open_screen 会切换到对应真实 Screen。</p>
-      <button disabled={!canClick || !!gesture} aria-pressed={mode} onClick={() => { if (mode) reset(); else { onBeginPreview(); setPreview({}); setNavigation(null); setMode(true); } }}>{mode ? '退出画布行为测试' : '开始画布行为测试'}</button>
-      {nodes.filter(n => n.type === 'minecraft:button' || n.type === 'minecraft:checkbox' || n.type === 'minecraft:fill' || (n.type === 'minecraft:creative-tab' && !!n.props.groupId)).map(n => <button key={n.id} onClick={() => simulate(n)}>模拟触发 {n.id}{n.type === 'minecraft:checkbox' ? `（${(preview?.[n.id]?.checked ?? n.props.selected) ? '已勾选' : '未勾选'}）` : ''}</button>)}
-      <button onClick={reset}>重置预览</button>
+    <div><strong>测试行为</strong><p>使用工作区的“交互预览”统一入口。启用后，画布点击同时模拟原生控件交互并执行 F2 规则；CreativeTab 内容切换和 Screen 导航也在此会话中运行。状态仅临时保留，不写入设计数据。</p>
+      <p role="status">{mode ? '交互预览已开启' : '交互预览已关闭'} · {mode ? '可点击画布或使用下方模拟触发' : '请使用工作区顶部的交互预览按钮'}</p>
+      {nodes.filter(n => n.type === 'minecraft:button' || n.type === 'minecraft:checkbox' || n.type === 'minecraft:fill' || (n.type === 'minecraft:creative-tab' && (!!n.props.groupId || n.props.tabMode === 'screen-navigation'))).map(n => <button key={n.id} disabled={!mode || !canClick || !!gesture} onClick={() => simulate(n)}>模拟触发 {n.id}{n.type === 'minecraft:checkbox' ? `（${(preview?.[n.id]?.checked ?? n.props.selected) ? '已勾选' : '未勾选'}）` : ''}</button>)}
+      <button disabled={!mode} onClick={reset}>重置预览</button>
       {preview && <div data-testid="behavior-preview" role="status">预览中：{JSON.stringify(preview)}{navigation && (screens.find(t => t.id === navigation)?.boundScreenId ? ` · 导航目标：${navigation}（${screens.find(t => t.id === navigation)?.name ?? ''}）` : ` · 导航意图：${navigation}（${screens.find(t => t.id === navigation)?.name ?? ''}）；未切换 Screen`)}</div>}
     </div>
     </div>

@@ -6,6 +6,7 @@ import type { VisualSnapshot } from './visualSnapshot';
 import { exportFilename, screenExportFilename } from './filenames';
 import { displayText } from '../domain/model';
 import { NAVIGATION_LIFECYCLE, RENDERING_CONTRACT } from '../domain/runtimeContract';
+import { isNumericNode } from '../render/numericWidgets';
 
 export type ExportFile = { name: string; label: string; mime: string; bytes: Uint8Array };
 type Renderer = (snapshot: ExportSnapshot, reference: ExportReference, pixelRatio: number, screenId: string) => Promise<Uint8Array>;
@@ -55,13 +56,14 @@ export async function buildBundle(snapshot: ExportSnapshot,
       designImage: { ...entry(names.design), kind: 'design-area-reference', width: screen.designSize.width, height: screen.designSize.height, pixelRatio: 1, background: origin ?? 'transparent' },
       enlargedReferenceImage: { ...entry(names.reference), kind: output.scale === 1 ? 'design-area-reference' : 'enlarged-design-area-reference', width: screen.designSize.width * output.scale, height: screen.designSize.height * output.scale, pixelRatio: output.scale, background: origin ?? (output.scale === 1 ? 'transparent' : 'preview-matte-#1c2634') },
       panelTexture: names.background ? { ...entry(names.background), file: names.background, source: origin, style, width: panelTextureSide(screen.designSize.width, screen.designSize.height), height: panelTextureSide(screen.designSize.width, screen.designSize.height), contentWidth: screen.designSize.width, contentHeight: screen.designSize.height, panelBounds: panelBounds(screen), pixelRatio: 1, origin: [0, 0], padding: 'transparent', layers: 'panel-only' } : null,
-      tabGroups: screen.nodes.filter(node => node.type === 'minecraft:creative-tab' && node.props.groupId).map(node => ({ nodeId: node.id, ...node.props })),
+      tabGroups: screen.nodes.filter(node => node.type === 'minecraft:creative-tab' && (node.props.groupId || node.props.tabMode === 'screen-navigation')).map(node => node.type === 'minecraft:creative-tab' && node.props.tabMode === 'screen-navigation' ? { nodeId: node.id, mode: 'screen-navigation', navigationGroupId: node.props.navigationGroupId, navigationTabId: node.props.navigationTabId, targetScreenId: snapshot.document.screenTabGroups?.find(group => group.id === node.props.navigationGroupId)?.tabs.find(tab => tab.id === node.props.navigationTabId)?.targetScreenId ?? null, selectedOnThisScreen: snapshot.document.screenTabGroups?.find(group => group.id === node.props.navigationGroupId)?.tabs.find(tab => tab.id === node.props.navigationTabId)?.targetScreenId === screen.id } : { nodeId: node.id, mode: 'content', ...node.props }),
+      numericControls: screen.nodes.filter(isNumericNode).map(node => ({ nodeId: node.id, type: node.type, initialValue: node.props.initialValue, constraints: { min: node.props.min, max: node.props.max, step: node.props.step, numericType: node.props.numericType, format: node.props.format }, events: node.events, binding: 'unbound-implementation-intent' })),
       behavior: { rules: screen.behaviors, screenTargets: (screen.screenTargets ?? []).map(target => ({ ...target, bindingStatus: target.boundScreenId ? 'bound' : 'unbound' })) } };
   });
   const first = screens[0];
-  const manifest = deepFreeze({ format: 'minecraft-gui-maker-export-manifest', version: '0.8.0', reference,
-    versions: { projectSchema: snapshot.document.schemaVersion, manifest: '0.8.0', exportReference: snapshot.contract, implementationSpecification: spec.version, responsibilities: { projectSchema: 'authoritative document structure; ONLY import compatibility gate', manifest: 'derived file inventory and metadata', exportReference: 'snapshot identity/hash and shared interpretation', implementationSpecification: 'derived implementation intent structure' } },
-    entryScreenId: snapshot.document.entryScreenId ?? null, entryStatus: snapshot.document.entryScreenId ? 'explicit' : 'legacy-unspecified', navigationLifecycle: NAVIGATION_LIFECYCLE, rendering: RENDERING_CONTRACT,
+  const manifest = deepFreeze({ format: 'minecraft-gui-maker-export-manifest', version: '0.11.0', reference,
+    versions: { projectSchema: snapshot.document.schemaVersion, manifest: '0.11.0', exportReference: snapshot.contract, implementationSpecification: spec.version, responsibilities: { projectSchema: 'authoritative document structure; ONLY import compatibility gate', manifest: 'derived file inventory and metadata', exportReference: 'snapshot identity/hash and shared interpretation', implementationSpecification: 'derived implementation intent structure' } },
+    entryScreenId: snapshot.document.entryScreenId ?? null, entryStatus: snapshot.document.entryScreenId ? 'explicit' : 'legacy-unspecified', navigationLifecycle: NAVIGATION_LIFECYCLE, screenTabGroups: snapshot.document.screenTabGroups ?? [], rendering: RENDERING_CONTRACT,
     legacyCompatibility: { sourceScreenId: first.screenId, purpose: 'top-level image/behavior aliases only; NOT another Screen or authority' },
     authority: { file: projectFile, sha256: reference.documentSha256, scope: 'entire-project' }, currentScreenIdAtCapture: snapshot.selectedScreenId, screens,
     designImage: first.designImage, enlargedReferenceImage: first.enlargedReferenceImage, panelTexture: first.panelTexture, tabGroups: first.tabGroups,

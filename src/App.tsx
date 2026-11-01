@@ -42,11 +42,12 @@ export function App() {
   const [preview, setPreview] = useState<GuiScalePreview | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [interaction, setInteraction] = useState(false), [resourceOpenRequest, setResourceOpenRequest] = useState(0);
+  const [numericPreviewEpoch, setNumericPreviewEpoch] = useState(0);
   const fontRef = useRef<HTMLInputElement>(null);
   const fontMenuRef = useRef<HTMLDivElement>(null);
   const [fontMenuOpen, setFontMenuOpen] = useState(false);
   useDismissOutside(fontMenuRef, fontMenuOpen, () => setFontMenuOpen(false));
-  useEffect(() => { setInteraction(false); }, [state.doc]);
+  useEffect(() => { setInteraction(false); setBehaviorPreview(null); setBehaviorMode(false); behaviorStartScreen.current = null; }, [state.doc]);
   const [exportOpen, setExportOpen] = useState(false);
   const [behaviorOpen, setBehaviorOpen] = useState(false), [behaviorPreview, setBehaviorPreview] = useState<BehaviorPreview | null>(null);
   const [editTabs, setEditTabs] = useState<Record<string, string>>({});
@@ -55,13 +56,12 @@ export function App() {
   const behaviorStartScreen = useRef<string | null>(null), behaviorNavigation = useRef<'navigate' | 'reset' | null>(null);
   const [theme, setTheme] = useState<'dark' | 'light'>(loadTheme);
   const [importError, setImportError] = useState<ImportFailure | null>(null);
-  useEffect(() => { if (preview || behaviorPreview || behaviorMode) setInteraction(false); }, [preview, behaviorPreview, behaviorMode]);
   useEffect(() => { if (behaviorMode || behaviorPreview || preview) setEditTabs({}); }, [behaviorMode, behaviorPreview, preview]);
   useEffect(() => {
     setEditTabs({}); setInteraction(false); setPreview(null);
     if (behaviorNavigation.current) {
       const transition = behaviorNavigation.current; behaviorNavigation.current = null;
-      if (transition === 'navigate') { setBehaviorPreview({}); setBehaviorMode(true); }
+      if (transition === 'navigate') { setInteraction(true); setBehaviorPreview({}); setBehaviorMode(true); }
       else { setBehaviorPreview(null); setBehaviorMode(false); }
       return;
     }
@@ -179,12 +179,22 @@ export function App() {
     } catch (error) { notify((error as Error).message, true); }
   };
   const toggleBehavior = () => {
-    if (behaviorOpen) {
-      const id = behaviorStartScreen.current; behaviorStartScreen.current = null;
-      setBehaviorPreview(null); setBehaviorMode(false);
-      if (id && state.doc.screens.some(item => item.id === id) && state.currentScreenId !== id) { behaviorNavigation.current = 'reset'; state.switchScreen(id); }
-    }
     setBehaviorOpen(!behaviorOpen);
+  };
+  const toggleInteractionPreview = () => {
+    setNumericPreviewEpoch(epoch => epoch + 1);
+    if (interaction) {
+      setInteraction(false); setBehaviorPreview(null); setBehaviorMode(false);
+      const id = editorStore.getState().doc.entryScreenId;
+      if (id && editorStore.getState().currentScreenId !== id && editorStore.getState().doc.screens.some(item => item.id === id)) {
+        behaviorNavigation.current = 'reset'; editorStore.getState().switchScreen(id);
+      }
+      behaviorStartScreen.current = null;
+      return;
+    }
+    const s = editorStore.getState(); behaviorStartScreen.current = s.currentScreenId;
+    setInteraction(true); setBehaviorPreview({}); setBehaviorMode(true);
+    if (s.doc.entryScreenId && s.doc.entryScreenId !== s.currentScreenId) { behaviorNavigation.current = 'navigate'; s.switchScreen(s.doc.entryScreenId); }
   };
 
   if (state.blocked === '正在读取本地副本') return <main className="loading-local">正在读取本地副本…</main>;
@@ -226,7 +236,6 @@ export function App() {
           <button onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}>{theme === 'dark' ? '切换为亮色主题' : '切换为暗色主题'}</button>
         </div></details>
         <details><summary>模式</summary><div>
-          <button aria-label="交互预览" aria-pressed={interaction} disabled={!!preview || !!behaviorPreview || behaviorMode || !!state.gesture} onClick={() => setInteraction(value => !value)}>交互预览：{interaction ? '开启' : '关闭'}</button>
           <button onClick={toggleBehavior}>切换行为面板</button>
         </div></details>
         <details><summary>工具</summary><div>
@@ -302,7 +311,7 @@ export function App() {
           </div>
         </div>
         <ResourceTestPanel manager={resources} openRequest={resourceOpenRequest} onChange={() => setResourceGeneration(n => n + 1)}/>
-        <button className="context-action" aria-label="交互预览开关" aria-pressed={interaction} disabled={!!preview || !!behaviorPreview || behaviorMode || !!state.gesture} onClick={() => setInteraction(value => !value)}>交互预览：{interaction ? '开' : '关'}</button>
+        <button className="context-action" aria-label="交互预览" aria-pressed={interaction} disabled={!!preview || !!state.gesture} onClick={toggleInteractionPreview}>交互预览：{interaction ? '开' : '关'}</button>
         <ScreenSettings preview={preview} setPreview={setPreview} notify={notify} open={settingsOpen} setOpen={setSettingsOpen}/>
         <button className="behavior-toggle" aria-label="行为" aria-expanded={behaviorOpen} aria-pressed={behaviorOpen} onClick={toggleBehavior}>行为</button>
       </div>
@@ -348,17 +357,16 @@ export function App() {
             <button type="button" className="screen-tool-button screen-delete-button" aria-label="删除当前画布" title={state.doc.entryScreenId === screen.id ? '先在左侧更换项目入口，再删除此画布' : '删除当前 Screen 画布'} disabled={!!state.blocked || !!state.gesture || !!preview || !!behaviorPreview || behaviorMode || state.doc.screens.length <= 1} onClick={() => { try { commitExportDrafts(); state.deleteScreen(screen.id); setScreenPositions(previous => { const next = { ...previous }; delete next[screen.id]; return next; }); notify('Screen 画布已删除，可撤销'); } catch (error) { notify((error as Error).message, true); } }}><svg aria-hidden="true" viewBox="0 0 20 20"><path d="M3.5 5.5h13M8 5.5V3.5h4v2M5.5 5.5l.7 11h7.6l.7-11M8 8v5.5M12 8v5.5"/></svg></button>
           </div>
         </div>
-            <Canvas screenPositions={screenPositions} setScreenPositions={setScreenPositions} onSelectScreen={id => { try { commitExportDrafts(); editorStore.getState().switchScreen(id); } catch (error) { notify((error as Error).message, true); } }} interaction={interaction} view={view} setView={setView} preview={preview} readOnly={!!state.blocked || !!behaviorPreview} behaviorPreview={behaviorPreview} behaviorMode={behaviorMode} editTabs={editTabs} onBehaviorTrigger={id => behaviorTrigger.current?.(id)} grid={grid} alignment={{ guides: prefs.smartGuides, snap: prefs.smartSnap }} resources={resources} resourceGeneration={resourceGeneration} font={font} theme={theme}/>
+            <Canvas numericPreviewEpoch={numericPreviewEpoch} screenPositions={screenPositions} setScreenPositions={setScreenPositions} onSelectScreen={id => { try { commitExportDrafts(); editorStore.getState().switchScreen(id); } catch (error) { notify((error as Error).message, true); } }} interaction={interaction} view={view} setView={setView} preview={preview} readOnly={!!state.blocked || !!behaviorPreview} behaviorPreview={behaviorPreview} behaviorMode={behaviorMode} editTabs={editTabs} onBehaviorTrigger={id => behaviorTrigger.current?.(id)} grid={grid} alignment={{ guides: prefs.smartGuides, snap: prefs.smartSnap }} resources={resources} resourceGeneration={resourceGeneration} font={font} theme={theme}/>
         {libraryOpen && <div className="sidebar-resizer sidebar-resizer-left" role="separator" aria-label="调整组件栏宽度" onPointerDown={e => resizeSidebar('left', e)}/>}
         {inspectorOpen && <div className="sidebar-resizer sidebar-resizer-right" role="separator" aria-label="调整属性栏宽度" onPointerDown={e => resizeSidebar('right', e)}/>}
         <button onMouseEnter={() => showPeek('left')} onMouseLeave={() => hidePeek('left')} className="sidebar-toggle sidebar-toggle-left" aria-label={libraryOpen ? '收起组件栏' : '展开组件栏'} title={libraryOpen ? '收起组件栏' : '展开组件栏'} aria-expanded={libraryOpen} onClick={() => setLibraryOpen(!libraryOpen)}>{libraryOpen ? '‹' : '›'}</button>
         <button onMouseEnter={() => showPeek('right')} onMouseLeave={() => hidePeek('right')} className="sidebar-toggle sidebar-toggle-right" aria-label={inspectorOpen ? '收起属性栏' : '展开属性栏'} title={inspectorOpen ? '收起属性栏' : '展开属性栏'} aria-expanded={inspectorOpen} onClick={() => setInspectorOpen(!inspectorOpen)}>{inspectorOpen ? '›' : '‹'}</button>
         {exportOpen && <ExportPanel {...exports} resourceRevision={resources.revision} onClose={() => setExportOpen(false)} currentJson={JSON.stringify(state.doc, null, 2) + '\n'}/>}
-        {behaviorOpen && <BehaviorPanel key={state.currentScreenId} preview={behaviorPreview} setPreview={setBehaviorPreview} mode={behaviorMode} setMode={setBehaviorMode} canClick={!preview} triggerRef={behaviorTrigger}
-          onBeginPreview={() => { const s = editorStore.getState(); behaviorStartScreen.current = s.currentScreenId; if (s.doc.entryScreenId && s.doc.entryScreenId !== s.currentScreenId) { behaviorNavigation.current = 'navigate'; s.switchScreen(s.doc.entryScreenId); } }}
-          onOpenScreen={id => { if (editorStore.getState().currentScreenId !== id) { behaviorNavigation.current = 'navigate'; editorStore.getState().switchScreen(id); } setBehaviorPreview({}); setBehaviorMode(true); }}
-          onResetPreview={() => { const id = behaviorStartScreen.current; behaviorStartScreen.current = null; if (id && editorStore.getState().doc.screens.some(item => item.id === id) && editorStore.getState().currentScreenId !== id) { behaviorNavigation.current = 'reset'; editorStore.getState().switchScreen(id); } }}
-          close={() => setBehaviorOpen(false)} notify={notify}/>}
+        {(behaviorOpen || behaviorMode) && <div hidden={!behaviorOpen}><BehaviorPanel key={state.currentScreenId} preview={behaviorPreview} setPreview={setBehaviorPreview} mode={behaviorMode} setMode={setBehaviorMode} canClick={!preview} triggerRef={behaviorTrigger}
+          onOpenScreen={id => { setNumericPreviewEpoch(epoch => epoch + 1); if (editorStore.getState().currentScreenId !== id) { behaviorNavigation.current = 'navigate'; editorStore.getState().switchScreen(id); } setBehaviorPreview({}); setBehaviorMode(true); }}
+          onResetPreview={() => { setNumericPreviewEpoch(epoch => epoch + 1); setInteraction(false); const s = editorStore.getState(), id = s.doc.entryScreenId; behaviorStartScreen.current = null; if (id && s.doc.screens.some(item => item.id === id) && s.currentScreenId !== id) { behaviorNavigation.current = 'reset'; s.switchScreen(id); } }}
+          close={() => setBehaviorOpen(false)} notify={notify}/></div>}
         <div className="studio-footer"><span><i/> {screen.nodes.length} COMPONENTS</span><span data-testid="history-count">{state.past.length} undo / {state.future.length} redo</span><span>INTEGER COORDINATES · GUI px</span></div>
         <details className="json-preview"><summary>项目 JSON <span>只读 / 当前已提交文档</span></summary><pre data-testid="project-json">{JSON.stringify(state.doc, null, 2)}</pre></details>
       </main>

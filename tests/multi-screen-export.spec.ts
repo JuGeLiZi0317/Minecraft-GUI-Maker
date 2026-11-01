@@ -36,7 +36,7 @@ test('three real Screens export one authoritative project and complete same-snap
   expect([...entries.keys()].filter(name => name.endsWith('.reference.png'))).toHaveLength(3);
   expect([...entries.keys()].filter(name => name.endsWith('.background.png'))).toHaveLength(1);
   const manifestName = [...entries.keys()].find(name => name.endsWith('.manifest.json'))!, manifest = JSON.parse(entries.get(manifestName)!.toString());
-  expect(manifest.version).toBe('0.8.0'); expect(manifest.screens.map((item: { screenId: string }) => item.screenId)).toEqual([first, second, third]);
+  expect(manifest.version).toBe('0.10.0'); expect(manifest.screens.map((item: { screenId: string }) => item.screenId)).toEqual([first, second, third]);
   expect(manifest.entryScreenId).toBe(second); expect(manifest.reference.schemaVersion).toBe('0.13.0');
   expect(manifest.navigationLifecycle.historyStack).toBe('none');
   const specName = [...entries.keys()].find(name => name.endsWith('.implementation.json'))!, spec = JSON.parse(entries.get(specName)!.toString());

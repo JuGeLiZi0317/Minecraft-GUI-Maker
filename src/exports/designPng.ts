@@ -2,8 +2,10 @@ import { drawCheckboxFallback, drawPreviewText, fontSession, type FontChoice } f
 import type { ExportReference, ExportSnapshot } from './snapshot';
 import { panelBounds, panelRects, panelSource, panelTextureSide, type PanelStyle } from '../domain/panel';
 import { drawNativePanel, getPanelImage, isTextureStyle } from '../render/panelTexture';
-import { beforePanel, drawCreativeTabFallback, spriteForNode } from '../render/spritePreview';
+import { beforePanel, drawCreativeTabFallback, spriteForNode, SpriteRasterCache } from '../render/spritePreview';
+import { isNumericNode, drawNumericWidget } from '../render/numericWidgets';
 import { tabManaged, tabVisibility } from '../domain/tabGroups';
+import { screenNavigationSelected } from '../domain/screenTabNavigation';
 import type { VisualSnapshot } from './visualSnapshot';
 
 export const MAX_PNG_PIXELS = 16_777_216;
@@ -71,10 +73,15 @@ export async function renderDesignPng(snapshot: ExportSnapshot, reference: Expor
     // The enlarged image is a visual reference; this matte is not a game background.
     if (pixelRatio > 1) { ctx.fillStyle = '#1c2634'; ctx.fillRect(0, 0, width, height); }
     const visibleInGroup = tabVisibility(screen.nodes), managed = tabManaged(screen.nodes);
-    const drawNode = (node: typeof screen.nodes[number]) => {
+    const drawNode = (original: typeof screen.nodes[number]) => {
+      const selected = screenNavigationSelected(original, screen.id, snapshot.document.screenTabGroups ?? []);
+      const node = selected === null || original.type !== 'minecraft:creative-tab' ? original : { ...original, props: { ...original.props, selected } };
       if ((!managed.has(node.id) && !node.state.visible) || !visibleInGroup(node.id)) return;
       const { x, y, w, h } = node.bounds;
-      ctx.save(); if (node.type !== 'minecraft:checkbox') { ctx.beginPath(); ctx.rect(x, y, w, h); ctx.clip(); }
+      if (isNumericNode(node)) {
+        ctx.save(); ctx.translate(x, y); drawNumericWidget(ctx, node, w, h, font.family, visual?.entries ?? {}, visual?.cache ?? new SpriteRasterCache(), { resourceActive: visual?.active }); ctx.restore(); return;
+      }
+      ctx.save(); if (node.type !== 'minecraft:checkbox' && node.type !== 'minecraft:multi-line-text-widget') { ctx.beginPath(); ctx.rect(x, y, w, h); ctx.clip(); }
       const spriteId = spriteForNode(node), entry = spriteId ? visual?.entries[spriteId] : undefined;
       let raster: HTMLCanvasElement | null = null, renderError = '';
       if (spriteId && entry?.sprite) { try { raster = visual!.cache.get(spriteId, entry.sprite, node.type === 'minecraft:checkbox' ? 17 : w, node.type === 'minecraft:checkbox' ? 17 : h); } catch (error) { renderError = (error as Error).message; } }
@@ -84,7 +91,7 @@ export async function renderDesignPng(snapshot: ExportSnapshot, reference: Expor
         if (raster) { ctx.save(); ctx.imageSmoothingEnabled = false; ctx.drawImage(raster, x, y); ctx.restore(); }
         else if (node.type === 'minecraft:creative-tab') { ctx.save(); ctx.translate(x, y); drawCreativeTabFallback(ctx, node.props.selected); ctx.restore(); }
         else if (node.type === 'minecraft:checkbox') { ctx.save(); ctx.translate(x, y); drawCheckboxFallback(ctx, node.props.selected); ctx.restore(); }
-        else if (node.type !== 'minecraft:string-widget' && !(node.type === 'minecraft:edit-box' && !node.props.bordered)) {
+        else if (node.type !== 'minecraft:string-widget' && node.type !== 'minecraft:multi-line-text-widget' && !(node.type === 'minecraft:edit-box' && !node.props.bordered)) {
           ctx.fillStyle = node.type === 'minecraft:button' || node.type === 'minecraft:cycle-button' ? '#314354' : '#151e2b'; ctx.fillRect(x, y, w, h);
           if (node.type === 'minecraft:button' || node.type === 'minecraft:cycle-button' || (node.type === 'minecraft:edit-box' && node.props.bordered)) { ctx.strokeStyle = '#5a7185'; ctx.lineWidth = 0.6; ctx.strokeRect(x, y, w, h); }
         }
@@ -93,9 +100,10 @@ export async function renderDesignPng(snapshot: ExportSnapshot, reference: Expor
       }
       ctx.restore();
     };
-    screen.nodes.filter(beforePanel).forEach(drawNode);
+    const resolvedNodes = screen.nodes.map(node => { const selected = screenNavigationSelected(node, screen.id, snapshot.document.screenTabGroups ?? []); return node.type === 'minecraft:creative-tab' && selected !== null ? { ...node, props: { ...node.props, selected } } : node; });
+    resolvedNodes.filter(beforePanel).forEach(drawNode);
     if (screen.background.kind === 'panel') { const panel = panelBounds(screen); ctx.save(); ctx.translate(panel.x, panel.y); await drawPanel(ctx, panel.w, panel.h, screen.background.style); ctx.restore(); }
-    screen.nodes.filter(node => !beforePanel(node)).forEach(drawNode);
+    resolvedNodes.filter(node => !beforePanel(node)).forEach(drawNode);
     return addPngMetadata(await encode(canvas), { reference, kind: pixelRatio === 1 ? 'design-area-reference' : 'enlarged-design-area-reference', screenId: screen.id,
       width: width * pixelRatio, height: height * pixelRatio, designWidth: width, designHeight: height, unit: 'gui-px', origin: [0, 0], xDirection: 'right', yDirection: 'down', pixelRatio, background: screen.background.kind === 'panel' ? panelSource(screen.background.style) : pixelRatio === 1 ? 'transparent' : 'preview-matte-#1c2634', resourceGeneration: visual?.generation ?? null, visualVerification: 'approximate-browser-rendering-only' });
   } finally { canvas.width = 0; canvas.height = 0; }

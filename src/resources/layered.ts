@@ -3,6 +3,8 @@ import { prepareClient, prepareSession, ResourceError, type ResourceSession } fr
 export const GUI_SPRITES = ['minecraft:widget/button', 'minecraft:widget/button_highlighted', 'minecraft:widget/button_disabled', 'minecraft:widget/text_field', 'minecraft:widget/text_field_highlighted'] as const;
 /** Checkbox sprites audited for 1.21.1; loaded only when requested by an H1 node. */
 export const CHECKBOX_SPRITES = ['minecraft:widget/checkbox', 'minecraft:widget/checkbox_highlighted', 'minecraft:widget/checkbox_selected', 'minecraft:widget/checkbox_selected_highlighted'] as const;
+/** Exactly the four native AbstractSliderButton 1.21.1 sprites. */
+export const SLIDER_SPRITES = ['minecraft:widget/slider', 'minecraft:widget/slider_highlighted', 'minecraft:widget/slider_handle', 'minecraft:widget/slider_handle_highlighted'] as const;
 export const CREATIVE_TAB_SPRITES = ['unselected', 'selected'].flatMap(state => Array.from({ length: 7 }, (_, i) => `minecraft:container/creative_inventory/tab_top_${state}_${i + 1}`));
 type PackInput = Parameters<typeof prepareSession>[0];
 export type Scaling = { type: 'stretch' } | { type: 'tile'; width: number; height: number } | { type: 'nine_slice'; width: number; height: number; border: { left: number; right: number; top: number; bottom: number } };
@@ -78,7 +80,7 @@ export class LayeredResources {
   async sprite(id: string): Promise<SpriteResult> {
     const generation = this.generation, base = this.base, upper = this.overlay;
     const result = (status: 'missing' | 'filtered' | 'invalid' | 'unsupported', diagnostic: string): SpriteResult => ({ status, id, diagnostic });
-    if (!(GUI_SPRITES as readonly string[]).includes(id) && !(CHECKBOX_SPRITES as readonly string[]).includes(id) && !CREATIVE_TAB_SPRITES.includes(id)) return result('unsupported', '仅支持已审计的 GUI sprite');
+    if (!(GUI_SPRITES as readonly string[]).includes(id) && !(CHECKBOX_SPRITES as readonly string[]).includes(id) && !(SLIDER_SPRITES as readonly string[]).includes(id) && !CREATIVE_TAB_SPRITES.includes(id)) return result('unsupported', '仅支持已审计的 GUI sprite');
     if (!base) return result('missing', '未选择客户端基础 JAR');
     try {
       if (upper?.query(atlas).status === 'valid') return result('unsupported', '覆盖包含 GUI atlas 定义，尚不支持合并 atlas source');

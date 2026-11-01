@@ -1,0 +1,790 @@
+{
+  "format": "minecraft-gui-maker",
+  "schemaVersion": "0.17.0",
+  "catalogVersion": "mc-1.21.1-neoforge-21.1.244-audit-1",
+  "target": {
+    "edition": "java",
+    "minecraft": "1.21.1",
+    "loader": {
+      "id": "neoforge",
+      "version": "21.1.244"
+    },
+    "java": 21
+  },
+  "project": {
+    "id": "project_main",
+    "name": "Feedback numeric acceptance",
+    "revision": 0
+  },
+  "entryScreenId": "screen_main",
+  "screenTabGroups": [],
+  "screens": [
+    {
+      "id": "screen_main",
+      "title": {
+        "kind": "literal",
+        "value": "Untitled screen"
+      },
+      "base": "screen",
+      "designSize": {
+        "width": 320,
+        "height": 180,
+        "unit": "gui-px"
+      },
+      "placement": "center",
+      "background": {
+        "kind": "none"
+      },
+      "nodes": [
+        {
+          "id": "node_1",
+          "bounds": {
+            "x": 20,
+            "y": 30,
+            "w": 110,
+            "h": 20
+          },
+          "type": "minecraft:numeric-input",
+          "source": {
+            "category": "vanilla-widget",
+            "className": "net.minecraft.client.gui.components.EditBox"
+          },
+          "state": {
+            "visible": true,
+            "enabled": true
+          },
+          "props": {
+            "min": -0.15,
+            "max": 0.3,
+            "step": 0.1,
+            "initialValue": 0.05,
+            "numericType": "decimal",
+            "format": {
+              "decimals": 2,
+              "unit": "m"
+            },
+            "name": {
+              "kind": "literal",
+              "value": "Number"
+            },
+            "textShadow": false,
+            "bordered": true,
+            "editable": true,
+            "commitPolicy": "enter-or-blur",
+            "errorMessage": "数值无效"
+          },
+          "events": {
+            "commit": "numeric-commit"
+          }
+        },
+        {
+          "id": "node_2",
+          "bounds": {
+            "x": 20,
+            "y": 80,
+            "w": 150,
+            "h": 20
+          },
+          "type": "minecraft:slider",
+          "source": {
+            "category": "vanilla-widget",
+            "className": "net.minecraft.client.gui.components.AbstractSliderButton"
+          },
+          "state": {
+            "visible": true,
+            "enabled": true
+          },
+          "props": {
+            "min": -0.15,
+            "max": 0.3,
+            "step": 0.1,
+            "initialValue": 0.05,
+            "numericType": "decimal",
+            "format": {
+              "decimals": 2,
+              "unit": "m"
+            },
+            "name": {
+              "kind": "literal",
+              "value": "Value"
+            },
+            "textShadow": true,
+            "showValue": true
+          },
+          "events": {
+            "change": "slider-change"
+          }
+        },
+        {
+          "id": "node_3",
+          "bounds": {
+            "x": 180,
+            "y": 30,
+            "w": 90,
+            "h": 20
+          },
+          "type": "minecraft:button",
+          "source": {
+            "category": "vanilla-widget",
+            "className": "net.minecraft.client.gui.components.Button"
+          },
+          "state": {
+            "visible": true,
+            "enabled": true
+          },
+          "props": {
+            "message": {
+              "kind": "literal",
+              "value": "下一页 / 返回"
+            }
+          },
+          "events": {}
+        },
+        {
+          "id": "node_4",
+          "bounds": {
+            "x": 180,
+            "y": 70,
+            "w": 90,
+            "h": 20
+          },
+          "type": "minecraft:button",
+          "source": {
+            "category": "vanilla-widget",
+            "className": "net.minecraft.client.gui.components.Button"
+          },
+          "state": {
+            "visible": true,
+            "enabled": true
+          },
+          "props": {
+            "message": {
+              "kind": "literal",
+              "value": "重开本页"
+            }
+          },
+          "events": {}
+        }
+      ],
+      "variables": [],
+      "behaviors": [
+        {
+          "id": "go_b",
+          "event": {
+            "type": "button-click",
+            "sourceId": "node_3"
+          },
+          "action": {
+            "type": "open_screen",
+            "targetScreenId": "target_b"
+          }
+        },
+        {
+          "id": "go_self",
+          "event": {
+            "type": "button-click",
+            "sourceId": "node_4"
+          },
+          "action": {
+            "type": "open_screen",
+            "targetScreenId": "target_self"
+          }
+        }
+      ],
+      "screenTargets": [
+        {
+          "id": "target_b",
+          "name": "Next",
+          "boundScreenId": "screen_1"
+        },
+        {
+          "id": "target_self",
+          "name": "Self",
+          "boundScreenId": "screen_main"
+        }
+      ]
+    },
+    {
+      "id": "screen_1",
+      "title": {
+        "kind": "literal",
+        "value": "Screen 1"
+      },
+      "base": "screen",
+      "designSize": {
+        "width": 320,
+        "height": 180,
+        "unit": "gui-px"
+      },
+      "placement": "center",
+      "background": {
+        "kind": "none"
+      },
+      "nodes": [
+        {
+          "id": "node_5",
+          "bounds": {
+            "x": 80,
+            "y": 96,
+            "w": 120,
+            "h": 20
+          },
+          "type": "minecraft:numeric-input",
+          "source": {
+            "category": "vanilla-widget",
+            "className": "net.minecraft.client.gui.components.EditBox"
+          },
+          "state": {
+            "visible": true,
+            "enabled": true
+          },
+          "props": {
+            "min": 0,
+            "max": 100,
+            "step": 1,
+            "initialValue": 0,
+            "numericType": "integer",
+            "format": {
+              "decimals": 0,
+              "unit": ""
+            },
+            "name": {
+              "kind": "literal",
+              "value": "Number"
+            },
+            "textShadow": false,
+            "bordered": true,
+            "editable": true,
+            "commitPolicy": "enter-or-blur",
+            "errorMessage": "数值无效"
+          },
+          "events": {
+            "commit": "numeric-commit"
+          }
+        },
+        {
+          "id": "node_6",
+          "bounds": {
+            "x": 180,
+            "y": 70,
+            "w": 90,
+            "h": 20
+          },
+          "type": "minecraft:button",
+          "source": {
+            "category": "vanilla-widget",
+            "className": "net.minecraft.client.gui.components.Button"
+          },
+          "state": {
+            "visible": true,
+            "enabled": true
+          },
+          "props": {
+            "message": {
+              "kind": "literal",
+              "value": "下一页 / 返回"
+            }
+          },
+          "events": {}
+        },
+        {
+          "id": "feedback_open_edges",
+          "type": "minecraft:button",
+          "bounds": {
+            "x": 170,
+            "y": 145,
+            "w": 140,
+            "h": 20
+          },
+          "source": {
+            "category": "vanilla-widget",
+            "className": "net.minecraft.client.gui.components.Button"
+          },
+          "state": {
+            "visible": true,
+            "enabled": true
+          },
+          "props": {
+            "message": {
+              "kind": "literal",
+              "value": "边界样例 →"
+            }
+          },
+          "events": {}
+        }
+      ],
+      "variables": [],
+      "behaviors": [
+        {
+          "id": "go_a",
+          "event": {
+            "type": "button-click",
+            "sourceId": "node_6"
+          },
+          "action": {
+            "type": "open_screen",
+            "targetScreenId": "target_a"
+          }
+        },
+        {
+          "id": "rule_feedback_open_edges",
+          "event": {
+            "type": "button-click",
+            "sourceId": "feedback_open_edges"
+          },
+          "action": {
+            "type": "open_screen",
+            "targetScreenId": "target_feedback_open_edges"
+          }
+        }
+      ],
+      "screenTargets": [
+        {
+          "id": "target_a",
+          "name": "Back",
+          "boundScreenId": "screen_main"
+        },
+        {
+          "id": "target_feedback_open_edges",
+          "name": "边界样例 →",
+          "boundScreenId": "feedback_edges"
+        }
+      ]
+    },
+    {
+      "id": "feedback_edges",
+      "title": {
+        "kind": "literal",
+        "value": "数值边界验收"
+      },
+      "base": "screen",
+      "designSize": {
+        "width": 480,
+        "height": 300,
+        "unit": "gui-px"
+      },
+      "placement": "center",
+      "background": {
+        "kind": "none"
+      },
+      "nodes": [
+        {
+          "id": "feedback_0_0",
+          "bounds": {
+            "x": 20,
+            "y": 25,
+            "w": 200,
+            "h": 20
+          },
+          "type": "minecraft:numeric-input",
+          "source": {
+            "category": "vanilla-widget",
+            "className": "net.minecraft.client.gui.components.EditBox"
+          },
+          "state": {
+            "visible": true,
+            "enabled": true
+          },
+          "props": {
+            "min": 5,
+            "max": 5,
+            "step": 1,
+            "initialValue": 5,
+            "numericType": "integer",
+            "format": {
+              "decimals": 0,
+              "unit": ""
+            },
+            "name": {
+              "kind": "literal",
+              "value": "常量"
+            },
+            "textShadow": false,
+            "bordered": true,
+            "editable": true,
+            "commitPolicy": "enter-or-blur",
+            "errorMessage": "数值无效",
+            "color": "#FF404040"
+          },
+          "events": {
+            "commit": "numeric-commit"
+          }
+        },
+        {
+          "id": "feedback_0_1",
+          "bounds": {
+            "x": 250,
+            "y": 25,
+            "w": 200,
+            "h": 20
+          },
+          "type": "minecraft:slider",
+          "source": {
+            "category": "vanilla-widget",
+            "className": "net.minecraft.client.gui.components.AbstractSliderButton"
+          },
+          "state": {
+            "visible": true,
+            "enabled": true
+          },
+          "props": {
+            "min": 5,
+            "max": 5,
+            "step": 1,
+            "initialValue": 5,
+            "numericType": "integer",
+            "format": {
+              "decimals": 0,
+              "unit": ""
+            },
+            "name": {
+              "kind": "literal",
+              "value": "常量"
+            },
+            "textShadow": false,
+            "showValue": true,
+            "color": "#FF404040"
+          },
+          "events": {
+            "change": "slider-change"
+          }
+        },
+        {
+          "id": "feedback_1_0",
+          "bounds": {
+            "x": 20,
+            "y": 73,
+            "w": 200,
+            "h": 20
+          },
+          "type": "minecraft:numeric-input",
+          "source": {
+            "category": "vanilla-widget",
+            "className": "net.minecraft.client.gui.components.EditBox"
+          },
+          "state": {
+            "visible": true,
+            "enabled": false
+          },
+          "props": {
+            "min": 0,
+            "max": 100,
+            "step": 1,
+            "initialValue": 50,
+            "numericType": "integer",
+            "format": {
+              "decimals": 0,
+              "unit": ""
+            },
+            "name": {
+              "kind": "literal",
+              "value": "禁用"
+            },
+            "textShadow": false,
+            "bordered": true,
+            "editable": true,
+            "commitPolicy": "enter-or-blur",
+            "errorMessage": "数值无效",
+            "color": "#FF404040"
+          },
+          "events": {
+            "commit": "numeric-commit"
+          }
+        },
+        {
+          "id": "feedback_1_1",
+          "bounds": {
+            "x": 250,
+            "y": 73,
+            "w": 200,
+            "h": 20
+          },
+          "type": "minecraft:slider",
+          "source": {
+            "category": "vanilla-widget",
+            "className": "net.minecraft.client.gui.components.AbstractSliderButton"
+          },
+          "state": {
+            "visible": true,
+            "enabled": false
+          },
+          "props": {
+            "min": 0,
+            "max": 100,
+            "step": 1,
+            "initialValue": 50,
+            "numericType": "integer",
+            "format": {
+              "decimals": 0,
+              "unit": ""
+            },
+            "name": {
+              "kind": "literal",
+              "value": "禁用"
+            },
+            "textShadow": false,
+            "showValue": true,
+            "color": "#FF404040"
+          },
+          "events": {
+            "change": "slider-change"
+          }
+        },
+        {
+          "id": "feedback_2_0",
+          "bounds": {
+            "x": 20,
+            "y": 121,
+            "w": 200,
+            "h": 20
+          },
+          "type": "minecraft:numeric-input",
+          "source": {
+            "category": "vanilla-widget",
+            "className": "net.minecraft.client.gui.components.EditBox"
+          },
+          "state": {
+            "visible": true,
+            "enabled": true
+          },
+          "props": {
+            "min": -3e-06,
+            "max": 4e-06,
+            "step": 2e-06,
+            "initialValue": 1e-06,
+            "numericType": "decimal",
+            "format": {
+              "decimals": 6,
+              "unit": ""
+            },
+            "name": {
+              "kind": "literal",
+              "value": "六位小数"
+            },
+            "textShadow": false,
+            "bordered": true,
+            "editable": true,
+            "commitPolicy": "enter-or-blur",
+            "errorMessage": "数值无效",
+            "color": "#FF404040"
+          },
+          "events": {
+            "commit": "numeric-commit"
+          }
+        },
+        {
+          "id": "feedback_2_1",
+          "bounds": {
+            "x": 250,
+            "y": 121,
+            "w": 200,
+            "h": 20
+          },
+          "type": "minecraft:slider",
+          "source": {
+            "category": "vanilla-widget",
+            "className": "net.minecraft.client.gui.components.AbstractSliderButton"
+          },
+          "state": {
+            "visible": true,
+            "enabled": true
+          },
+          "props": {
+            "min": -3e-06,
+            "max": 4e-06,
+            "step": 2e-06,
+            "initialValue": 1e-06,
+            "numericType": "decimal",
+            "format": {
+              "decimals": 6,
+              "unit": ""
+            },
+            "name": {
+              "kind": "literal",
+              "value": "六位小数"
+            },
+            "textShadow": false,
+            "showValue": true,
+            "color": "#FF404040"
+          },
+          "events": {
+            "change": "slider-change"
+          }
+        },
+        {
+          "id": "feedback_3_0",
+          "bounds": {
+            "x": 20,
+            "y": 169,
+            "w": 200,
+            "h": 20
+          },
+          "type": "minecraft:numeric-input",
+          "source": {
+            "category": "vanilla-widget",
+            "className": "net.minecraft.client.gui.components.EditBox"
+          },
+          "state": {
+            "visible": true,
+            "enabled": true
+          },
+          "props": {
+            "min": -1000000000,
+            "max": 1000000000,
+            "step": 1000000000,
+            "initialValue": 0,
+            "numericType": "integer",
+            "format": {
+              "decimals": 0,
+              "unit": ""
+            },
+            "name": {
+              "kind": "literal",
+              "value": "极值"
+            },
+            "textShadow": false,
+            "bordered": true,
+            "editable": true,
+            "commitPolicy": "enter-or-blur",
+            "errorMessage": "数值无效",
+            "color": "#FF404040"
+          },
+          "events": {
+            "commit": "numeric-commit"
+          }
+        },
+        {
+          "id": "feedback_3_1",
+          "bounds": {
+            "x": 250,
+            "y": 169,
+            "w": 200,
+            "h": 20
+          },
+          "type": "minecraft:slider",
+          "source": {
+            "category": "vanilla-widget",
+            "className": "net.minecraft.client.gui.components.AbstractSliderButton"
+          },
+          "state": {
+            "visible": true,
+            "enabled": true
+          },
+          "props": {
+            "min": -1000000000,
+            "max": 1000000000,
+            "step": 1000000000,
+            "initialValue": 0,
+            "numericType": "integer",
+            "format": {
+              "decimals": 0,
+              "unit": ""
+            },
+            "name": {
+              "kind": "literal",
+              "value": "极值"
+            },
+            "textShadow": false,
+            "showValue": true,
+            "color": "#FF404040"
+          },
+          "events": {
+            "change": "slider-change"
+          }
+        },
+        {
+          "id": "feedback_return",
+          "type": "minecraft:button",
+          "bounds": {
+            "x": 20,
+            "y": 250,
+            "w": 140,
+            "h": 20
+          },
+          "source": {
+            "category": "vanilla-widget",
+            "className": "net.minecraft.client.gui.components.Button"
+          },
+          "state": {
+            "visible": true,
+            "enabled": true
+          },
+          "props": {
+            "message": {
+              "kind": "literal",
+              "value": "返回入口"
+            }
+          },
+          "events": {}
+        },
+        {
+          "id": "feedback_restart",
+          "type": "minecraft:button",
+          "bounds": {
+            "x": 250,
+            "y": 250,
+            "w": 140,
+            "h": 20
+          },
+          "source": {
+            "category": "vanilla-widget",
+            "className": "net.minecraft.client.gui.components.Button"
+          },
+          "state": {
+            "visible": true,
+            "enabled": true
+          },
+          "props": {
+            "message": {
+              "kind": "literal",
+              "value": "重开边界页"
+            }
+          },
+          "events": {}
+        }
+      ],
+      "variables": [],
+      "behaviors": [
+        {
+          "id": "rule_feedback_return",
+          "event": {
+            "type": "button-click",
+            "sourceId": "feedback_return"
+          },
+          "action": {
+            "type": "open_screen",
+            "targetScreenId": "target_feedback_return"
+          }
+        },
+        {
+          "id": "rule_feedback_restart",
+          "event": {
+            "type": "button-click",
+            "sourceId": "feedback_restart"
+          },
+          "action": {
+            "type": "open_screen",
+            "targetScreenId": "target_feedback_restart"
+          }
+        }
+      ],
+      "screenTargets": [
+        {
+          "id": "target_feedback_return",
+          "name": "返回入口",
+          "boundScreenId": "screen_main"
+        },
+        {
+          "id": "target_feedback_restart",
+          "name": "重开边界页",
+          "boundScreenId": "feedback_edges"
+        }
+      ]
+    }
+  ],
+  "assets": [],
+  "runtimePolicy": {
+    "escapeAction": "close",
+    "nativeBackground": "default"
+  }
+}

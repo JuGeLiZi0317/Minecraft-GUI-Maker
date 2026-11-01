@@ -1,4 +1,14 @@
 /* Inspector forms: compact, tokenised, keyboard first. */
+.inspector .multiline-field textarea {
+  width: 100%;
+  min-height: 100px;
+  height: auto;
+  resize: vertical;
+  padding: 8px;
+  font: inherit;
+  line-height: 1.5;
+}
+
 .inspector {
   min-height: 0;
   padding: 0 12px 16px;

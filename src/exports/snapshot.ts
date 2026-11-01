@@ -1,6 +1,6 @@
 import { exportProject, parseProject, type GuiProject } from '../domain/schema';
 
-export const EXPORT_CONTRACT = 'minecraft-gui-maker-export/0.7.0' as const;
+export const EXPORT_CONTRACT = 'minecraft-gui-maker-export/0.8.0' as const;
 export function deepFreeze<T>(value: T): T {
   if (value && typeof value === 'object') {
     for (const child of Object.values(value)) deepFreeze(child);

@@ -18,14 +18,14 @@ describe('F1 rectangle and screen declarations', () => {
     const wrong = structuredClone(doc); wrong.screens[0].behaviors[0].event.sourceId = 'screen_1'; expect(() => parseProject(JSON.stringify(wrong))).toThrow();
     const snapshot = beginExport(doc), spec = buildSpecification(snapshot, await referenceFor(snapshot), 'project.json'), prompt = buildPrompt(spec);
     expect(spec.designIntent.screenTargets).toEqual(doc.screens[0].screenTargets); expect(prompt).toContain('mouse hit testing'); expect(prompt).toContain('target Screen creation and switching');
-    store.getState().add('minecraft:checkbox'); store.getState().setPanel(true); expect(store.getState().doc.schemaVersion).toBe('0.7.0');
+    store.getState().add('minecraft:checkbox'); store.getState().setPanel(true); expect(store.getState().doc.schemaVersion).toBe('0.17.0');
     store.getState().select('node_1'); expect(() => store.getState().deleteSelected()).toThrow('引用'); expect(store.getState().doc.screens[0].behaviors).toHaveLength(1);
     expect(old.schemaVersion).toBe('0.1.0'); expect(old.screens[0].screenTargets).toBeUndefined();
   });
   it('rejects old-version declaration even if empty and preserves valid F0 documents', () => {
     const store = createEditorStore(); store.getState().add('minecraft:button'); store.getState().add('minecraft:string-widget');
     store.getState().saveBehavior({ id: 'rule_1', event: { type: 'button-click', sourceId: 'node_1' }, action: { type: 'set-text', targetId: 'node_2', text: 'Hello' } });
-    const f0 = structuredClone(store.getState().doc); expect(f0.schemaVersion).toBe('0.6.0'); expect(parseProject(JSON.stringify(f0))).toEqual(f0);
-    f0.screens[0].screenTargets = []; expect(() => parseProject(JSON.stringify(f0))).toThrow('0.7.0');
+    const f0 = structuredClone(store.getState().doc); expect(f0.schemaVersion).toBe('0.17.0'); expect(parseProject(JSON.stringify(f0))).toEqual(f0);
+    for (const n of f0.screens[0].nodes) if (n.type === 'minecraft:button') delete n.props.color; f0.schemaVersion = '0.6.0'; delete f0.entryScreenId; delete f0.screenTabGroups; f0.screens[0].screenTargets = []; expect(() => parseProject(JSON.stringify(f0))).toThrow('0.7.0');
   });
 });

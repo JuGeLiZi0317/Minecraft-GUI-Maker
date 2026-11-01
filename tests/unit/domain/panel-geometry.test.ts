@@ -12,8 +12,8 @@ describe('H2-P independent panel', () => {
     const saved = structuredClone(store.getState().doc); expect(saved.schemaVersion).toBe('0.9.0'); expect(panelBounds(saved.screens[0])).toEqual(bounds); expect(store.getState().past).toHaveLength(1);
     expect(parseProject(JSON.stringify(saved))).toEqual(saved);
     store.getState().undo(); expect(store.getState().doc).toEqual(legacy); store.getState().redo(); expect(store.getState().doc).toEqual(saved);
-    store.getState().add('minecraft:checkbox'); store.getState().setPanel(true); expect(store.getState().doc.schemaVersion).toBe('0.9.0');
-    store.getState().saveScreenTarget({ id: 'screen_other', name: 'Other' }); expect(store.getState().doc.schemaVersion).toBe('0.9.0');
+    store.getState().add('minecraft:checkbox'); store.getState().setPanel(true); expect(store.getState().doc.schemaVersion).toBe('0.17.0');
+    store.getState().saveScreenTarget({ id: 'screen_other', name: 'Other' }); expect(store.getState().doc.schemaVersion).toBe('0.17.0');
   });
   it('atomically rejects legacy fields, invalid bounds and design-area shrink', () => {
     const store = createEditorStore(); store.getState().setPanel(true); store.getState().setPanelBounds({ x: 4, y: 28, w: 200, h: 100 });
