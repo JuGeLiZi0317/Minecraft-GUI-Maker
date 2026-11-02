@@ -33,6 +33,17 @@ it('uses separate image and metadata layers, with no inheritance below an overri
   r.close();
 });
 
+it('resolves full Texture PNG ResourceLocations from overlay before the base client', async () => {
+  const r = new LayeredResources(); await r.setBase(client(), 'client');
+  const id = 'example:textures/gui/panel.png', path = 'assets/example/textures/gui/panel.png';
+  await r.setOverlay(overlay([{ name: path, data: png() }]), 'textures');
+  expect(await r.texture(id)).toMatchObject({ status: 'valid', id, imageLayer: '覆盖：textures', width: 200, height: 20 });
+  expect(await r.texture('../bad')).toMatchObject({ status: 'unsupported' });
+  expect(await r.texture('example:gui/panel.png')).toMatchObject({ status: 'unsupported' });
+  expect(await r.texture('missing:textures/gui/panel.png')).toMatchObject({ status: 'missing' });
+  r.close();
+});
+
 it('rejects invalid, unsupported and cancelled replacements while keeping existing layers', async () => {
   const r = new LayeredResources(); await r.setBase(client(), 'client');
   await r.setOverlay(overlay([{ name: location(GUI_SPRITES[0]) + '.mcmeta', data: '{' }]), 'bad metadata');

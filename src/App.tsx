@@ -1,11 +1,14 @@
 import { useEffect, useRef, useState, useSyncExternalStore, type CSSProperties, type PointerEvent as ReactPointerEvent } from 'react';
 import { useStore } from 'zustand';
-import { CATALOG, NODE_TYPES } from './domain/catalog';
+import { CATALOG, NODE_TYPES, type NodeType } from './domain/catalog';
+import type { ContainerDrop } from './domain/scrollablePanel';
 import { displayText } from './domain/model';
 import { MAX_JSON_BYTES } from './domain/schema';
 import { currentScreen, editorStore } from './editor/store';
 import { commitExportDrafts } from './exports/draftBarrier';
 import { Canvas, type View } from './canvas/Canvas';
+import { StatusPreview } from './canvas/StatusPreview';
+import { isStatusNode } from './domain/statusIndicator';
 import { Inspector, ProjectName } from './ui/Inspector';
 import { ScreenSettings } from './ui/ScreenSettings';
 import type { GuiScalePreview } from './domain/guiScale';
@@ -42,6 +45,8 @@ export function App() {
   const [preview, setPreview] = useState<GuiScalePreview | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [interaction, setInteraction] = useState(false), [resourceOpenRequest, setResourceOpenRequest] = useState(0);
+  const [previewStatusValues, setPreviewStatusValues] = useState<Record<string, string>>({});
+  useEffect(() => { setPreviewStatusValues({}); }, [interaction, screen.id]);
   const [numericPreviewEpoch, setNumericPreviewEpoch] = useState(0);
   const fontRef = useRef<HTMLInputElement>(null);
   const fontMenuRef = useRef<HTMLDivElement>(null);
@@ -52,6 +57,7 @@ export function App() {
   const [behaviorOpen, setBehaviorOpen] = useState(false), [behaviorPreview, setBehaviorPreview] = useState<BehaviorPreview | null>(null);
   const [editTabs, setEditTabs] = useState<Record<string, string>>({});
   const [screenPositions, setScreenPositions] = useState<Record<string, { x: number; y: number }>>({});
+  const [containerScroll, setContainerScroll] = useState<Record<string, number>>({});
   const [behaviorMode, setBehaviorMode] = useState(false), behaviorTrigger = useRef<((id: string) => void) | null>(null);
   const behaviorStartScreen = useRef<string | null>(null), behaviorNavigation = useRef<'navigate' | 'reset' | null>(null);
   const [theme, setTheme] = useState<'dark' | 'light'>(loadTheme);
@@ -142,6 +148,10 @@ export function App() {
     buttons[next]?.click();
   };
   const notify = (text: string, error = false) => setMessage({ text, error });
+  const addComponent = (type: NodeType, position?: { x: number; y: number }, containerDrop?: ContainerDrop) => {
+    try { editorStore.getState().add(type, position, containerDrop); }
+    catch (error) { notify(`无法添加组件：${(error as Error).message}`, true); }
+  };
   const exports = useExports(notify, resources);
   const revision = state.doc.project.revision;
 
@@ -328,7 +338,7 @@ export function App() {
             else if (e.key === 'ArrowUp') { e.preventDefault(); moveLayer('up'); }
             else if (e.key === 'Home') { e.preventDefault(); moveLayer('first'); }
             else if (e.key === 'End') { e.preventDefault(); moveLayer('last'); }
-          }}>{!screen.nodes.length ? <p className="muted">尚无组件</p> : [...screen.nodes].reverse().map(node => <button key={node.id} disabled={!!behaviorPreview} className={node.id === state.selected ? 'layer selected' : 'layer'} aria-label={`选择 ${node.id}`} aria-pressed={node.id === state.selected} onClick={() => state.select(node.id)}><span aria-hidden="true">{CATALOG[node.type].glyph}</span><span>{node.id}<small>{CATALOG[node.type].label}</small></span><span aria-hidden="true" title={node.state.visible ? '可见初态：显示' : '可见初态：隐藏'}>{node.state.visible ? '◦' : '–'}</span></button>)}</div>
+          }}>{!screen.nodes.length ? <p className="muted">尚无组件</p> : [...screen.nodes].filter(node => node.parentContainerId === undefined).reverse().flatMap(parent => [parent, ...screen.nodes.filter(node => node.parentContainerId === parent.id).reverse()]).map(node => <button key={node.id} style={node.parentContainerId ? { paddingLeft: 24 } : undefined} disabled={!!behaviorPreview} className={node.id === state.selected ? 'layer selected' : 'layer'} aria-label={`选择 ${node.id}`} aria-pressed={node.id === state.selected} onClick={() => state.select(node.id)}><span aria-hidden="true">{CATALOG[node.type].glyph}</span><span>{node.id}<small>{CATALOG[node.type].label}{node.parentContainerId ? ' · 子节点' : ''}</small></span><span aria-hidden="true" title={node.state.visible ? '可见初态：显示' : '可见初态：隐藏'}>{node.state.visible ? '◦' : '–'}</span></button>)}</div>
         </div>
         <div className={`library-split ${screen.nodes.length ? '' : 'empty'}`} role="separator" aria-label="调整项目结构区域高度" onPointerDown={e => {
           if (e.button !== 0) return;
@@ -341,23 +351,24 @@ export function App() {
           <div className="panel-heading"><span>COMPONENTS</span><span>{NODE_TYPES.length}</span></div>
           <h2>构建你的界面</h2>
           <div className="component-list">{NODE_TYPES.map(type => <button key={type} className="component-card" disabled={!!state.blocked || !!state.gesture || !!preview || !!behaviorPreview || screen.nodes.length >= 1000}
-            aria-label={`添加 ${CATALOG[type].label}`} draggable={!state.gesture && !behaviorPreview} onDragStart={e => { pointerDown.current = true; e.dataTransfer.setData('application/x-minecraft-gui-component', type); }} onClick={() => state.add(type)}>
+            aria-label={`添加 ${CATALOG[type].label}`} draggable={!state.gesture && !behaviorPreview} onDragStart={e => { pointerDown.current = true; e.dataTransfer.setData('application/x-minecraft-gui-component', type); }} onClick={() => addComponent(type)}>
             <span className="component-glyph" aria-hidden="true">{CATALOG[type].glyph}</span><span><strong>{CATALOG[type].label}</strong><small>{CATALOG[type].subtitle}</small></span>
           </button>)}</div>
         </div>
       </aside>
-      <Inspector key={state.currentScreenId} editTabs={editTabs} setEditTabs={setEditTabs} notify={notify} readOnly={!!preview || !!state.blocked || !!behaviorPreview} onMouseEnter={() => showPeek('right')} onMouseLeave={() => hidePeek('right')} onPin={prefs.right.mode !== 'pinned' && peek.right ? () => mode('right', 'pinned') : undefined} emptyControls={null}/>
+      <Inspector containerScroll={containerScroll} key={state.currentScreenId} editTabs={editTabs} setEditTabs={setEditTabs} notify={notify} readOnly={!!preview || !!state.blocked || !!behaviorPreview} onMouseEnter={() => showPeek('right')} onMouseLeave={() => hidePeek('right')} onPin={prefs.right.mode !== 'pinned' && peek.right ? () => mode('right', 'pinned') : undefined} emptyControls={null}/>
       <main className="studio">
         <div className="screen-toolbar" aria-label="Screen 画布工具">
           <label className="screen-toolbar-select"><span>画布</span><select aria-label="当前画布" value={state.currentScreenId} disabled={!!state.gesture || !!preview || !!behaviorPreview} onChange={e => { try { commitExportDrafts(); state.switchScreen(e.target.value); } catch (error) { notify((error as Error).message, true); } }}>{state.doc.screens.map(item => <option key={item.id} value={item.id}>{displayText(item.title)} · {item.id}</option>)}</select></label>
           {renamingScreen ? <form className="screen-rename-form" onSubmit={e => { e.preventDefault(); try { commitExportDrafts(); state.renameScreen(screen.id, screenName); setRenamingScreen(false); notify('画布已重命名'); } catch (error) { notify((error as Error).message, true); } }}><input autoFocus aria-label="画布名称" maxLength={128} value={screenName} onChange={e => setScreenName(e.target.value)}/><button className="screen-tool-button" type="submit" title="保存画布名称" aria-label="保存画布名称">✓</button><button className="screen-tool-button" type="button" title="取消重命名" aria-label="取消重命名" onClick={() => { setRenamingScreen(false); setScreenName(displayText(screen.title)); }}>×</button></form> : <strong className="screen-toolbar-title">{displayText(screen.title)}</strong>}
-          <div className="screen-toolbar-actions">
+        <div className="screen-toolbar-actions">
+            {interaction && screen.nodes.some(node => isStatusNode(node) && node.state.visible) && <StatusPreview key={screen.id} screenId={screen.id} nodes={screen.nodes.filter((node): node is Extract<typeof node, { type: 'minecraft:status-indicator' }> => isStatusNode(node) && node.state.visible)} values={previewStatusValues} onChange={(nodeId, statusId) => setPreviewStatusValues(values => ({ ...values, [nodeId]: statusId }))}/>}
             {!renamingScreen && <button type="button" className="screen-tool-button" aria-label="重命名画布" title="重命名当前画布" disabled={!!state.blocked || !!state.gesture || !!preview || !!behaviorPreview} onClick={() => setRenamingScreen(true)}><svg aria-hidden="true" viewBox="0 0 20 20"><path d="M3 14.5V17h2.5L16.2 6.3l-2.5-2.5L3 14.5Z"/><path d="m12.8 4.7 2.5 2.5"/></svg></button>}
             <button type="button" className="screen-tool-button" aria-label="新增画布" title="新增 Screen 画布" disabled={!!state.blocked || !!state.gesture || !!preview || !!behaviorPreview || behaviorMode} onClick={() => { try { commitExportDrafts(); state.addScreen(); setView(v => ({ ...v, zoom: Math.min(v.zoom, 0.5), panX: 0, panY: 0 })); notify('已新增 Screen 画布'); } catch (error) { notify((error as Error).message, true); } }}><svg aria-hidden="true" viewBox="0 0 20 20"><path d="M10 3v14M3 10h14"/></svg></button>
             <button type="button" className="screen-tool-button screen-delete-button" aria-label="删除当前画布" title={state.doc.entryScreenId === screen.id ? '先在左侧更换项目入口，再删除此画布' : '删除当前 Screen 画布'} disabled={!!state.blocked || !!state.gesture || !!preview || !!behaviorPreview || behaviorMode || state.doc.screens.length <= 1} onClick={() => { try { commitExportDrafts(); state.deleteScreen(screen.id); setScreenPositions(previous => { const next = { ...previous }; delete next[screen.id]; return next; }); notify('Screen 画布已删除，可撤销'); } catch (error) { notify((error as Error).message, true); } }}><svg aria-hidden="true" viewBox="0 0 20 20"><path d="M3.5 5.5h13M8 5.5V3.5h4v2M5.5 5.5l.7 11h7.6l.7-11M8 8v5.5M12 8v5.5"/></svg></button>
           </div>
         </div>
-            <Canvas numericPreviewEpoch={numericPreviewEpoch} screenPositions={screenPositions} setScreenPositions={setScreenPositions} onSelectScreen={id => { try { commitExportDrafts(); editorStore.getState().switchScreen(id); } catch (error) { notify((error as Error).message, true); } }} interaction={interaction} view={view} setView={setView} preview={preview} readOnly={!!state.blocked || !!behaviorPreview} behaviorPreview={behaviorPreview} behaviorMode={behaviorMode} editTabs={editTabs} onBehaviorTrigger={id => behaviorTrigger.current?.(id)} grid={grid} alignment={{ guides: prefs.smartGuides, snap: prefs.smartSnap }} resources={resources} resourceGeneration={resourceGeneration} font={font} theme={theme}/>
+            <Canvas containerScroll={containerScroll} setContainerScroll={setContainerScroll} onEditError={message => notify(message, true)} onAddNode={addComponent} numericPreviewEpoch={numericPreviewEpoch} statusValues={previewStatusValues} screenPositions={screenPositions} setScreenPositions={setScreenPositions} onSelectScreen={id => { try { commitExportDrafts(); editorStore.getState().switchScreen(id); } catch (error) { notify((error as Error).message, true); } }} interaction={interaction} view={view} setView={setView} preview={preview} readOnly={!!state.blocked || !!behaviorPreview} behaviorPreview={behaviorPreview} behaviorMode={behaviorMode} editTabs={editTabs} onBehaviorTrigger={id => behaviorTrigger.current?.(id)} grid={grid} alignment={{ guides: prefs.smartGuides, snap: prefs.smartSnap }} resources={resources} resourceGeneration={resourceGeneration} font={font} theme={theme}/>
         {libraryOpen && <div className="sidebar-resizer sidebar-resizer-left" role="separator" aria-label="调整组件栏宽度" onPointerDown={e => resizeSidebar('left', e)}/>}
         {inspectorOpen && <div className="sidebar-resizer sidebar-resizer-right" role="separator" aria-label="调整属性栏宽度" onPointerDown={e => resizeSidebar('right', e)}/>}
         <button onMouseEnter={() => showPeek('left')} onMouseLeave={() => hidePeek('left')} className="sidebar-toggle sidebar-toggle-left" aria-label={libraryOpen ? '收起组件栏' : '展开组件栏'} title={libraryOpen ? '收起组件栏' : '展开组件栏'} aria-expanded={libraryOpen} onClick={() => setLibraryOpen(!libraryOpen)}>{libraryOpen ? '‹' : '›'}</button>
@@ -365,7 +376,7 @@ export function App() {
         {exportOpen && <ExportPanel {...exports} resourceRevision={resources.revision} onClose={() => setExportOpen(false)} currentJson={JSON.stringify(state.doc, null, 2) + '\n'}/>}
         {(behaviorOpen || behaviorMode) && <div hidden={!behaviorOpen}><BehaviorPanel key={state.currentScreenId} preview={behaviorPreview} setPreview={setBehaviorPreview} mode={behaviorMode} setMode={setBehaviorMode} canClick={!preview} triggerRef={behaviorTrigger}
           onOpenScreen={id => { setNumericPreviewEpoch(epoch => epoch + 1); if (editorStore.getState().currentScreenId !== id) { behaviorNavigation.current = 'navigate'; editorStore.getState().switchScreen(id); } setBehaviorPreview({}); setBehaviorMode(true); }}
-          onResetPreview={() => { setNumericPreviewEpoch(epoch => epoch + 1); setInteraction(false); const s = editorStore.getState(), id = s.doc.entryScreenId; behaviorStartScreen.current = null; if (id && s.doc.screens.some(item => item.id === id) && s.currentScreenId !== id) { behaviorNavigation.current = 'reset'; s.switchScreen(id); } }}
+          onResetPreview={() => { setNumericPreviewEpoch(epoch => epoch + 1); setInteraction(false); setBehaviorPreview(null); setBehaviorMode(false); const s = editorStore.getState(), id = s.doc.entryScreenId; behaviorStartScreen.current = null; if (id && s.doc.screens.some(item => item.id === id) && s.currentScreenId !== id) { behaviorNavigation.current = 'reset'; s.switchScreen(id); } }}
           close={() => setBehaviorOpen(false)} notify={notify}/></div>}
         <div className="studio-footer"><span><i/> {screen.nodes.length} COMPONENTS</span><span data-testid="history-count">{state.past.length} undo / {state.future.length} redo</span><span>INTEGER COORDINATES · GUI px</span></div>
         <details className="json-preview"><summary>项目 JSON <span>只读 / 当前已提交文档</span></summary><pre data-testid="project-json">{JSON.stringify(state.doc, null, 2)}</pre></details>

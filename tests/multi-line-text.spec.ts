@@ -52,6 +52,37 @@ test('W1-A edits, drags, resizes by rows, isolates preview and persists exact JS
   expect(errors).toEqual([]);
 });
 
+test('W1-G scroll text preview becomes inert on exit and resets its scroll position on re-entry', async ({ page }) => {
+  await page.goto('/'); await page.getByRole('button', { name: '添加 ReadOnlyScrollText', exact: true }).click();
+  await page.getByLabel('只读文本', { exact: true }).fill(Array.from({ length: 30 }, (_, i) => `Line ${i + 1} - scroll preview lifecycle`).join('\n'));
+  await page.getByLabel('只读文本', { exact: true }).blur();
+  const shadow = page.getByLabel('文字阴影', { exact: true });
+  await expect(shadow).toBeChecked();
+  await shadow.uncheck();
+  await expect(shadow).not.toBeChecked();
+
+  const toggle = page.getByRole('button', { name: '交互预览', exact: true });
+  await toggle.click();
+  const region = page.locator('.scroll-text-preview-layer:not([hidden]) .scroll-text-preview').first();
+  await expect(region).toBeVisible();
+  await expect(region).toHaveCSS('text-shadow', 'none');
+  await region.evaluate(el => { el.scrollTop = el.scrollHeight; });
+  await expect.poll(() => region.evaluate(el => el.scrollTop)).toBeGreaterThan(0);
+
+  await toggle.click();
+  await expect(page.getByTestId('canvas-host')).toHaveAttribute('data-runtime-preview-active', 'false');
+  await expect(page.locator('.scroll-text-preview-layer')).toHaveCount(0);
+  await expect(page.locator('.scroll-text-preview')).toHaveCount(0);
+  await expect(toggle).toHaveAttribute('aria-pressed', 'false');
+
+  await toggle.click();
+  const reopened = page.locator('.scroll-text-preview-layer:not([hidden]) .scroll-text-preview').first();
+  await expect(reopened).toBeVisible();
+  await expect.poll(() => page.locator('.scroll-text-preview-layer:not([hidden]) .scroll-text-preview').evaluateAll(elements => elements.every(element => element.scrollTop === 0))).toBe(true);
+  await toggle.click();
+  await expect(page.locator('.scroll-text-preview-layer')).toHaveCount(0);
+});
+
 test('W1-A real multi-Screen ZIP contains authority, native agent contract, consistent hashes and PNGs', async ({ page }, info) => {
   // Observe the exact production download Blob before its short-lived URL is revoked.
   // Disk download cancellation is reported separately, never mistaken for successful saveAs.
@@ -87,7 +118,7 @@ test('W1-A real multi-Screen ZIP contains authority, native agent contract, cons
   for (const file of manifest.files) expect(createHash('sha256').update(entries.get(file.name)!).digest('hex')).toBe(file.sha256);
   for (const screen of manifest.screens) { const png = entries.get(screen.designImage.name)!; expect(png.readUInt32BE(16)).toBe(320); expect(png.readUInt32BE(20)).toBe(180); }
   const spec = JSON.parse(entries.get([...entries.keys()].find(k => k.endsWith('.implementation.json'))!)!.toString());
-  expect(spec.version).toBe('0.7.0'); expect(spec.designIntent.screens[1].nodes[0].properties.text.key).toBe('gui.w1.description');
+  expect(spec.version).toBe('0.8.0'); expect(spec.designIntent.screens[1].nodes[0].properties.text.key).toBe('gui.w1.description');
   expect(spec.designIntent.widgetContracts.multiLineTextWidget.shadow).toContain('props.textShadow is explicit');
   expect(spec.designIntent.widgetContracts.multiLineTextWidget.shadow).toContain('no presumed native shadow setter');
   const prompt = entries.get([...entries.keys()].find(k => k.endsWith('.prompt.md'))!)!.toString(); expect(prompt).toContain('NEVER call setSize'); expect(prompt).toContain('PENDING');

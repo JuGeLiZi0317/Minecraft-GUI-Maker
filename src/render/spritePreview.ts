@@ -2,7 +2,7 @@ import type { Scaling } from '../resources/layered';
 import { CHECKBOX_SPRITES, GUI_SPRITES } from '../resources/layered';
 import type { GuiNode } from '../domain/schema';
 
-export type DecodedSprite = { image: ImageBitmap; scaling: Scaling };
+export type DecodedSprite = { image: ImageBitmap | HTMLCanvasElement; scaling: Scaling };
 export function spriteForNode(node: GuiNode, hovered = false, focused = false): string | null {
   if (node.type === 'minecraft:numeric-input') return node.props.bordered ? focused ? GUI_SPRITES[4] : GUI_SPRITES[3] : null;
   if (node.type === 'minecraft:slider') return 'minecraft:widget/slider';

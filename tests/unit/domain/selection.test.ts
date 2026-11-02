@@ -56,9 +56,9 @@ describe('W1-C bounded selection composites', () => {
   it('exports full options, typed event responsibilities and atomic multi-Screen snapshot', async () => {
     const s = createEditorStore(); s.getState().add('minecraft:radio-group'); s.getState().addScreen(); s.getState().add('minecraft:dropdown');
     const snapshot = beginExport(s.getState().doc), reference = await referenceFor(snapshot), spec = buildSpecification(snapshot, reference, 'project.json');
-    expect(spec.version).toBe('0.7.0'); expect(spec.designIntent.selectionEvents).toHaveLength(2); expect(buildPrompt(spec)).toContain('matching release');
+    expect(spec.version).toBe('0.12.0'); expect(spec.designIntent.selectionEvents).toHaveLength(2); expect(buildPrompt(spec)).toContain('matching release');
     const bundle = await buildBundle(snapshot, async () => new Uint8Array([1]));
-    expect(bundle.manifest.version).toBe('0.12.0'); expect(bundle.manifest.screens.map(s => s.selectionControls[0].options.length)).toEqual([3, 3]);
+    expect(bundle.manifest.version).toBe('0.17.0'); expect(bundle.manifest.screens.map(s => s.selectionControls[0].options.length)).toEqual([3, 3]);
     expect(bundle.manifest.screens.every(s => s.selectionControls[0].popupInDesignPng === false)).toBe(true);
     await expect(buildBundle(snapshot, async (_s, _r, _p, screenId) => { if (screenId === snapshot.document.screens[1].id) throw Error('second Screen failure'); return new Uint8Array([1]); })).rejects.toThrow('second Screen failure');
     expect(createNode('minecraft:dropdown', 'stable').id).toBe('stable');

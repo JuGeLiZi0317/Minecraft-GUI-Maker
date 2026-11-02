@@ -10,8 +10,25 @@ type PackInput = Parameters<typeof prepareSession>[0];
 export type Scaling = { type: 'stretch' } | { type: 'tile'; width: number; height: number } | { type: 'nine_slice'; width: number; height: number; border: { left: number; right: number; top: number; bottom: number } };
 export type SpriteResult = { status: 'valid'; id: string; imageLayer: string; metadataLayer: string | null; width: number; height: number; scaling: Scaling; data: Uint8Array; diagnostic: string }
   | { status: 'missing' | 'filtered' | 'invalid' | 'unsupported'; id: string; diagnostic: string };
+export type TextureResult = { status: 'valid'; id: string; imageLayer: string; width: number; height: number; data: Uint8Array; diagnostic: string }
+  | { status: 'missing' | 'filtered' | 'invalid' | 'unsupported'; id: string; diagnostic: string };
 const atlas = 'assets/minecraft/atlases/gui.json';
 const text = (bytes: Uint8Array) => new TextDecoder('utf-8', { fatal: true }).decode(bytes);
+function splitResourceId(id: string) {
+  const split = id.indexOf(':'); if (split < 1 || split !== id.lastIndexOf(':')) return null;
+  const namespace = id.slice(0, split), resourcePath = id.slice(split + 1);
+  if (!/^[a-z0-9_.-]+$/.test(namespace) || !/^[a-z0-9/._-]+$/.test(resourcePath) || resourcePath.split('/').some(part => !part || part === '.' || part === '..')) return null;
+  return { namespace, resourcePath };
+}
+function isGuiSpriteId(id: string) {
+  const parsed = splitResourceId(id); return !!parsed && parsed.namespace === 'minecraft' && !parsed.resourcePath.startsWith('textures/') && !parsed.resourcePath.endsWith('.png');
+}
+function pngSize(data: Uint8Array) {
+  if (data.length < 33 || ![137, 80, 78, 71, 13, 10, 26, 10].every((v, i) => data[i] === v)) throw new ResourceError('invalid', 'PNG 文件头无效');
+  const view = new DataView(data.buffer, data.byteOffset, data.byteLength), width = view.getUint32(16), height = view.getUint32(20);
+  if (view.getUint32(8) !== 13 || text(data.subarray(12, 16)) !== 'IHDR' || !width || !height || width > 8192 || height > 8192 || width * height > 16_777_216) throw new ResourceError('invalid', 'PNG IHDR 无效或尺寸超限');
+  return { width, height };
+}
 function parseAtlas(data: Uint8Array) {
   const obj = JSON.parse(text(data));
   return Array.isArray(obj?.sources) && obj.sources.length === 1 && obj.sources[0]?.type === 'directory' && obj.sources[0]?.source === 'gui/sprites' && obj.sources[0]?.prefix === '';
@@ -77,10 +94,33 @@ export class LayeredResources {
     const upper = this.overlay?.query(path); if (upper && upper.status !== 'missing') return upper.status === 'valid' ? { ...upper, layer: `覆盖：${upper.layer}` } : upper;
     const lower = this.base?.query(path); return lower?.status === 'valid' ? { ...lower, layer: `基础：${lower.layer}` } : lower ?? { status: 'missing' as const, diagnostic: '未提供基础资源' };
   }
+  async texture(id: string): Promise<TextureResult> {
+    const generation = this.generation;
+    const result = (status: 'missing' | 'filtered' | 'invalid' | 'unsupported', diagnostic: string): TextureResult => ({ status, id, diagnostic });
+    const parsed = splitResourceId(id);
+    if (!parsed || !parsed.resourcePath.startsWith('textures/') || !parsed.resourcePath.endsWith('.png')) return result('unsupported', 'Texture ID 必须是安全的完整 PNG ResourceLocation（textures/…png）');
+    const resourcePath = `assets/${parsed.namespace}/${parsed.resourcePath}`;
+    const upper = this.overlay?.query(resourcePath);
+    const lower = this.base?.query(resourcePath);
+    const chosen = upper && upper.status !== 'missing' ? { query: upper, session: this.overlay!, label: `覆盖：${this.overlay!.layer}` }
+      : lower && lower.status !== 'missing' ? { query: lower, session: this.base!, label: `基础：${this.base!.layer}` }
+      : null;
+    if (!chosen) return result('missing', '贴图在基础客户端和覆盖资源层中均不存在');
+    if (chosen.query.status !== 'valid') return result(chosen.query.status, chosen.query.diagnostic);
+    try {
+      const data = await chosen.session.read(resourcePath);
+      if (generation !== this.generation) return result('unsupported', '资源层已变化，请重新查询');
+      const { width, height } = pngSize(data);
+      return { status: 'valid', id, imageLayer: chosen.label, width, height, data, diagnostic: 'PNG 文件头和尺寸已检查；完整解码由预览阶段执行。' };
+    } catch (error) {
+      if (generation !== this.generation) return result('unsupported', '资源层已变化，请重新查询');
+      return result(error instanceof ResourceError && error.code === 'unsupported' ? 'unsupported' : 'invalid', error instanceof Error ? error.message : '贴图读取失败');
+    }
+  }
   async sprite(id: string): Promise<SpriteResult> {
     const generation = this.generation, base = this.base, upper = this.overlay;
     const result = (status: 'missing' | 'filtered' | 'invalid' | 'unsupported', diagnostic: string): SpriteResult => ({ status, id, diagnostic });
-    if (!(GUI_SPRITES as readonly string[]).includes(id) && !(CHECKBOX_SPRITES as readonly string[]).includes(id) && !(SLIDER_SPRITES as readonly string[]).includes(id) && !CREATIVE_TAB_SPRITES.includes(id)) return result('unsupported', '仅支持已审计的 GUI sprite');
+    if (!(GUI_SPRITES as readonly string[]).includes(id) && !(CHECKBOX_SPRITES as readonly string[]).includes(id) && !(SLIDER_SPRITES as readonly string[]).includes(id) && !CREATIVE_TAB_SPRITES.includes(id) && !isGuiSpriteId(id)) return result('unsupported', 'Sprite ID 无效或首版仅支持 minecraft GUI atlas');
     if (!base) return result('missing', '未选择客户端基础 JAR');
     try {
       if (upper?.query(atlas).status === 'valid') return result('unsupported', '覆盖包含 GUI atlas 定义，尚不支持合并 atlas source');

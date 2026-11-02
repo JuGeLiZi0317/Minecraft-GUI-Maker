@@ -5,6 +5,7 @@ import { upgradeTextStyleEdit, constrainBounds, createNode, editNode, emptyProje
 import { MAX_EDITABLE_DESIGN_SIZE } from '../domain/guiScale';
 import { actionsOf, parseProject, type Behavior, type Bounds, type GuiNode, type GuiProject, type ScreenTabGroup, type ScreenTarget } from '../domain/schema';
 import { PANEL_STYLE, NATIVE_PANEL_16, type PanelStyle } from '../domain/panel';
+import { contentViewport, containerScrollOffset, nodeAbsoluteBounds, nodeToContainerBounds, isScrollableChildType, isScrollablePanelNode, type ContainerDrop, type ScrollOffsets } from '../domain/scrollablePanel';
 
 type Snapshot = { doc: GuiProject; selected: string | null };
 /** Session selection is separate from the authoritative document and history. */
@@ -29,7 +30,7 @@ export type EditorState = Snapshot & {
   renameScreen: (id: string, name: string) => void;
   deleteScreen: (id: string) => void;
   select: (id: string | null) => void;
-  add: (type: NodeType, position?: { x: number; y: number }) => void;
+  add: (type: NodeType, position?: { x: number; y: number }, containerDrop?: ContainerDrop) => void;
   configureTab: (id: string, groupId: string | undefined, contentIds: string[], selected: boolean) => void;
   createScreenTabGroup: (nodeId: string) => string;
   configureCreativeTabNavigation: (nodeId: string, groupId: string, tabId: string) => void;
@@ -37,6 +38,7 @@ export type EditorState = Snapshot & {
   setRuntimePolicy: (enabled: boolean) => void;
   syncNavigationTabLayout: (id: string) => void;
   updateNode: (id: string, change: (node: GuiNode) => GuiNode) => void;
+  setNodeContainer: (id: string, parentContainerId: string | undefined, scrollOffsets?: ScrollOffsets) => void;
   saveBehavior: (rule: Behavior) => void;
   deleteBehavior: (id: string) => void;
   saveScreenTarget: (target: ScreenTarget) => void;
@@ -48,13 +50,21 @@ export type EditorState = Snapshot & {
   setPanelBounds: (bounds: Bounds) => void;
   beginGesture: (id: string) => void;
   previewBounds: (bounds: Bounds) => void;
-  commitGesture: () => void;
+  commitGesture: (containerDrop?: ContainerDrop) => void;
   cancelGesture: () => void;
   importJson: (json: string) => void;
   undo: () => void; redo: () => void;
 };
 const same = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
 const snap = (s: EditorState): Snapshot => ({ doc: s.doc, selected: s.selected });
+function transferToContainer(node: GuiNode, target: ContainerDrop, nodes: GuiNode[]) {
+  const parent = nodes.find(item => item.id === target.parentContainerId);
+  if (!parent || !isScrollablePanelNode(parent)) throw new Error('目标容器不存在');
+  if (!isScrollableChildType(node.type)) throw new Error('此组件暂不支持放入 Scrollable Panel');
+  const local = nodeToContainerBounds(node, parent, nodes, target.scrollOffsets), viewport = contentViewport(parent);
+  if (local.x < 0 || local.y < 0 || local.x + local.w > viewport.w || local.y + local.h > parent.props.contentHeight) throw new Error('组件无法完整放入目标容器内容区；本次转移未修改');
+  node.bounds = local; node.parentContainerId = parent.id;
+}
 export function createEditorStore(initial = emptyProject()) {
   // All mutation paths pass the same domain validator, including supplied initial fixtures.
   const doc = parseProject(JSON.stringify(initial));
@@ -82,12 +92,12 @@ export function createEditorStore(initial = emptyProject()) {
         if (s.doc.screens.length >= 100) throw new Error('最多 100 个 Screen');
         const next = structuredClone(s.doc), used = new Set([next.project.id, ...next.screens.flatMap(screen => [screen.id, ...screen.nodes.map(n => n.id), ...screen.behaviors.map(r => r.id), ...(screen.screenTargets ?? []).map(t => t.id)])]);
         let n = 1; while (used.has(`screen_${n}`)) n++;
-        const screen = structuredClone(emptyProject().screens[0]); screen.id = `screen_${n}`; screen.title = { kind: 'literal', value: `Screen ${n}` }; next.screens.push(screen); if (!['0.13.0', '0.14.0', '0.15.0', '0.16.0', '0.17.0', '0.18.0'].includes(next.schemaVersion)) next.schemaVersion = '0.12.0';
+        const screen = structuredClone(emptyProject().screens[0]); screen.id = `screen_${n}`; screen.title = { kind: 'literal', value: `Screen ${n}` }; next.screens.push(screen); if (!['0.13.0', '0.14.0', '0.15.0', '0.16.0', '0.17.0', '0.18.0', '0.19.0', '0.20.0', '0.21.0', '0.22.0', '0.23.0', '0.24.0', '0.25.0', '0.26.0'].includes(next.schemaVersion)) next.schemaVersion = '0.12.0';
         commit(next, null); set({ currentScreenId: screen.id, selected: null });
       },
       setEntryScreen: id => {
         const s = get(); if (s.blocked) throw new Error(s.blocked); if (s.gesture) throw new Error('请先完成当前拖动');
-        screenById(s.doc, id); const next = structuredClone(s.doc); next.schemaVersion = ['0.14.0', '0.15.0', '0.16.0', '0.17.0', '0.18.0'].includes(next.schemaVersion) ? next.schemaVersion : '0.13.0'; if (['0.14.0', '0.15.0', '0.16.0', '0.17.0', '0.18.0'].includes(next.schemaVersion)) next.screenTabGroups ??= []; next.entryScreenId = id; commit(next, s.selected);
+        screenById(s.doc, id); const next = structuredClone(s.doc); next.schemaVersion = ['0.14.0', '0.15.0', '0.16.0', '0.17.0', '0.18.0', '0.19.0', '0.20.0', '0.21.0', '0.22.0', '0.23.0', '0.24.0', '0.25.0', '0.26.0'].includes(next.schemaVersion) ? next.schemaVersion : '0.13.0'; if (['0.14.0', '0.15.0', '0.16.0', '0.17.0', '0.18.0', '0.19.0', '0.20.0', '0.21.0', '0.22.0', '0.23.0', '0.24.0', '0.25.0', '0.26.0'].includes(next.schemaVersion)) next.screenTabGroups ??= []; next.entryScreenId = id; commit(next, s.selected);
       },
       renameScreen: (id, name) => {
         const s = get(); if (s.blocked) throw new Error(s.blocked); if (s.gesture) throw new Error('请先完成当前拖动');
@@ -106,25 +116,46 @@ export function createEditorStore(initial = emptyProject()) {
       },
       switchScreen: id => { const s = get(); if (s.blocked) throw new Error(s.blocked); if (s.gesture) throw new Error('请先完成当前拖动'); screenById(s.doc, id); if (id !== s.currentScreenId) set({ currentScreenId: id, selected: null }); },
       select: selected => { if (!get().gesture && (selected === null || currentScreen(get()).nodes.some(n => n.id === selected))) set({ selected }); },
-      add: (type, position) => {
+      add: (type, position, containerDrop) => {
         const s = get();
         if (s.blocked || s.gesture || currentScreen(s).nodes.length >= 1000) return;
         const next = structuredClone(s.doc);
-        if ((type === 'minecraft:checkbox' || type === 'minecraft:cycle-button') && !['0.5.0', '0.6.0', '0.7.0', '0.8.0', '0.9.0', '0.10.0', '0.11.0', '0.12.0', '0.13.0', '0.14.0', '0.15.0', '0.16.0', '0.17.0', '0.18.0'].includes(next.schemaVersion)) next.schemaVersion = '0.4.0';
-        if (type === 'minecraft:creative-tab' && !['0.11.0', '0.12.0', '0.13.0', '0.14.0', '0.15.0', '0.16.0', '0.17.0', '0.18.0'].includes(next.schemaVersion)) next.schemaVersion = '0.10.0';
+        if ((type === 'minecraft:checkbox' || type === 'minecraft:cycle-button') && !['0.5.0', '0.6.0', '0.7.0', '0.8.0', '0.9.0', '0.10.0', '0.11.0', '0.12.0', '0.13.0', '0.14.0', '0.15.0', '0.16.0', '0.17.0', '0.18.0', '0.19.0', '0.20.0', '0.21.0', '0.22.0', '0.23.0', '0.24.0', '0.25.0', '0.26.0'].includes(next.schemaVersion)) next.schemaVersion = '0.4.0';
+        if (type === 'minecraft:creative-tab' && !['0.11.0', '0.12.0', '0.13.0', '0.14.0', '0.15.0', '0.16.0', '0.17.0', '0.18.0', '0.19.0', '0.20.0', '0.21.0', '0.22.0', '0.23.0', '0.24.0', '0.25.0', '0.26.0'].includes(next.schemaVersion)) next.schemaVersion = '0.10.0';
         const ids = new Set([next.project.id, ...next.screens.flatMap(screen => [screen.id, ...screen.nodes.map(n => n.id), ...screen.behaviors.map(r => r.id), ...(screen.screenTargets ?? []).map(t => t.id)]), ...(next.screenTabGroups ?? []).flatMap(group => [group.id, ...group.tabs.map(tab => tab.id)])]);
         let index = screenById(next, get().currentScreenId).nodes.length + 1;
         while (ids.has(`node_${index}`)) index++;
         const node = createNode(type, `node_${index}`, position ?? { x: 16 + (index - 1) % 6 * 16, y: 16 + (index - 1) % 6 * 20 });
-        if (type === 'minecraft:radio-group' || type === 'minecraft:dropdown') { next.schemaVersion = '0.18.0'; next.screenTabGroups ??= []; next.entryScreenId ??= next.screens[0].id; }
-        if (type === 'minecraft:numeric-input' || type === 'minecraft:slider') { if (!['0.17.0', '0.18.0'].includes(next.schemaVersion)) next.schemaVersion = '0.16.0'; next.screenTabGroups ??= []; next.entryScreenId ??= next.screens[0].id; }
+        if (type === 'minecraft:radio-group' || type === 'minecraft:dropdown') { if (!['0.19.0', '0.20.0', '0.21.0', '0.22.0', '0.23.0', '0.24.0', '0.25.0', '0.26.0'].includes(next.schemaVersion)) next.schemaVersion = '0.18.0'; next.screenTabGroups ??= []; next.entryScreenId ??= next.screens[0].id; }
+        if (type === 'minecraft:numeric-input' || type === 'minecraft:slider') { if (!['0.17.0', '0.18.0', '0.19.0', '0.20.0', '0.21.0', '0.22.0', '0.23.0', '0.24.0', '0.25.0', '0.26.0'].includes(next.schemaVersion)) next.schemaVersion = '0.16.0'; next.screenTabGroups ??= []; next.entryScreenId ??= next.screens[0].id; }
+        if (type === 'minecraft:progress-bar' && !['0.19.0', '0.20.0', '0.21.0', '0.22.0', '0.23.0', '0.24.0', '0.25.0', '0.26.0'].includes(next.schemaVersion)) { next.schemaVersion = '0.19.0'; next.screenTabGroups ??= []; next.entryScreenId ??= next.screens[0].id; }
+        if (type === 'minecraft:status-indicator') { if (!['0.21.0', '0.22.0', '0.23.0', '0.24.0', '0.25.0', '0.26.0'].includes(next.schemaVersion)) next.schemaVersion = '0.21.0'; next.screenTabGroups ??= []; next.entryScreenId ??= next.screens[0].id; }
+        if (type === 'minecraft:image') { if (!['0.22.0', '0.23.0', '0.24.0', '0.25.0', '0.26.0'].includes(next.schemaVersion)) next.schemaVersion = '0.22.0'; next.screenTabGroups ??= []; next.entryScreenId ??= next.screens[0].id; }
+        if (type === 'minecraft:fitting-multi-line-text-widget') { if (!['0.24.0', '0.25.0', '0.26.0'].includes(next.schemaVersion)) next.schemaVersion = '0.24.0'; next.screenTabGroups ??= []; next.entryScreenId ??= next.screens[0].id; }
+        if (type === 'minecraft:scrollable-panel') { next.schemaVersion = '0.26.0'; next.screenTabGroups ??= []; next.entryScreenId ??= next.screens[0].id; }
         // Tiny imported screens must not create invalid nodes.
-        if (screenById(next, get().currentScreenId).designSize.width < CATALOG[type].min.w || screenById(next, get().currentScreenId).designSize.height < CATALOG[type].min.h) return;
+        if (screenById(next, get().currentScreenId).designSize.width < CATALOG[type].min.w || screenById(next, get().currentScreenId).designSize.height < CATALOG[type].min.h) {
+          if (type === 'minecraft:scrollable-panel') throw new Error('Scrollable Panel 至少需要 40×32 GUI px 的设计区');
+          return;
+        }
         if (isSelectionNode(node)) { const min = selectionMinimum(node), size = currentScreen(s).designSize; if (size.width < min.w || size.height < min.h) return; }
         node.bounds = constrainBounds(node.bounds, type, screenById(next, get().currentScreenId).designSize);
         if (node.type === 'minecraft:multi-line-text-widget') {
           node.props.maxWidth = node.bounds.w; node.props.maxRows = node.bounds.h / 9;
-          if (!['0.16.0', '0.17.0', '0.18.0'].includes(next.schemaVersion)) next.schemaVersion = '0.15.0'; next.screenTabGroups ??= []; next.entryScreenId ??= next.screens[0].id;
+          if (!['0.16.0', '0.17.0', '0.18.0', '0.19.0', '0.20.0', '0.21.0', '0.22.0', '0.23.0', '0.24.0', '0.25.0', '0.26.0'].includes(next.schemaVersion)) next.schemaVersion = '0.15.0'; next.screenTabGroups ??= []; next.entryScreenId ??= next.screens[0].id;
+        }
+        if (containerDrop) {
+          const nodes = screenById(next, get().currentScreenId).nodes;
+          const parent = nodes.find(item => item.id === containerDrop.parentContainerId);
+          if (!parent || !isScrollablePanelNode(parent)) throw new Error('目标容器不存在');
+          if (!isScrollableChildType(node.type)) throw new Error('此组件暂不支持放入 Scrollable Panel');
+          const viewport = contentViewport(parent);
+          if (node.bounds.w > viewport.w || node.bounds.h > parent.props.contentHeight) throw new Error('组件尺寸超出容器内容区，无法放入');
+          const dropX = position?.x ?? node.bounds.x, dropY = position?.y ?? node.bounds.y;
+          node.bounds = { ...node.bounds,
+            x: Math.max(0, Math.min(viewport.w - node.bounds.w, Math.round(dropX - viewport.x - node.bounds.w / 2))),
+            y: Math.max(0, Math.min(parent.props.contentHeight - node.bounds.h, Math.round(dropY - viewport.y + containerScrollOffset(parent, containerDrop.scrollOffsets[parent.id] ?? 0) - node.bounds.h / 2))) };
+          node.parentContainerId = parent.id;
         }
         screenById(next, get().currentScreenId).nodes.push(node);
         commit(next, node.id);
@@ -141,7 +172,7 @@ export function createEditorStore(initial = emptyProject()) {
         tab.props.selected = groupId && !peers.some(n => n.type === 'minecraft:creative-tab' && n.props.selected) ? true : selected;
         if (groupId && tab.props.selected) for (const n of peers) if (n.type === 'minecraft:creative-tab') n.props.selected = false;
         if (previous && previous !== groupId) { const remaining = nodes.filter(n => n.type === 'minecraft:creative-tab' && n.props.groupId === previous); if (remaining.length && !remaining.some(n => n.type === 'minecraft:creative-tab' && n.props.selected)) { const first = remaining[0]; if (first.type === 'minecraft:creative-tab') first.props.selected = true; } }
-        if (!['0.12.0', '0.13.0', '0.14.0', '0.15.0', '0.16.0', '0.17.0', '0.18.0'].includes(next.schemaVersion)) next.schemaVersion = '0.11.0'; commit(next, id);
+        if (!['0.12.0', '0.13.0', '0.14.0', '0.15.0', '0.16.0', '0.17.0', '0.18.0', '0.19.0', '0.20.0', '0.21.0', '0.22.0', '0.23.0', '0.24.0', '0.25.0', '0.26.0'].includes(next.schemaVersion)) next.schemaVersion = '0.11.0'; commit(next, id);
       },
       createScreenTabGroup: nodeId => {
         const s = get(); if (s.blocked) throw new Error(s.blocked); if (s.gesture) throw new Error('请先完成当前拖动');
@@ -151,7 +182,7 @@ export function createEditorStore(initial = emptyProject()) {
         let groupIndex = 1; while (used.has(`tabgroup_${groupIndex}`)) groupIndex++;
         let tabIndex = 1; while (used.has(`navtab_${tabIndex}`)) tabIndex++;
         const groupId = `tabgroup_${groupIndex}`, tabId = `navtab_${tabIndex}`;
-        if (!['0.15.0', '0.16.0', '0.17.0', '0.18.0'].includes(next.schemaVersion)) next.schemaVersion = '0.14.0'; next.screenTabGroups ??= []; next.entryScreenId ??= next.screens[0].id;
+        if (!['0.15.0', '0.16.0', '0.17.0', '0.18.0', '0.19.0', '0.20.0', '0.21.0', '0.22.0', '0.23.0', '0.24.0', '0.25.0', '0.26.0'].includes(next.schemaVersion)) next.schemaVersion = '0.14.0'; next.screenTabGroups ??= []; next.entryScreenId ??= next.screens[0].id;
         next.screenTabGroups.push({ id: groupId, name: 'Screen 标签组', tabs: [{ id: tabId, name: node.props.name || '标签', targetScreenId: screen.id }] });
         if (node.props.groupId && node.props.selected) { const successor = screen.nodes.find(item => item.type === 'minecraft:creative-tab' && item.id !== nodeId && item.props.groupId === node.props.groupId); if (successor?.type === 'minecraft:creative-tab') successor.props.selected = true; }
         delete node.props.groupId; delete node.props.contentIds;
@@ -166,11 +197,11 @@ export function createEditorStore(initial = emptyProject()) {
         if (node.props.groupId && node.props.selected) { const successor = screen.nodes.find(item => item.type === 'minecraft:creative-tab' && item.id !== nodeId && item.props.groupId === node.props.groupId); if (successor?.type === 'minecraft:creative-tab') successor.props.selected = true; }
         delete node.props.groupId; delete node.props.contentIds;
         node.props.tabMode = 'screen-navigation'; node.props.navigationGroupId = groupId; node.props.navigationTabId = tabId; node.props.selected = false;
-        if (!['0.15.0', '0.16.0', '0.17.0', '0.18.0'].includes(next.schemaVersion)) next.schemaVersion = '0.14.0'; next.screenTabGroups ??= []; next.entryScreenId ??= next.screens[0].id; commit(next, nodeId);
+        if (!['0.15.0', '0.16.0', '0.17.0', '0.18.0', '0.19.0', '0.20.0', '0.21.0', '0.22.0', '0.23.0', '0.24.0', '0.25.0', '0.26.0'].includes(next.schemaVersion)) next.schemaVersion = '0.14.0'; next.screenTabGroups ??= []; next.entryScreenId ??= next.screens[0].id; commit(next, nodeId);
       },
       saveScreenTabGroup: group => {
         const s = get(); if (s.blocked) throw new Error(s.blocked); if (s.gesture) throw new Error('请先完成当前拖动');
-        const next = structuredClone(s.doc); if (!['0.15.0', '0.16.0', '0.17.0', '0.18.0'].includes(next.schemaVersion)) next.schemaVersion = '0.14.0'; next.screenTabGroups ??= []; next.entryScreenId ??= next.screens[0].id;
+        const next = structuredClone(s.doc); if (!['0.15.0', '0.16.0', '0.17.0', '0.18.0', '0.19.0', '0.20.0', '0.21.0', '0.22.0', '0.23.0', '0.24.0', '0.25.0', '0.26.0'].includes(next.schemaVersion)) next.schemaVersion = '0.14.0'; next.screenTabGroups ??= []; next.entryScreenId ??= next.screens[0].id;
         const index = next.screenTabGroups.findIndex(item => item.id === group.id); if (index < 0) next.screenTabGroups.push(group); else next.screenTabGroups[index] = group;
         commit(next, s.selected);
       },
@@ -192,14 +223,30 @@ export function createEditorStore(initial = emptyProject()) {
         const s = get(); if (s.blocked) throw new Error(s.blocked); if (s.gesture) return;
         const next = structuredClone(s.doc);
         screenById(next, get().currentScreenId).nodes = screenById(next, get().currentScreenId).nodes.map(n => n.id === id ? editNode(n, change) : n);
-        if (!['0.6.0', '0.7.0', '0.8.0', '0.9.0', '0.10.0', '0.11.0', '0.12.0', '0.13.0', '0.14.0', '0.15.0', '0.16.0', '0.17.0', '0.18.0'].includes(next.schemaVersion) && screenById(next, get().currentScreenId).nodes.some(n => n.type !== 'minecraft:fill' && n.type !== 'minecraft:creative-tab' && n.props.textShadow !== undefined)) next.schemaVersion = '0.5.0';
+        if (screenById(next, get().currentScreenId).nodes.some(n => n.type === 'minecraft:status-indicator' && n.props.statuses.some(status => status.text?.kind === 'translate'))) { if (!['0.22.0', '0.23.0', '0.24.0', '0.25.0', '0.26.0'].includes(next.schemaVersion)) next.schemaVersion = '0.22.0'; next.screenTabGroups ??= []; next.entryScreenId ??= next.screens[0].id; }
+        if (screenById(next, get().currentScreenId).nodes.some(n => n.type === 'minecraft:fitting-multi-line-text-widget') && !['0.23.0', '0.24.0', '0.25.0', '0.26.0'].includes(next.schemaVersion)) next.schemaVersion = '0.23.0';
+        if (screenById(next, get().currentScreenId).nodes.some(n => n.type === 'minecraft:fitting-multi-line-text-widget' && n.props.textShadow !== undefined) && !['0.24.0', '0.25.0', '0.26.0'].includes(next.schemaVersion)) next.schemaVersion = '0.24.0';
+        if (!['0.6.0', '0.7.0', '0.8.0', '0.9.0', '0.10.0', '0.11.0', '0.12.0', '0.13.0', '0.14.0', '0.15.0', '0.16.0', '0.17.0', '0.18.0', '0.19.0', '0.20.0', '0.21.0', '0.22.0', '0.23.0', '0.24.0', '0.25.0', '0.26.0'].includes(next.schemaVersion) && screenById(next, get().currentScreenId).nodes.some(n => n.type !== 'minecraft:fill' && n.type !== 'minecraft:image' && n.type !== 'minecraft:creative-tab' && n.type !== 'minecraft:fitting-multi-line-text-widget' && n.type !== 'minecraft:scrollable-panel' && 'textShadow' in n.props && n.props.textShadow !== undefined)) next.schemaVersion = '0.5.0';
+        commit(next, s.selected);
+      },
+      setNodeContainer: (id, parentContainerId, scrollOffsets = {}) => {
+        const s = get(); if (s.blocked) throw new Error(s.blocked); if (s.gesture) throw new Error('请先完成当前拖动');
+        const next = structuredClone(s.doc), nodes = screenById(next, s.currentScreenId).nodes;
+        const node = nodes.find(item => item.id === id); if (!node) throw new Error('组件不存在');
+        if (node.type === 'minecraft:scrollable-panel') throw new Error('Scrollable Panel 不能嵌套');
+        if (parentContainerId !== undefined) {
+          transferToContainer(node, { parentContainerId, scrollOffsets }, nodes);
+        } else if (node.parentContainerId) {
+          node.bounds = nodeAbsoluteBounds(node, nodes, scrollOffsets); delete node.parentContainerId;
+        }
+        next.schemaVersion = '0.26.0'; next.screenTabGroups ??= []; next.entryScreenId ??= next.screens[0].id;
         commit(next, s.selected);
       },
       saveBehavior: rule => {
         const s = get(); if (s.blocked) throw new Error(s.blocked); if (s.gesture) throw new Error('请先完成拖动');
         const next = structuredClone(s.doc), rules = screenById(next, get().currentScreenId).behaviors, index = rules.findIndex(r => r.id === rule.id);
         if (index < 0) rules.push(rule); else rules[index] = rule;
-        next.schemaVersion = ['0.13.0', '0.14.0', '0.15.0', '0.16.0', '0.17.0', '0.18.0'].includes(next.schemaVersion) ? next.schemaVersion : next.schemaVersion === '0.12.0' ? '0.12.0' : next.schemaVersion === '0.11.0' ? '0.11.0' : next.schemaVersion === '0.10.0' ? '0.10.0' : next.schemaVersion === '0.9.0' ? '0.9.0' : next.schemaVersion === '0.8.0' || 'actions' in rule ? '0.8.0' : next.schemaVersion === '0.7.0' || rule.event.type === 'rectangle-click' || actionsOf(rule).some(a => a.type === 'open_screen') ? '0.7.0' : '0.6.0'; if (['0.14.0', '0.15.0', '0.16.0', '0.17.0', '0.18.0'].includes(next.schemaVersion)) next.screenTabGroups ??= []; commit(next, s.selected);
+        next.schemaVersion = ['0.13.0', '0.14.0', '0.15.0', '0.16.0', '0.17.0', '0.18.0', '0.19.0', '0.20.0', '0.21.0', '0.22.0', '0.23.0', '0.24.0', '0.25.0', '0.26.0'].includes(next.schemaVersion) ? next.schemaVersion : next.schemaVersion === '0.12.0' ? '0.12.0' : next.schemaVersion === '0.11.0' ? '0.11.0' : next.schemaVersion === '0.10.0' ? '0.10.0' : next.schemaVersion === '0.9.0' ? '0.9.0' : next.schemaVersion === '0.8.0' || 'actions' in rule ? '0.8.0' : next.schemaVersion === '0.7.0' || rule.event.type === 'rectangle-click' || actionsOf(rule).some(a => a.type === 'open_screen') ? '0.7.0' : '0.6.0'; if (['0.14.0', '0.15.0', '0.16.0', '0.17.0', '0.18.0', '0.19.0', '0.20.0', '0.21.0', '0.22.0', '0.23.0', '0.24.0', '0.25.0', '0.26.0'].includes(next.schemaVersion)) next.screenTabGroups ??= []; commit(next, s.selected);
       },
       deleteBehavior: id => {
         const s = get(); if (s.blocked) throw new Error(s.blocked); const next = structuredClone(s.doc);
@@ -210,7 +257,7 @@ export function createEditorStore(initial = emptyProject()) {
         const next = structuredClone(s.doc), screen = screenById(next, get().currentScreenId); screen.screenTargets ??= [];
         const index = screen.screenTargets.findIndex(t => t.id === target.id);
         if (index < 0) screen.screenTargets.push(target); else screen.screenTargets[index] = target;
-        if (!['0.8.0', '0.9.0', '0.10.0', '0.11.0', '0.12.0', '0.13.0', '0.14.0', '0.15.0', '0.16.0', '0.17.0', '0.18.0'].includes(next.schemaVersion)) next.schemaVersion = '0.7.0'; commit(next, s.selected);
+        if (!['0.8.0', '0.9.0', '0.10.0', '0.11.0', '0.12.0', '0.13.0', '0.14.0', '0.15.0', '0.16.0', '0.17.0', '0.18.0', '0.19.0', '0.20.0', '0.21.0', '0.22.0', '0.23.0', '0.24.0', '0.25.0', '0.26.0'].includes(next.schemaVersion)) next.schemaVersion = '0.7.0'; commit(next, s.selected);
       },
       deleteScreenTarget: id => {
         const s = get(); if (s.blocked) throw new Error(s.blocked); if (s.gesture) throw new Error('请先完成拖动');
@@ -221,6 +268,7 @@ export function createEditorStore(initial = emptyProject()) {
         if (!name.trim()) throw new Error('项目名称不能为空'); const next = structuredClone(s.doc); next.project.name = name.trim(); commit(next, s.selected); },
       deleteSelected: () => {
         const s = get(); if (s.blocked || !s.selected || s.gesture) return;
+        if (currentScreen(s).nodes.some(n => n.parentContainerId === s.selected)) throw new Error('容器仍包含子节点，请先将子节点移出容器');
         if (currentScreen(s).nodes.some(n => n.type === 'minecraft:creative-tab' && n.props.contentIds?.includes(s.selected!))) throw new Error('组件仍被标签内容引用，请先解除关联');
         if (currentScreen(s).behaviors.some(r => r.event.sourceId === s.selected || actionsOf(r).some(a => a.type !== 'open_screen' && a.targetId === s.selected))) throw new Error('组件仍被行为规则引用，请先修改或删除相关规则');
         const next = structuredClone(s.doc);
@@ -235,7 +283,7 @@ export function createEditorStore(initial = emptyProject()) {
         if (![width, height].every(n => Number.isInteger(n) && n >= 1 && n <= MAX_EDITABLE_DESIGN_SIZE)) {
           throw new Error(`设计区宽高必须为1～${MAX_EDITABLE_DESIGN_SIZE}的整数（编辑器操作上限）`);
         }
-        if (currentScreen(s).nodes.some(n => n.bounds.x + n.bounds.w > width || n.bounds.y + n.bounds.h > height)) {
+        if (currentScreen(s).nodes.some(n => n.parentContainerId === undefined && (n.bounds.x + n.bounds.w > width || n.bounds.y + n.bounds.h > height))) {
           throw new Error('缩小后有组件超出设计区，请先移动或调整组件；本次未修改画布');
         }
         const next = structuredClone(s.doc);
@@ -246,7 +294,7 @@ export function createEditorStore(initial = emptyProject()) {
         const s = get(); if (s.blocked) throw new Error(s.blocked); if (s.gesture) throw new Error('请先完成当前拖动');
         const next = structuredClone(s.doc);
         const previousBackground = screenById(next, s.currentScreenId).background;
-        if (enabled) { if (style !== PANEL_STYLE && !['0.4.0', '0.5.0', '0.6.0', '0.7.0', '0.8.0', '0.9.0', '0.10.0', '0.11.0', '0.12.0', '0.13.0', '0.14.0', '0.15.0', '0.16.0', '0.17.0', '0.18.0'].includes(next.schemaVersion)) next.schemaVersion = '0.3.0'; else if (next.schemaVersion === '0.1.0') next.schemaVersion = '0.2.0'; screenById(next, get().currentScreenId).background = { kind: 'panel', style, ...(previousBackground.kind === 'panel' && previousBackground.bounds ? { bounds: previousBackground.bounds } : {}) }; }
+        if (enabled) { if (style !== PANEL_STYLE && !['0.4.0', '0.5.0', '0.6.0', '0.7.0', '0.8.0', '0.9.0', '0.10.0', '0.11.0', '0.12.0', '0.13.0', '0.14.0', '0.15.0', '0.16.0', '0.17.0', '0.18.0', '0.19.0', '0.20.0', '0.21.0', '0.22.0', '0.23.0', '0.24.0', '0.25.0', '0.26.0'].includes(next.schemaVersion)) next.schemaVersion = '0.3.0'; else if (next.schemaVersion === '0.1.0') next.schemaVersion = '0.2.0'; screenById(next, get().currentScreenId).background = { kind: 'panel', style, ...(previousBackground.kind === 'panel' && previousBackground.bounds ? { bounds: previousBackground.bounds } : {}) }; }
         else screenById(next, get().currentScreenId).background = { kind: 'none' };
         commit(next, s.selected);
       },
@@ -254,7 +302,7 @@ export function createEditorStore(initial = emptyProject()) {
         const state = get(); if (state.blocked) throw new Error(state.blocked); if (state.gesture) throw new Error('请先完成当前拖动');
         const next = structuredClone(state.doc), background = screenById(next, get().currentScreenId).background;
         if (background.kind !== 'panel') throw new Error('请先启用 Panel');
-        background.bounds = bounds; if (!['0.10.0', '0.11.0', '0.12.0', '0.13.0', '0.14.0', '0.15.0', '0.16.0', '0.17.0', '0.18.0'].includes(next.schemaVersion)) next.schemaVersion = '0.9.0'; commit(next, state.selected);
+        background.bounds = bounds; if (!['0.10.0', '0.11.0', '0.12.0', '0.13.0', '0.14.0', '0.15.0', '0.16.0', '0.17.0', '0.18.0', '0.19.0', '0.20.0', '0.21.0', '0.22.0', '0.23.0', '0.24.0', '0.25.0', '0.26.0'].includes(next.schemaVersion)) next.schemaVersion = '0.9.0'; commit(next, state.selected);
       },
       beginGesture: id => {
         const s = get(), node = currentScreen(s).nodes.find(n => n.id === id);
@@ -264,22 +312,40 @@ export function createEditorStore(initial = emptyProject()) {
         const s = get(), g = s.gesture;
         if (s.blocked || !g || !Object.values(bounds).every(Number.isFinite)) return;
         const node = currentScreen(s).nodes.find(n => n.id === g.id)!;
-        const draft = constrainBounds(bounds, node.type, currentScreen(s).designSize);
+        const parent = node.parentContainerId ? currentScreen(s).nodes.find(n => n.id === node.parentContainerId) : undefined;
+        const draft = constrainBounds(bounds, node.type, parent && isScrollablePanelNode(parent) ? { width: contentViewport(parent).w, height: parent.props.contentHeight } : currentScreen(s).designSize);
+        if (isScrollablePanelNode(node)) {
+          const children = currentScreen(s).nodes.filter(child => child.parentContainerId === node.id);
+          const requiredWidth = Math.max(CATALOG[node.type].min.w, ...children.map(child => child.bounds.x + child.bounds.w + node.props.padding * 2 + 8));
+          if (draft.w < requiredWidth) { draft.w = requiredWidth; draft.x = Math.min(draft.x, currentScreen(s).designSize.width - draft.w); }
+        }
         if (isSelectionNode(node)) {
           const min = selectionMinimum(node); draft.w = Math.max(min.w, draft.w); draft.h = Math.max(min.h, draft.h);
           if (bounds.x !== g.before.x && bounds.w !== g.before.w) draft.x = Math.max(0, Math.round(bounds.x + bounds.w - draft.w));
           if (bounds.y !== g.before.y && bounds.h !== g.before.h) draft.y = Math.max(0, Math.round(bounds.y + bounds.h - draft.h));
-          draft.x = Math.min(draft.x, currentScreen(s).designSize.width - draft.w); draft.y = Math.min(draft.y, currentScreen(s).designSize.height - draft.h);
+          const size = parent && isScrollablePanelNode(parent) ? { width: contentViewport(parent).w, height: parent.props.contentHeight } : currentScreen(s).designSize;
+          draft.x = Math.min(draft.x, size.width - draft.w); draft.y = Math.min(draft.y, size.height - draft.h);
         }
         if (node.type === 'minecraft:multi-line-text-widget' && bounds.y !== g.before.y && bounds.h !== g.before.h) draft.y = Math.max(0, Math.round(bounds.y + bounds.h - draft.h));
         set({ gesture: { ...g, draft } });
       },
-      commitGesture: () => {
+      commitGesture: containerDrop => {
         const s = get(), g = s.gesture;
         if (!g) return;
-        set({ gesture: null });
-        if (same(g.before, g.draft)) return;
-        get().updateNode(g.id, n => ({ ...n, bounds: g.draft }));
+        if (!containerDrop) {
+          set({ gesture: null });
+          if (!same(g.before, g.draft)) get().updateNode(g.id, n => ({ ...n, bounds: g.draft }));
+          return;
+        }
+        if (same(g.before, g.draft)) { set({ gesture: null }); return; }
+        try {
+          const next = structuredClone(s.doc), screen = screenById(next, s.currentScreenId);
+          screen.nodes = screen.nodes.map(n => n.id === g.id ? editNode(n, current => ({ ...current, bounds: g.draft })) : n);
+          const node = screen.nodes.find(n => n.id === g.id);
+          if (containerDrop && node) transferToContainer(node, containerDrop, screen.nodes);
+          parseProject(JSON.stringify(next));
+          set({ gesture: null }); commit(next, g.id);
+        } catch (error) { set({ gesture: null }); throw error; }
       },
       cancelGesture: () => { if (get().gesture) set({ gesture: null }); },
       importJson: json => {

@@ -13,6 +13,14 @@ import { SelectionFields } from './SelectionFields';
 import { isSelectionNode } from '../domain/selection';
 import { numericError, type NumericConfig } from '../domain/numeric';
 import { isNumericNode, type NumericNode } from '../render/numericWidgets';
+import { isProgressNode, progressError, type ProgressNode } from '../domain/progress';
+import { isStatusNode, type StatusNode } from '../domain/statusIndicator';
+import { StatusFields } from './StatusFields';
+
+type TextureImageProps = Extract<Extract<GuiNode, { type: 'minecraft:image' }>['props'], { kind: 'texture' }>;
+type SpriteImageProps = Extract<Extract<GuiNode, { type: 'minecraft:image' }>['props'], { kind: 'sprite' }>;
+type ImageSourceProps = TextureImageProps | SpriteImageProps;
+type ImageSourceCache = Map<string, Partial<Record<ImageSourceProps['kind'], ImageSourceProps>>>;
 
 function NumericConstraints({ node, update }: { node: NumericNode; update: (change: (node: GuiNode) => GuiNode, dry?: boolean) => boolean }) {
   const [draft, setDraft] = useState({ min: String(node.props.min), max: String(node.props.max), step: String(node.props.step), initialValue: String(node.props.initialValue), numericType: node.props.numericType, decimals: String(node.props.format.decimals), unit: node.props.format.unit });
@@ -35,6 +43,27 @@ function NumericConstraints({ node, update }: { node: NumericNode; update: (chan
     <button disabled={!dirty} onClick={() => { try { apply(true); apply(false); setError(''); } catch (e) { setError((e as Error).message); } }}>应用数值约束</button>
     {error && <p className="field-error" role="alert">{error}</p>}
     <p className="field-note">整组原子提交；最多6位小数。步进锚点为最小值，最大值额外作为可达端点；中点向较大值舍入。单位不进入可编辑数值串。</p>
+  </section>;
+}
+
+function ProgressRangeConstraints({ node, update }: { node: ProgressNode; update: (change: (node: GuiNode) => GuiNode, dry?: boolean) => boolean }) {
+  const original = { min: String(node.props.min), max: String(node.props.max), initialValue: String(node.props.initialValue) };
+  const [draft, setDraft] = useState(original), [error, setError] = useState(''), composing = useRef(false);
+  const dirty = JSON.stringify(draft) !== JSON.stringify(original);
+  const apply = (dry: boolean) => {
+    if (!dirty) return;
+    if (composing.current) throw new Error('请先完成输入法组合输入');
+    if ([draft.min, draft.max, draft.initialValue].some(value => !value.trim())) throw new Error('数值配置不能为空');
+    const config = { min: Number(draft.min), max: Number(draft.max), initialValue: Number(draft.initialValue) };
+    const reason = progressError(config); if (reason) throw new Error(reason);
+    if (!update(n => { if (isProgressNode(n)) Object.assign(n.props, config); return n; }, dry)) throw new Error('进度数值配置无效');
+  };
+  useExportDraft({ validate: () => apply(true), commit: () => apply(false) });
+  return <section aria-label="进度数值范围" className="numeric-constraints" onCompositionStart={() => { composing.current = true; }} onCompositionEnd={() => { composing.current = false; }}>
+    {([['min', '最小值'], ['max', '最大值'], ['initialValue', '初始值']] as const).map(([key, label]) => <label key={key} className="field"><span>{label}</span><input aria-label={label} inputMode="decimal" value={draft[key]} onChange={e => { setDraft({ ...draft, [key]: e.target.value }); setError(''); }}/></label>)}
+    <button disabled={!dirty} onClick={() => { try { apply(true); apply(false); setError(''); } catch (e) { setError((e as Error).message); } }}>应用数值范围</button>
+    {error && <p className="field-error" role="alert">{error}</p>}
+    <p className="field-note">最小值、最大值和初始值作为一组原子应用；不使用步进或量化。min=max 表示唯一值并显示为 100%。</p>
   </section>;
 }
 
@@ -79,7 +108,7 @@ function CheckboxDiagnostics({ node, screen }: { node: Extract<GuiNode, { type: 
   </div>;
 }
 
-function Field({ label, value, onCommit, type = 'text', min, unit }: { label: string; value: string | number; onCommit: (value: string, validateOnly?: boolean) => boolean | void; type?: string; min?: number; unit?: string }) {
+function Field({ label, value, onCommit, type = 'text', min, max, unit }: { label: string; value: string | number; onCommit: (value: string, validateOnly?: boolean) => boolean | void; type?: string; min?: number; max?: number; unit?: string }) {
   const hintId = useId();
   const [draft, setDraft] = useState(String(value));
   const [error, setError] = useState('');
@@ -94,7 +123,7 @@ function Field({ label, value, onCommit, type = 'text', min, unit }: { label: st
   const validate = () => { try { apply(true); } catch (e) { setError((e as Error).message); throw e; } };
   const submit = () => { try { validate(); apply(false); } catch (e) { setError((e as Error).message); } };
   useExportDraft({ validate, commit: () => apply(false) });
-  return <label className="field"><span>{label}{unit && <em className="field-unit">{unit}</em>}</span><input ref={field} aria-label={label} aria-invalid={!!error} aria-describedby={error ? `${hintId}-error` : unit ? `${hintId}-unit` : undefined} type={type} min={min} step={type === 'number' ? 1 : undefined} value={draft}
+  return <label className="field"><span>{label}{unit && <em className="field-unit">{unit}</em>}</span><input ref={field} aria-label={label} aria-invalid={!!error} aria-describedby={error ? `${hintId}-error` : unit ? `${hintId}-unit` : undefined} type={type} min={min} max={max} step={type === 'number' ? 1 : undefined} value={draft}
     onChange={e => { setDraft(e.target.value); setError(''); }} onBlur={submit}
     onCompositionStart={() => { composing.current = true; }} onCompositionEnd={() => { composing.current = false; }}
     onKeyDown={e => { if (e.nativeEvent.isComposing || e.keyCode === 229) return;
@@ -102,6 +131,45 @@ function Field({ label, value, onCommit, type = 'text', min, unit }: { label: st
       if (e.key === 'Escape') { e.preventDefault(); setDraft(String(value)); applied.current = String(value); setError(''); } }}/>
     {unit && <span id={`${hintId}-unit`} className="sr-only">单位：GUI 逻辑像素</span>}
     {error && <small id={`${hintId}-error`} className="field-error">{error}</small>}</label>;
+}
+
+function ImageSourceFields({ node, update, cache }: { node: Extract<GuiNode, { type: 'minecraft:image' }>; update: (change: (node: GuiNode) => GuiNode, validateOnly?: boolean) => boolean; cache: ImageSourceCache }) {
+  const saved = cache.get(node.id) ?? {};
+  saved[node.props.kind] = structuredClone(node.props);
+  cache.set(node.id, saved);
+  const commitTexture = (change: (props: TextureImageProps) => TextureImageProps, dry = false) => update(current => {
+    if (current.type !== 'minecraft:image' || current.props.kind !== 'texture') return current;
+    const props = change(current.props);
+    if (!dry) cache.set(node.id, { ...cache.get(node.id), texture: structuredClone(props) });
+    return { ...current, props };
+  }, dry);
+  const commitSprite = (change: (props: SpriteImageProps) => SpriteImageProps, dry = false) => update(current => {
+    if (current.type !== 'minecraft:image' || current.props.kind !== 'sprite') return current;
+    const props = change(current.props);
+    if (!dry) cache.set(node.id, { ...cache.get(node.id), sprite: structuredClone(props) });
+    return { ...current, props };
+  }, dry);
+  const sourceSelector = <label className="field"><span>图像来源</span><select aria-label="图像来源" value={node.props.kind} onChange={e => {
+      const kind = e.target.value as ImageSourceProps['kind'];
+      if (kind === node.props.kind) return;
+      const texture: TextureImageProps = { kind: 'texture', resourceId: 'minecraft:textures/gui/container/dispenser.png', textureWidth: 256, textureHeight: 256, uv: { x: 0, y: 0, width: 256, height: 256 } };
+      const sprite: SpriteImageProps = { kind: 'sprite', spriteId: 'minecraft:container/slot' };
+      const current = cache.get(node.id) ?? {};
+      const next = kind === 'texture' ? current.texture ?? texture : current.sprite ?? sprite;
+      cache.set(node.id, { ...current, [node.props.kind]: structuredClone(node.props) });
+      update(n => n.type === 'minecraft:image' ? { ...n, source: { ...n.source, member: kind === 'sprite' ? 'blitSprite' : 'blit' }, props: structuredClone(next) } : n);
+    }}><option value="texture">Texture PNG</option><option value="sprite">GUI Sprite</option></select></label>;
+  if (node.props.kind === 'texture') {
+    const props = node.props;
+    return <>{sourceSelector}
+      <Field label="Texture ResourceLocation" value={props.resourceId} onCommit={(v, dry) => commitTexture(current => ({ ...current, resourceId: v.trim() }), dry)}/>
+      <div className="geometry">{(['textureWidth', 'textureHeight'] as const).map(key => <Field key={`${key}-${props[key]}`} label={`逻辑贴图 ${key.endsWith('Width') ? '宽' : '高'}`} unit="px" type="number" min={1} value={props[key]} onCommit={(v, dry) => commitTexture(current => ({ ...current, [key]: v.trim() ? Number(v) : NaN }), dry)}/>)}</div>
+      <div className="geometry">{(['x', 'y', 'width', 'height'] as const).map(key => <Field key={`${key}-${props.uv[key]}`} label={`UV ${key}`} unit="px" type="number" min={key === 'width' || key === 'height' ? 1 : 0} value={props.uv[key]} onCommit={(v, dry) => commitTexture(current => ({ ...current, uv: { ...current.uv, [key]: v.trim() ? Number(v) : NaN } }), dry)}/>)}</div>
+      <p className="field-note">Texture 的 UV 按逻辑贴图尺寸定义，并映射到资源 PNG 实际像素；整个 UV 区域缩放至节点 W×H。预览需在资源检查中加载客户端 JAR 或覆盖包。</p>
+    </>;
+  }
+  const props = node.props;
+  return <>{sourceSelector}<Field label="GUI Sprite ID" value={props.spriteId} onCommit={(v, dry) => commitSprite(current => ({ ...current, spriteId: v.trim() }), dry)}/><p className="field-note">Sprite 首版仅支持 Minecraft GUI atlas ResourceLocation；按 atlas metadata 的 stretch/tile/nine-slice 规则映射至 W×H，不支持自定义 atlas。</p></>;
 }
 function ColorPicker({ value, commit }: { value: string; commit: (color: string) => boolean }) {
   const [draft, setDraft] = useState(value); const applied = useRef(value);
@@ -258,7 +326,7 @@ function PanelGeometry({ notify, readOnly }: { notify: (message: string, error?:
     const values = Object.fromEntries(Object.entries(draft).map(([k, v]) => [k, v.trim() ? Number(v) : NaN])) as typeof current;
     const copy = structuredClone(state.doc), bg = screenById(copy, state.currentScreenId).background;
     if (bg.kind !== 'panel') throw new Error('请先启用 Panel');
-    bg.bounds = values; if (!['0.10.0', '0.11.0', '0.12.0', '0.13.0', '0.14.0', '0.15.0', '0.16.0', '0.17.0', '0.18.0'].includes(copy.schemaVersion)) copy.schemaVersion = '0.9.0'; parseProject(JSON.stringify(copy));
+    bg.bounds = values; if (!['0.10.0', '0.11.0', '0.12.0', '0.13.0', '0.14.0', '0.15.0', '0.16.0', '0.17.0', '0.18.0', '0.19.0', '0.20.0', '0.21.0', '0.22.0', '0.23.0', '0.24.0', '0.25.0', '0.26.0'].includes(copy.schemaVersion)) copy.schemaVersion = '0.9.0'; parseProject(JSON.stringify(copy));
   };
   const commit = () => { if (changed()) editorStore.getState().setPanelBounds(Object.fromEntries(Object.entries(draft).map(([k, v]) => [k, Number(v)])) as typeof current); };
   useExportDraft({ validate, commit });
@@ -268,7 +336,8 @@ function PanelGeometry({ notify, readOnly }: { notify: (message: string, error?:
     <p className="field-note">坐标相对设计区左上角，最小 8×8，必须在设计区内。将 Y 设为 28 并缩小高度，可预留顶部空间；不会自动布置标签。</p></div></fieldset></section>;
 }
 
-export function Inspector({ notify, readOnly = false, emptyControls, editTabs, setEditTabs, onMouseEnter, onMouseLeave, onPin }: { onMouseEnter?: () => void; onMouseLeave?: () => void; onPin?: () => void; notify: (message: string, error?: boolean) => void; readOnly?: boolean; emptyControls: ReactNode; editTabs: Record<string, string>; setEditTabs: (value: Record<string, string>) => void }) {
+export function Inspector({ notify, readOnly = false, emptyControls, editTabs, setEditTabs, containerScroll, onMouseEnter, onMouseLeave, onPin }: { onMouseEnter?: () => void; onMouseLeave?: () => void; onPin?: () => void; notify: (message: string, error?: boolean) => void; readOnly?: boolean; emptyControls: ReactNode; editTabs: Record<string, string>; setEditTabs: (value: Record<string, string>) => void; containerScroll: Readonly<Record<string, number>> }) {
+  const imageSourceCache = useRef<ImageSourceCache>(new Map()).current;
   const doc = useStore(editorStore, s => s.doc);
   const selected = useStore(editorStore, s => s.selected);
   const gesture = useStore(editorStore, s => s.gesture);
@@ -284,6 +353,7 @@ export function Inspector({ notify, readOnly = false, emptyControls, editTabs, s
       if (validateOnly) {
         const copy = structuredClone(current.doc);
         screenById(copy, screenId).nodes = screenById(copy, screenId).nodes.map(n => n.id === node.id ? editNode(n, change) : n);
+        if (screenById(copy, screenId).nodes.some(n => n.type === 'minecraft:status-indicator' && n.props.statuses.some(status => status.text?.kind === 'translate'))) { if (!['0.22.0', '0.23.0', '0.24.0', '0.25.0', '0.26.0'].includes(copy.schemaVersion)) copy.schemaVersion = '0.22.0'; copy.screenTabGroups ??= []; copy.entryScreenId ??= copy.screens[0].id; }
         upgradeTextStyleEdit(copy); parseProject(JSON.stringify(copy));
       } else { current.updateNode(node.id, change); notify('属性已更新'); }
       return true;
@@ -308,13 +378,25 @@ export function Inspector({ notify, readOnly = false, emptyControls, editTabs, s
           <div className="section-body"><div className="geometry">
             {(node.type === 'minecraft:creative-tab' ? (['x', 'y'] as const) : (['x', 'y', 'w', 'h'] as const)).map(key => <Field key={`${key}-${node.bounds[key]}`} label={key.toUpperCase()} unit="px" type="number" min={key === 'w' || key === 'h' ? CATALOG[node.type].min[key] : 0} value={node.bounds[key]}
               onCommit={(raw, dry) => { const value = raw.trim() === '' ? NaN : Number(raw); return update(n => ({ ...n, bounds: { ...n.bounds, [key]: value } }), dry); }}/>)}</div>
-            <p className="field-note">{node.type === 'minecraft:creative-tab' ? '固定 26×32 GUI px，位置为贴图左上角。' : node.type === 'minecraft:checkbox' ? 'W、H 仅为设计参考边界；原版尺寸由游戏字体、文字与构造最大宽度决定，不能强制按参考高度构造。' : '拖动边缘中点只调整宽或高；拖动右下或左上角手柄可同时调整宽高。拖左边或上边时，对侧位置保持不变。'} 超出设计区的精确输入会被拒绝。</p>
+            <p className="field-note">{node.parentContainerId ? '子节点 X/Y/W/H 使用父容器内容局部 GUI px；X/Y 从内容区左上角计算。' : node.type === 'minecraft:creative-tab' ? '固定 26×32 GUI px，位置为贴图左上角。' : node.type === 'minecraft:checkbox' ? 'W、H 仅为设计参考边界；原版尺寸由游戏字体、文字与构造最大宽度决定，不能强制按参考高度构造。' : '拖动边缘中点只调整宽或高；拖动右下或左上角手柄可同时调整宽高。拖左边或上边时，对侧位置保持不变。'} 超出所在坐标区域的精确输入会被拒绝。</p>
           </div>
         </details>
+        {node.type !== 'minecraft:scrollable-panel' && <section className="inspector-section"><h3 className="section-title">父容器</h3><div className="section-body">
+          <label className="field"><span>容器</span><select aria-label="父容器" value={node.parentContainerId ?? ''} onChange={e => { try { editorStore.getState().setNodeContainer(node.id, e.target.value || undefined, containerScroll); notify('父容器已更新'); } catch (error) { notify((error as Error).message, true); } }}><option value="">Screen 根节点</option>{screen.nodes.filter((candidate): candidate is Extract<GuiNode, { type: 'minecraft:scrollable-panel' }> => candidate.type === 'minecraft:scrollable-panel').map(candidate => <option key={candidate.id} value={candidate.id}>{candidate.id}</option>)}</select></label>
+          <p className="field-note">跨级转移保持屏幕位置；超出内容区域时会整笔拒绝。首版不支持嵌套。</p>
+        </div></section>}
         <details className="inspector-section" open>
           <summary><span>外观与文案</span></summary>
           <div className="section-body">
-          {node.type !== 'minecraft:fill' && node.type !== 'minecraft:creative-tab' && checkbox('文字阴影', node.props.textShadow ?? false, v => { const next = structuredClone(node); next.props.textShadow = v; return next; })}
+          {node.type === 'minecraft:scrollable-panel' && <>
+            <Field key={node.props.padding} label="内边距" type="number" min={0} max={16} value={node.props.padding} onCommit={(raw, dry) => { const value = raw.trim() ? Number(raw) : NaN; return update(n => n.type === 'minecraft:scrollable-panel' ? { ...n, props: { ...n.props, padding: value } } : n, dry); }}/>
+            <Field key={node.props.contentHeight} label="内容高度" unit="px" type="number" min={1} max={8192} value={node.props.contentHeight} onCommit={(raw, dry) => { const value = raw.trim() ? Number(raw) : NaN; return update(n => n.type === 'minecraft:scrollable-panel' ? { ...n, props: { ...n.props, contentHeight: value } } : n, dry); }}/>
+            <Field key={node.props.backgroundColor} label="背景色 ARGB" value={node.props.backgroundColor} onCommit={(value, dry) => update(n => n.type === 'minecraft:scrollable-panel' ? { ...n, props: { ...n.props, backgroundColor: value } } : n, dry)}/>
+            <Field key={node.props.borderColor} label="边框色 ARGB" value={node.props.borderColor} onCommit={(value, dry) => update(n => n.type === 'minecraft:scrollable-panel' ? { ...n, props: { ...n.props, borderColor: value } } : n, dry)}/>
+            <p className="field-note">子节点以内容局部坐标保存；滚动条占用右侧 8px。首版仅支持一层容器和垂直滚动。</p>
+          </>}
+          {node.type === 'minecraft:image' && <ImageSourceFields node={node} update={update} cache={imageSourceCache}/>}
+          {node.type !== 'minecraft:fill' && node.type !== 'minecraft:image' && node.type !== 'minecraft:creative-tab' && node.type !== 'minecraft:fitting-multi-line-text-widget' && node.type !== 'minecraft:scrollable-panel' && 'textShadow' in node.props && checkbox('文字阴影', node.props.textShadow ?? false, v => { const next = structuredClone(node); if ('textShadow' in next.props) next.props.textShadow = v; return next; })}
           {isSelectionNode(node) && <SelectionFields key={JSON.stringify([node.id, node.props.name, node.props.options, node.props.initialSelectedOptionId, node.type === 'minecraft:radio-group' ? node.props.orientation : node.props.visibleRows])} node={node} update={update}/>}
           {isNumericNode(node) && <>
             <TextFields label="控件名称" value={node.props.name} commit={(v, dry) => update(n => { if (isNumericNode(n)) n.props.name = v; return n; }, dry)}/>
@@ -337,6 +419,29 @@ export function Inspector({ notify, readOnly = false, emptyControls, editTabs, s
             <label className="field"><span>对齐</span><select aria-label="对齐" value={node.props.align} onChange={e => update(n => n.type === 'minecraft:multi-line-text-widget' ? { ...n, props: { ...n.props, align: e.target.value as 'left' | 'center' } } : n)}><option value="left">左对齐</option><option value="center">居中</option></select></label>
             <p className="field-note">W 是换行最大宽度，H = 最大行数 × 9；高度 Resize 按 9 px 步进。精确 H 须为 9 的倍数。居中相对实际文本宽度；阴影关闭时游戏端须自定义文字绘制；不能假设原生有 setter。显示文本不接受输入、不滚动、不自动旁白。</p>
             <MultiLineDiagnostics node={node}/>
+          </>}
+          {node.type === 'minecraft:fitting-multi-line-text-widget' && <>
+            <TextFields multiline label="只读文本" value={node.props.text} commit={(v, dry) => update(n => n.type === 'minecraft:fitting-multi-line-text-widget' ? { ...n, props: { ...n.props, text: v } } : n, dry)}/>
+            {checkbox('文字阴影', node.props.textShadow ?? true, value => ({ ...node, props: { ...node.props, textShadow: value } }))}
+            <p className="field-note">视窗 W×H 是固定 viewport，不是文本最大宽度/最大行数。原生固定 9px 行高，内容总行数不截断；overflow 时滚动，设计态不接收滚动输入。</p>
+            <p className="field-note">原生滚动条位于 Widget 右侧并可能向 bounds.w 外延 8px；仅有溢出时显示。游戏用原生焦点框与滚动条 Sprite，网页和 PNG 使用中性近似。滚动初始位置固定为顶部。</p>
+          </>}
+          {node.type === 'minecraft:progress-bar' && <>
+            <ProgressRangeConstraints key={JSON.stringify([node.id, node.props.min, node.props.max, node.props.initialValue])} node={node} update={update}/>
+            <label className="field"><span>填充方向</span><select aria-label="填充方向" value={node.props.direction} onChange={e => update(n => n.type === 'minecraft:progress-bar' ? { ...n, props: { ...n.props, direction: e.target.value as typeof n.props.direction } } : n)}><option value="left-to-right">从左到右</option><option value="right-to-left">从右到左</option><option value="bottom-to-top">从下到上</option><option value="top-to-bottom">从上到下</option></select></label>
+            {(['backgroundColor', 'foregroundColor', 'borderColor'] as const).map((key, index) => <Field key={`${key}-${node.props[key]}`} label={['背景色', '前景色', '边框色'][index]} value={node.props[key]} onCommit={(v, dry) => update(n => n.type === 'minecraft:progress-bar' ? { ...n, props: { ...n.props, [key]: v } } : n, dry)}/>)}
+            {checkbox('显示边框', node.props.border, v => ({ ...node, props: { ...node.props, border: v } }))}
+            <Field key={`pt-${node.props.borderThickness}`} label="边框厚度" type="number" min={0} max={16} value={node.props.borderThickness} onCommit={(v, dry) => update(n => n.type === 'minecraft:progress-bar' ? { ...n, props: { ...n.props, borderThickness: v.trim() ? Number(v) : NaN } } : n, dry)}/>
+            <label className="field"><span>显示文字</span><select aria-label="显示文字" value={node.props.display} onChange={e => update(n => n.type === 'minecraft:progress-bar' ? { ...n, props: { ...n.props, display: e.target.value as typeof n.props.display } } : n)}><option value="none">不显示</option><option value="percentage">百分比</option><option value="value">初始数值</option></select></label>
+            {checkbox('文字阴影', node.props.textShadow, v => ({ ...node, props: { ...node.props, textShadow: v } }))}
+            <p className="field-note">只读绘制节点，不响应运行时输入。min=max 时按 100% 显示；运行数据来源由游戏实现者接入，设计初值不代表业务绑定。百分比按四舍五入取整。Minecraft 原生没有通用 ProgressBar Widget，使用 GuiGraphics.fill 绘制。</p>
+          </>}
+          {isStatusNode(node) && <>
+            <TextFields label="控件名称" value={node.props.name} commit={(v, dry) => update(n => { if (isStatusNode(n)) n.props.name = v; return n; }, dry)}/>
+            <StatusFields key={JSON.stringify([node.id, node.props.statuses, node.props.initialStatusId])} node={node as StatusNode} update={update}/>
+            <label className="field"><span>指示符形状</span><select aria-label="指示符形状" value={node.props.shape} onChange={e => update(n => isStatusNode(n) ? { ...n, props: { ...n.props, shape: e.target.value as typeof n.props.shape } } : n)}><option value="circle">圆形</option><option value="square">方形</option></select></label>
+            {checkbox('显示状态文字', node.props.showLabel, value => ({ ...node, props: { ...node.props, showLabel: value } }))}
+            <p className="field-note">状态指示器仅绘制初始状态，不接受游戏输入。状态颜色使用 #AARRGGBB；至少应显示文字或在 Screen 旁白中提供状态说明。运行时状态由实现者设置并触发重绘，无变量绑定或服务端同步。</p>
           </>}
           {node.type === 'minecraft:creative-tab' && <><Field key={node.props.name} label="标签名称" value={node.props.name} onCommit={(v, dry) => update(n => n.type === 'minecraft:creative-tab' ? { ...n, props: { ...n.props, name: v } } : n, dry)}/><label className="field"><span>顶部列</span><select aria-label="顶部列" value={node.props.column} onChange={e => update(n => n.type === 'minecraft:creative-tab' ? { ...n, props: { ...n.props, column: Number(e.target.value) } } : n)}>{[1,2,3,4,5,6,7].map(i => <option key={i} value={i}>{i}</option>)}</select></label>{node.props.tabMode !== 'screen-navigation' && <label className="check"><input type="checkbox" aria-label="初始选中" checked={node.props.selected} onChange={e => { if (!e.target.checked && node.props.groupId) { notify('同组必须有一个初始选中标签，请选择其他标签', true); return; } try { if (node.props.groupId && e.target.checked) editorStore.getState().configureTab(node.id, node.props.groupId, node.props.contentIds ?? [], true); else update(n => n.type === 'minecraft:creative-tab' ? { ...n, props: { ...n.props, selected: e.target.checked } } : n); } catch (error) { notify((error as Error).message, true); } }}/>初始选中</label>}{node.props.tabMode === 'screen-navigation' && <><p className="field-note">{doc.screens.flatMap(s => s.nodes).some(n => n.type === 'minecraft:creative-tab' && n.id !== node.id && n.props.navigationGroupId === node.props.navigationGroupId && n.props.navigationTabId === node.props.navigationTabId && (n.props.column !== node.props.column || n.bounds.x !== node.bounds.x || n.bounds.y !== node.bounds.y)) ? '⚠ 同一导航标签在其他页面的位置或列号有覆盖差异。' : '此导航标签各页布局一致。'}</p><button onClick={() => { try { editorStore.getState().syncNavigationTabLayout(node.id); notify('同一导航标签布局已同步至各页 · 可撤销'); } catch (e) { notify((e as Error).message, true); } }}>将此标签布局同步至各页</button><p className="field-note">显式同步位置与列号，可撤销；后续单页修改仍独立，不建立隐式继承。</p></>}<CreativeTabModeEditor node={node} doc={doc} screenNodes={screen.nodes} notify={notify}/><p className="field-note">名称不绘制在 Sprite 上；Screen 导航只在交互预览开启时生效。</p></>}
           {node.type === 'minecraft:button' && <><TextFields label="按钮文字" value={node.props.message} commit={(v, dry) => update(n => n.type === 'minecraft:button' ? { ...n, props: { ...n.props, message: v } } : n, dry)}/>
@@ -367,8 +472,8 @@ export function Inspector({ notify, readOnly = false, emptyControls, editTabs, s
             <TextFields label="标签文字" value={node.props.text} commit={(v, dry) => update(n => n.type === 'minecraft:string-widget' ? { ...n, props: { ...n.props, text: v } } : n, dry)}/>
             <label className="field"><span>对齐</span><select aria-label="对齐" value={node.props.align} onChange={e => update(n => n.type === 'minecraft:string-widget' ? { ...n, props: { ...n.props, align: e.target.value as 'left' | 'center' | 'right' } } : n)}><option value="left">左对齐</option><option value="center">居中</option><option value="right">右对齐</option></select></label>
           </>}
-          {(node.type !== 'minecraft:creative-tab') && <><Field key={node.props.color} label="颜色 ARGB" value={node.props.color ?? (node.type === 'minecraft:checkbox' ? '#FFE0E0E0' : '#FFE0E8F1')} onCommit={(v, dry) => update(n => { if (n.type !== 'minecraft:creative-tab') n.props.color = v; return n; }, dry)}/>
-            {node.type === 'minecraft:checkbox' && <button onClick={() => update(n => { if (n.type === 'minecraft:checkbox') delete n.props.color; return n; })}>使用原生浅灰文字</button>}<ColorPicker key={node.id} value={node.props.color ?? '#FFE0E0E0'} commit={color => update(n => { if (n.type !== 'minecraft:creative-tab') n.props.color = color; return n; })}/>
+          {(node.type !== 'minecraft:creative-tab' && node.type !== 'minecraft:image' && node.type !== 'minecraft:scrollable-panel' && 'color' in node.props) && <><Field key={node.props.color} label={node.type === 'minecraft:progress-bar' ? '文字色 ARGB' : '颜色 ARGB'} value={node.props.color ?? (node.type === 'minecraft:checkbox' ? '#FFE0E0E0' : '#FFE0E8F1')} onCommit={(v, dry) => update(n => { if ('color' in n.props && n.type !== 'minecraft:fill') n.props.color = v; return n; }, dry)}/>
+            {node.type === 'minecraft:checkbox' && <button onClick={() => update(n => { if (n.type === 'minecraft:checkbox') delete n.props.color; return n; })}>使用原生浅灰文字</button>}<ColorPicker key={node.id} value={node.props.color ?? '#FFE0E0E0'} commit={color => update(n => { if ('color' in n.props && n.type !== 'minecraft:fill') n.props.color = color; return n; })}/>
             <p className="field-note">系统取色器支持可视选择；透明度保留，使用 ARGB 前两位修改。</p><div className="color-preview"><span style={{ background: `#${(node.props.color ?? '#FFE0E0E0').slice(3)}${(node.props.color ?? '#FFE0E0E0').slice(1, 3)}` }}/><small>格式 #AARRGGBB · 前两位为透明度。按 Enter 或离开输入框应用。</small></div></>}
           </div>
         </details>

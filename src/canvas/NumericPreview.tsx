@@ -3,8 +3,9 @@ import { displayText } from '../domain/model';
 import { allowsDraft, commitNumeric, initialNumericState, quantizeFraction, stepNumeric, type NumericEvent, type NumericState } from '../domain/numeric';
 import type { NumericNode } from '../render/numericWidgets';
 
-export function NumericPreview({ nodes, screenId, origin, zoom, family, onVisualChange }: {
+export function NumericPreview({ nodes, screenId, origin, zoom, family, onVisualChange, clipInsets = {} }: {
   nodes: NumericNode[]; screenId: string; origin: { x: number; y: number }; zoom: number; family: string;
+  clipInsets?: Record<string, { top: number; right: number; bottom: number; left: number }>;
   onVisualChange: (states: Record<string, NumericState>) => void;
 }) {
   const [states, setStates] = useState<Record<string, NumericState>>({}), [events, setEvents] = useState<NumericEvent[]>([]);
@@ -28,8 +29,8 @@ export function NumericPreview({ nodes, screenId, origin, zoom, family, onVisual
   return <>
     {nodes.map(n => {
       const state = states[n.id] ?? initialNumericState(n.props), name = displayText(n.props.name) || n.id;
-      const style = { position: 'absolute' as const, left: origin.x + n.bounds.x * zoom, top: origin.y + n.bounds.y * zoom, width: n.bounds.w * zoom, height: n.bounds.h * zoom, fontFamily: family, fontSize: 9 * zoom };
-      if (n.type === 'minecraft:numeric-input') return <div key={n.id} style={style} className="numeric-live-input">
+      const clip = clipInsets[n.id], style = { position: 'absolute' as const, left: origin.x + n.bounds.x * zoom, top: origin.y + n.bounds.y * zoom, width: n.bounds.w * zoom, height: n.bounds.h * zoom, fontFamily: family, fontSize: 9 * zoom, ...(clip ? { clipPath: `inset(${clip.top}px ${clip.right}px ${clip.bottom}px ${clip.left}px)` } : {}) };
+      if (n.type === 'minecraft:numeric-input') return <div key={n.id} data-numeric-node-id={n.id} style={style} className="numeric-live-input">
         <input aria-label={`数值输入 ${n.id}`} aria-description={`${name} ${n.props.format.unit}`} title={`${name}${n.props.format.unit ? ' (' + n.props.format.unit + ')' : ''}`} aria-invalid={!!state.error} aria-describedby={state.error ? `numeric-error-${n.id}` : undefined}
           inputMode={n.props.numericType === 'integer' ? 'numeric' : 'decimal'} maxLength={64} disabled={!n.state.enabled} readOnly={!n.props.editable} value={state.draft}
           style={{ fontFamily: family, fontSize: 9 * zoom, padding: `0 ${n.props.bordered ? 4 * zoom : 0}px`, color: state.error ? '#ff746e' : n.state.enabled ? (n.props.color ? '#' + n.props.color.slice(3) + n.props.color.slice(1, 3) : '#e0e0e0') : '#a0a0a0', textShadow: n.props.textShadow ? `${zoom}px ${zoom}px #383838` : 'none' }}

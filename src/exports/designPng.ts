@@ -6,9 +6,17 @@ import { beforePanel, drawCreativeTabFallback, spriteForNode, SpriteRasterCache 
 import { isSelectionNode } from '../domain/selection';
 import { drawSelectionWidget } from '../render/selectionWidgets';
 import { isNumericNode, drawNumericWidget } from '../render/numericWidgets';
+import { isProgressNode } from '../domain/progress';
+import { drawProgressBar } from '../render/progressBar';
+import { isStatusNode } from '../domain/statusIndicator';
+import { drawStatusIndicator } from '../render/statusIndicator';
+import { isImageNode } from '../domain/image';
+import { drawImageNode } from '../render/imageWidget';
+import { drawScrollText } from '../render/scrollText';
 import { tabManaged, tabVisibility } from '../domain/tabGroups';
 import { screenNavigationSelected } from '../domain/screenTabNavigation';
 import type { VisualSnapshot } from './visualSnapshot';
+import { contentSize, contentViewport, isScrollablePanelNode } from '../domain/scrollablePanel';
 
 export const MAX_PNG_PIXELS = 16_777_216;
 export function assertPngSize(width: number, height: number) {
@@ -64,49 +72,64 @@ export function addPngMetadata(bytes: Uint8Array, metadata: unknown): Uint8Array
 export async function renderDesignPng(snapshot: ExportSnapshot, reference: ExportReference, pixelRatio = 1, visual?: VisualSnapshot, font: FontChoice = fontSession.get(), screenId = snapshot.document.screens[0].id): Promise<Uint8Array> {
   const screen = snapshot.document.screens.find(item => item.id === screenId);
   if (!screen) throw new Error(`导出 Screen 不存在：${screenId}`);
-  const { width, height } = screen.designSize;
+  const activeScreen = screen;
+  const { width, height } = activeScreen.designSize;
   if (!Number.isInteger(pixelRatio) || pixelRatio < 1 || pixelRatio > 4) throw new Error('PNG参考图倍率无效');
   assertPngSize(width * pixelRatio, height * pixelRatio);
   const canvas = document.createElement('canvas'); canvas.width = width * pixelRatio; canvas.height = height * pixelRatio;
   try {
     const ctx = canvas.getContext('2d'); if (!ctx) throw new Error('当前浏览器无法创建PNG绘图上下文，本批未生成');
+    const renderContext = ctx;
     ctx.scale(pixelRatio, pixelRatio);
     ctx.clearRect(0, 0, width, height);
     // The enlarged image is a visual reference; this matte is not a game background.
     if (pixelRatio > 1) { ctx.fillStyle = '#1c2634'; ctx.fillRect(0, 0, width, height); }
-    const visibleInGroup = tabVisibility(screen.nodes), managed = tabManaged(screen.nodes);
-    const drawNode = (original: typeof screen.nodes[number]) => {
-      const selected = screenNavigationSelected(original, screen.id, snapshot.document.screenTabGroups ?? []);
+    const visibleInGroup = tabVisibility(activeScreen.nodes), managed = tabManaged(activeScreen.nodes);
+    const resolvedNodes = activeScreen.nodes.map(node => { const selected = screenNavigationSelected(node, activeScreen.id, snapshot.document.screenTabGroups ?? []); return node.type === 'minecraft:creative-tab' && selected !== null ? { ...node, props: { ...node.props, selected } } : node; });
+    function drawNode(original: typeof activeScreen.nodes[number], drawBounds = original.bounds) {
+      const selected = screenNavigationSelected(original, activeScreen.id, snapshot.document.screenTabGroups ?? []);
       const node = selected === null || original.type !== 'minecraft:creative-tab' ? original : { ...original, props: { ...original.props, selected } };
       if ((!managed.has(node.id) && !node.state.visible) || !visibleInGroup(node.id)) return;
-      const { x, y, w, h } = node.bounds;
-      if (isSelectionNode(node)) { ctx.save(); ctx.translate(x, y); drawSelectionWidget(ctx, node, w, h, font.family); ctx.restore(); return; }
-      if (isNumericNode(node)) {
-        ctx.save(); ctx.translate(x, y); drawNumericWidget(ctx, node, w, h, font.family, visual?.entries ?? {}, visual?.cache ?? new SpriteRasterCache(), { resourceActive: visual?.active }); ctx.restore(); return;
+      const { x, y, w, h } = drawBounds;
+      if (isScrollablePanelNode(node)) {
+        const viewport = contentViewport(node), metrics = contentSize(node);
+        renderContext.save(); renderContext.fillStyle = rgba(node.props.backgroundColor); renderContext.fillRect(x, y, w, h); renderContext.strokeStyle = rgba(node.props.borderColor); renderContext.lineWidth = 1; renderContext.strokeRect(x + 0.5, y + 0.5, Math.max(0, w - 1), Math.max(0, h - 1));
+        renderContext.beginPath(); renderContext.rect(viewport.x, viewport.y, viewport.w, viewport.h); renderContext.clip();
+        for (const child of resolvedNodes) if (child.parentContainerId === node.id) drawNode(child, { x: viewport.x + child.bounds.x, y: viewport.y + child.bounds.y, w: child.bounds.w, h: child.bounds.h });
+        renderContext.restore();
+        if (metrics.maxScroll > 0) { const thumb = Math.max(8, viewport.h * viewport.h / node.props.contentHeight); renderContext.fillStyle = '#111821'; renderContext.fillRect(viewport.x + viewport.w + 2, viewport.y, 6, viewport.h); renderContext.fillStyle = '#8795a5'; renderContext.fillRect(viewport.x + viewport.w + 2, viewport.y, 6, thumb); }
+        return;
       }
-      ctx.save(); if (node.type !== 'minecraft:checkbox' && node.type !== 'minecraft:multi-line-text-widget') { ctx.beginPath(); ctx.rect(x, y, w, h); ctx.clip(); }
+      if (isSelectionNode(node)) { renderContext.save(); renderContext.translate(x, y); drawSelectionWidget(renderContext, node, w, h, font.family); renderContext.restore(); return; }
+      if (isNumericNode(node)) {
+        renderContext.save(); renderContext.translate(x, y); drawNumericWidget(renderContext, node, w, h, font.family, visual?.entries ?? {}, visual?.cache ?? new SpriteRasterCache(), { resourceActive: visual?.active }); renderContext.restore(); return;
+      }
+      if (isProgressNode(node)) { renderContext.save(); renderContext.translate(x, y); drawProgressBar(renderContext, node, w, h, font.family); renderContext.restore(); return; }
+      if (isStatusNode(node)) { renderContext.save(); renderContext.translate(x, y); drawStatusIndicator(renderContext, node, w, h, font.family); renderContext.restore(); return; }
+      if (isImageNode(node)) { renderContext.save(); renderContext.translate(x, y); drawImageNode(renderContext, node, w, h, visual?.images[node.id], visual?.cache ?? new SpriteRasterCache()); renderContext.restore(); return; }
+      if (node.type === 'minecraft:fitting-multi-line-text-widget') { renderContext.save(); renderContext.translate(x, y); drawScrollText(renderContext, node, font.family); renderContext.restore(); return; }
+      renderContext.save(); if (node.type !== 'minecraft:checkbox' && node.type !== 'minecraft:multi-line-text-widget') { renderContext.beginPath(); renderContext.rect(x, y, w, h); renderContext.clip(); }
       const spriteId = spriteForNode(node), entry = spriteId ? visual?.entries[spriteId] : undefined;
       let raster: HTMLCanvasElement | null = null, renderError = '';
       if (spriteId && entry?.sprite) { try { raster = visual!.cache.get(spriteId, entry.sprite, node.type === 'minecraft:checkbox' ? 17 : w, node.type === 'minecraft:checkbox' ? 17 : h); } catch (error) { renderError = (error as Error).message; } }
-      ctx.globalAlpha = 'enabled' in node.state && !node.state.enabled && !raster && node.type !== 'minecraft:checkbox' ? 0.45 : 1;
-      if (node.type === 'minecraft:fill') { ctx.fillStyle = rgba(node.props.color); ctx.fillRect(x, y, w, h); }
+      renderContext.globalAlpha = 'enabled' in node.state && !node.state.enabled && !raster && node.type !== 'minecraft:checkbox' ? 0.45 : 1;
+      if (node.type === 'minecraft:fill') { renderContext.fillStyle = rgba(node.props.color); renderContext.fillRect(x, y, w, h); }
       else {
-        if (raster) { ctx.save(); ctx.imageSmoothingEnabled = false; ctx.drawImage(raster, x, y); ctx.restore(); }
-        else if (node.type === 'minecraft:creative-tab') { ctx.save(); ctx.translate(x, y); drawCreativeTabFallback(ctx, node.props.selected); ctx.restore(); }
-        else if (node.type === 'minecraft:checkbox') { ctx.save(); ctx.translate(x, y); drawCheckboxFallback(ctx, node.props.selected); ctx.restore(); }
+        if (raster) { renderContext.save(); renderContext.imageSmoothingEnabled = false; renderContext.drawImage(raster, x, y); renderContext.restore(); }
+        else if (node.type === 'minecraft:creative-tab') { renderContext.save(); renderContext.translate(x, y); drawCreativeTabFallback(renderContext, node.props.selected); renderContext.restore(); }
+        else if (node.type === 'minecraft:checkbox') { renderContext.save(); renderContext.translate(x, y); drawCheckboxFallback(renderContext, node.props.selected); renderContext.restore(); }
         else if (node.type !== 'minecraft:string-widget' && node.type !== 'minecraft:multi-line-text-widget' && !(node.type === 'minecraft:edit-box' && !node.props.bordered)) {
-          ctx.fillStyle = node.type === 'minecraft:button' || node.type === 'minecraft:cycle-button' ? '#314354' : '#151e2b'; ctx.fillRect(x, y, w, h);
-          if (node.type === 'minecraft:button' || node.type === 'minecraft:cycle-button' || (node.type === 'minecraft:edit-box' && node.props.bordered)) { ctx.strokeStyle = '#5a7185'; ctx.lineWidth = 0.6; ctx.strokeRect(x, y, w, h); }
+          renderContext.fillStyle = node.type === 'minecraft:button' || node.type === 'minecraft:cycle-button' ? '#314354' : '#151e2b'; renderContext.fillRect(x, y, w, h);
+          if (node.type === 'minecraft:button' || node.type === 'minecraft:cycle-button' || (node.type === 'minecraft:edit-box' && node.props.bordered)) { renderContext.strokeStyle = '#5a7185'; renderContext.lineWidth = 0.6; renderContext.strokeRect(x, y, w, h); }
         }
-        if (node.type !== 'minecraft:creative-tab' && visual?.active && spriteId && (entry?.error || renderError)) { ctx.font = '7px monospace'; ctx.textBaseline = 'top'; ctx.textAlign = 'left'; ctx.fillStyle = '#ff746e'; ctx.fillText('纹理不可用', x, y); }
-        ctx.save(); ctx.translate(x, y); drawPreviewText(ctx, node, w, h, font.family, screen.background.kind === 'panel'); ctx.restore();
+        if (node.type !== 'minecraft:creative-tab' && visual?.active && spriteId && (entry?.error || renderError)) { renderContext.font = '7px monospace'; renderContext.textBaseline = 'top'; renderContext.textAlign = 'left'; renderContext.fillStyle = '#ff746e'; renderContext.fillText('纹理不可用', x, y); }
+        renderContext.save(); renderContext.translate(x, y); drawPreviewText(renderContext, node, w, h, font.family, activeScreen.background.kind === 'panel'); renderContext.restore();
       }
-      ctx.restore();
-    };
-    const resolvedNodes = screen.nodes.map(node => { const selected = screenNavigationSelected(node, screen.id, snapshot.document.screenTabGroups ?? []); return node.type === 'minecraft:creative-tab' && selected !== null ? { ...node, props: { ...node.props, selected } } : node; });
-    resolvedNodes.filter(beforePanel).forEach(drawNode);
-    if (screen.background.kind === 'panel') { const panel = panelBounds(screen); ctx.save(); ctx.translate(panel.x, panel.y); await drawPanel(ctx, panel.w, panel.h, screen.background.style); ctx.restore(); }
-    resolvedNodes.filter(node => !beforePanel(node)).forEach(drawNode);
+      renderContext.restore();
+    }
+    resolvedNodes.filter(node => node.parentContainerId === undefined && beforePanel(node)).forEach(node => drawNode(node));
+    if (activeScreen.background.kind === 'panel') { const panel = panelBounds(screen); renderContext.save(); renderContext.translate(panel.x, panel.y); await drawPanel(renderContext, panel.w, panel.h, activeScreen.background.style); renderContext.restore(); }
+    resolvedNodes.filter(node => node.parentContainerId === undefined && !beforePanel(node)).forEach(node => drawNode(node));
     return addPngMetadata(await encode(canvas), { reference, kind: pixelRatio === 1 ? 'design-area-reference' : 'enlarged-design-area-reference', screenId: screen.id,
       width: width * pixelRatio, height: height * pixelRatio, designWidth: width, designHeight: height, unit: 'gui-px', origin: [0, 0], xDirection: 'right', yDirection: 'down', pixelRatio, background: screen.background.kind === 'panel' ? panelSource(screen.background.style) : pixelRatio === 1 ? 'transparent' : 'preview-matte-#1c2634', resourceGeneration: visual?.generation ?? null, visualVerification: 'approximate-browser-rendering-only' });
   } finally { canvas.width = 0; canvas.height = 0; }

@@ -94,8 +94,10 @@ function shadowText(ctx: CanvasRenderingContext2D, text: string, x: number, y: n
   ctx.fillText(text, x, y);
 }
 export function drawPreviewText(ctx: CanvasRenderingContext2D, node: GuiNode, w: number, h: number, family: string, panel = false) {
+  if (node.type === 'minecraft:scrollable-panel' || node.type === 'minecraft:fill' || node.type === 'minecraft:image' || node.type === 'minecraft:creative-tab') return;
+  if (node.type === 'minecraft:progress-bar') return;
+  if (node.type === 'minecraft:fitting-multi-line-text-widget') return;
   if (node.type === 'minecraft:numeric-input' || node.type === 'minecraft:slider') return; // Shared numeric renderer owns these nodes.
-  if (node.type === 'minecraft:fill' || node.type === 'minecraft:creative-tab') return;
   if (node.type === 'minecraft:multi-line-text-widget') {
     const draft = { ...node, props: { ...node.props, maxWidth: w, maxRows: Math.max(1, Math.floor(h / 9)) } };
     ctx.save(); ctx.font = `9px ${family}`; ctx.textBaseline = 'top'; ctx.textAlign = 'left';
@@ -118,6 +120,7 @@ export function drawPreviewText(ctx: CanvasRenderingContext2D, node: GuiNode, w:
     layout.lines.forEach((line, i) => shadowText(ctx, line, layout.textX, layout.textY + i * layout.lineHeight, node.props.textShadow ?? false, panel ? '#101010' : '#383838')); ctx.restore(); return;
   }
   if (node.type === 'minecraft:radio-group' || node.type === 'minecraft:dropdown') return;
+  if (node.type === 'minecraft:status-indicator') return;
   const text = node.type === 'minecraft:button' ? displayText(node.props.message) : node.type === 'minecraft:string-widget' ? displayText(node.props.text) : node.type === 'minecraft:cycle-button' ? cycleLabel(node) : node.props.value || (node.props.hint ? displayText(node.props.hint) : '');
   const align = node.type === 'minecraft:button' || node.type === 'minecraft:cycle-button' ? 'center' : node.type === 'minecraft:string-widget' ? node.props.align : 'left';
   const padding = node.type === 'minecraft:edit-box' ? 4 : 0;

@@ -9,7 +9,7 @@ function SelectionImage({ node, selected, family }: { node: SelectionNode; selec
   return <canvas ref={ref} width={node.bounds.w} height={node.bounds.h} style={{ width: '100%', height: '100%', pointerEvents: 'none', position: 'absolute', inset: 0, imageRendering: 'pixelated' }} aria-hidden="true"/>;
 }
 type Open = { nodeId: string; active: string };
-export function SelectionPreview({ nodes, screenId, design, origin, zoom, family }: { nodes: SelectionNode[]; screenId: string; design: { width: number; height: number }; origin: { x: number; y: number }; zoom: number; family: string }) {
+export function SelectionPreview({ nodes, screenId, design, origin, zoom, family, clipInsets = {} }: { nodes: SelectionNode[]; screenId: string; design: { width: number; height: number }; origin: { x: number; y: number }; zoom: number; family: string; clipInsets?: Record<string, { top: number; right: number; bottom: number; left: number }> }) {
   const [values, setValues] = useState<Record<string, string>>({}), [events, setEvents] = useState<SelectionEvent[]>([]), [open, setOpen] = useState<Open | null>(null);
   const root = useRef<HTMLDivElement>(null), list = useRef<HTMLDivElement>(null), triggers = useRef<Record<string, HTMLButtonElement | null>>({});
   const state = useRef({ nodes, open, values, zoom }); state.current = { nodes, open, values, zoom };
@@ -81,7 +81,7 @@ export function SelectionPreview({ nodes, screenId, design, origin, zoom, family
     {nodes.map(node => {
       const stored = values[node.id];
       const selected = node.props.options.some(o => o.id === stored && !o.disabled) ? stored : node.props.initialSelectedOptionId;
-      const style = { position: 'absolute' as const, left: origin.x + node.bounds.x * zoom, top: origin.y + node.bounds.y * zoom, width: node.bounds.w * zoom, height: node.bounds.h * zoom, pointerEvents: 'auto' as const };
+      const clip = clipInsets[node.id], style = { position: 'absolute' as const, left: origin.x + node.bounds.x * zoom, top: origin.y + node.bounds.y * zoom, width: node.bounds.w * zoom, height: node.bounds.h * zoom, pointerEvents: 'auto' as const, ...(clip ? { clipPath: `inset(${clip.top}px ${clip.right}px ${clip.bottom}px ${clip.left}px)` } : {}) };
       const enabled = node.props.options.filter(o => !o.disabled);
       const buttonStyle = { position: 'absolute' as const, background: 'transparent', padding: 0, margin: 0, border: 'none', borderRadius: 0, minWidth: 0, minHeight: 0, color: 'transparent' };
       return <div key={node.id} style={style} role={node.type === 'minecraft:radio-group' ? 'radiogroup' : undefined} aria-label={displayText(node.props.name)}>
