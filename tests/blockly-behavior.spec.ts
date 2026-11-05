@@ -1,0 +1,142 @@
+import { expect, test, type Locator, type Page } from '@playwright/test';
+import { mkdir, writeFile } from 'node:fs/promises';
+import { resolve } from 'node:path';
+import { blocklyProject, sharedStatusRule } from './fixtures/blocklyProject';
+import { EXPORT_MANIFEST_VERSION, IMPLEMENTATION_SPEC_VERSION } from '../src/exports/versions';
+
+const read = async (page: Page) => JSON.parse((await page.getByTestId('project-json').textContent())!);
+async function dragBlock(page: Page, from: Locator, point: { x: number; y: number }) {
+  // The flyout is a Blockly scroll surface. Scroll the requested palette block into its viewport before dragging.
+  const host = (await page.getByTestId('blockly-workspace').boundingBox())!;
+  for (let attempt = 0; attempt < 20; attempt++) {
+    const candidate = (await from.boundingBox())!;
+    if (candidate.y >= host.y + 6 && candidate.y + candidate.height <= host.y + host.height - 6) break;
+    await page.mouse.move(host.x + 35, host.y + host.height / 2); await page.mouse.wheel(0, candidate.y < host.y ? -180 : 180); await page.waitForTimeout(60);
+  }
+  const box = (await from.boundingBox())!; await page.mouse.move(box.x + 8, box.y + 10); await page.mouse.down();
+  await page.mouse.move(point.x, point.y, { steps: 18 }); await page.mouse.up();
+}
+function unpack(bytes: Buffer) { const files = new Map<string, Buffer>(); let at = 0; while (bytes.readUInt32LE(at) === 0x04034b50) { const len = bytes.readUInt16LE(at + 26), extra = bytes.readUInt16LE(at + 28), size = bytes.readUInt32LE(at + 18), start = at + 30 + len + extra; files.set(bytes.subarray(at + 30, at + 30 + len).toString(), bytes.subarray(start, start + size)); at = start + size; } return files; }
+
+test('B1 edits real Blockly blocks and keeps shared selection logic in authoritative F2 JSON', async ({ page }, info) => {
+  await page.addInitScript(() => { const click = HTMLAnchorElement.prototype.click; HTMLAnchorElement.prototype.click = function () { if (this.download.endsWith('.zip')) (window as any).blocklyZip = fetch(this.href).then(response => response.arrayBuffer()).then(bytes => Array.from(new Uint8Array(bytes))); return click.call(this); }; });
+  await page.goto('/');
+  await page.getByLabel('导入项目文件').setInputFiles({ name: 'B1.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(blocklyProject())) });
+  await expect(page.locator('.statusbar [role="status"]')).toContainText('导入成功');
+  await page.getByRole('button', { name: 'Blockly 实验', exact: true }).click();
+  const editor = page.getByTestId('blockly-editor');
+  await expect(editor.locator('.blocklySvg')).toBeVisible();
+  await expect(editor.getByTestId('blockly-semantic-preview')).toContainText('selection-change');
+  const before = await read(page); expect(before).toEqual(blocklyProject());
+  const main = editor.locator('.blocklySvg .blocklyBlockCanvas');
+  const source = main.locator('[data-block-type="gui_selection_source"]');
+  const to = (await source.boundingBox())!;
+  await dragBlock(page, editor.locator('.blocklyFlyout [data-block-type="gui_selection_source"]'), { x: to.x + 8, y: to.y + to.height + 7 });
+  await expect(source).toHaveCount(2);
+  await source.nth(1).locator('.blocklyDropdownField').click();
+  await page.getByRole('option', { name: /备用选择/ }).click();
+  await expect(editor.getByTestId('blockly-semantic-preview')).toContainText('additionalSourceIds');
+  const pairs = main.locator('[data-block-type="gui_mapping_pair"]'), flyPair = editor.locator('.blocklyFlyout [data-block-type="gui_mapping_pair"]');
+  const port = (await main.locator('[data-block-type="gui_status_map"] > .blocklyHighlightedConnectionPath').last().boundingBox())!;
+  await dragBlock(page, flyPair, { x: port.x + 2, y: port.y + 10 });
+  await expect(pairs).toHaveCount(1);
+  await pairs.nth(0).locator('.blocklyDropdownField').nth(0).click(); await page.getByRole('option', { name: /option_1/ }).click();
+  await pairs.nth(0).locator('.blocklyDropdownField').nth(1).click(); await page.getByRole('option', { name: '运行', exact: true }).click();
+  const pairBox = (await pairs.nth(0).boundingBox())!;
+  await dragBlock(page, flyPair, { x: pairBox.x + 8, y: pairBox.y + pairBox.height + 7 }); await expect(pairs).toHaveCount(2);
+  await pairs.nth(1).locator('.blocklyDropdownField').nth(0).click(); await page.getByRole('option', { name: /option_2/ }).click();
+  await pairs.nth(1).locator('.blocklyDropdownField').nth(1).click(); await page.getByRole('option', { name: '警告', exact: true }).click();
+  await expect(editor.getByTestId('blockly-semantic-preview')).toContainText('status_warning');
+  await editor.getByRole('button', { name: '撤销积木', exact: true }).click(); await expect(editor.getByTestId('blockly-diagnostic')).toContainText('STATUS');
+  await editor.getByRole('button', { name: '重做积木', exact: true }).click(); await expect(editor.getByTestId('blockly-semantic-preview')).toContainText('status_warning');
+  await main.locator('[data-block-type="gui_set_status"] > .blocklyDropdownField').click(); await page.getByRole('option', { name: '请选择', exact: true }).click();
+  await expect(editor.getByTestId('blockly-diagnostic')).toContainText('TARGET'); await expect(editor.getByRole('button', { name: '保存积木规则', exact: true })).toBeDisabled();
+  await editor.getByRole('button', { name: '撤销积木', exact: true }).click(); await expect(editor.getByTestId('blockly-diagnostic')).toContainText('连接与引用有效');
+  expect(await read(page)).toEqual(before);
+  await page.getByRole('button', { name: '导出规格', exact: true }).click(); await expect(page.locator('.statusbar [role="alert"]')).toContainText('Blockly');
+  await editor.getByRole('button', { name: '保存积木规则', exact: true }).click(); await expect(editor.getByTestId('blockly-diagnostic')).toContainText('积木规则已保存');
+  const saved = await read(page); expect(saved.schemaVersion).toBe('0.31.0'); expect(saved.screens[0].behaviors[0]).toEqual(before.screens[0].behaviors[0]);
+  expect(saved.screens[0].behaviors[1]).toMatchObject({ id: 'rule_1', event: { sourceId: 'node_22', additionalSourceIds: ['node_23'] }, actions: [{ type: 'set-status', targetId: 'node_26', optionMappings: [{ optionId: 'option_1', statusId: 'status_running' }, { optionId: 'option_2', statusId: 'status_warning' }] }] });
+  await page.screenshot({ path: info.outputPath('B1-workspace.png') });
+  await page.getByRole('button', { name: 'GUI 设计模式' }).click();
+  await page.getByRole('button', { name: '撤销', exact: true }).click(); expect(await read(page)).toEqual(before);
+  await page.getByRole('button', { name: '重做', exact: true }).click(); expect(await read(page)).toEqual(saved);
+  await expect(page.getByTestId('save-status')).toContainText('本地已保存'); await page.reload();
+  await expect(page.getByTestId('save-status')).toContainText('本地已保存'); expect(await read(page)).toEqual(saved);
+  await page.getByRole('button', { name: '选择 node_22', exact: true }).click();
+  await page.getByLabel('选择控件名称', { exact: true }).fill('重命名后的主选择'); await page.getByRole('button', { name: '应用选择选项', exact: true }).click();
+  expect((await read(page)).screens[0].behaviors).toEqual(saved.screens[0].behaviors);
+  await page.getByRole('button', { name: 'Blockly 实验', exact: true }).click();
+  await expect(editor.locator('.blocklySvg .blocklyBlockCanvas')).toContainText('重命名后的主选择');
+  const renamed = await read(page); await expect(editor.getByRole('button', { name: '保存积木规则', exact: true })).toBeDisabled();
+  await page.getByRole('button', { name: 'GUI 设计模式' }).click(); expect(await read(page)).toEqual(renamed);
+  await page.getByRole('button', { name: '行为', exact: true }).click(); await page.getByRole('button', { name: '交互预览', exact: true }).click();
+  const panel = page.getByTestId('behavior-panel'), log = panel.getByTestId('behavior-event-log'), preview = panel.getByTestId('behavior-preview');
+  await page.getByRole('radio', { name: '相同名称 (2/4)', exact: true }).click(); await expect(preview).toContainText('status_warning');
+  await expect(log).toContainText('selection-change · node_22 · optionId option_2');
+  const trigger = page.getByRole('button', { name: '备用选择: 相同名称', exact: true }); await trigger.focus(); await trigger.press('Enter');
+  const list = page.getByRole('listbox', { name: '备用选择', exact: true }); await list.press('ArrowDown');
+  await expect(log).not.toContainText('selection-change · node_23'); await list.press('Enter');
+  await expect(log).toContainText('selection-change · node_23 · optionId option_2'); await expect(log).toContainText('匹配：rule_1');
+  await trigger.focus(); await trigger.press('Enter'); await list.press('Home'); await list.press('Enter'); await expect(preview).toContainText('status_running');
+  await page.getByRole('radio', { name: '相同名称 (1/4)', exact: true }).click(); await page.getByRole('radio', { name: '相同名称 (2/4)', exact: true }).click(); await expect(preview).toContainText('status_warning');
+  await page.getByRole('radio', { name: '未映射 (3/4)', exact: true }).click(); await expect(preview).toContainText('status_warning'); await expect(log).toContainText('optionId option_3 未映射');
+  const traceText = await log.innerText(); await page.getByRole('radio', { name: '未映射 (3/4)', exact: true }).click(); expect(await log.innerText()).toBe(traceText);
+  await expect(page.getByRole('radio', { name: '禁用 (4/4)', exact: true })).toBeDisabled(); expect(await read(page)).toEqual(renamed);
+  await panel.getByRole('button', { name: '重置预览', exact: true }).click(); await expect(preview).toHaveCount(0);
+  await page.getByRole('button', { name: '交互预览', exact: true }).click(); await expect(log).toContainText('最近 0/30');
+  await expect(page.getByRole('radio', { name: '相同名称 (1/4)', exact: true })).toHaveAttribute('aria-checked', 'true');
+  await page.getByRole('button', { name: '交互预览', exact: true }).click();
+  const downloaded = page.waitForEvent('download'); await page.getByRole('button', { name: '一键导出 ZIP', exact: true }).click(); await downloaded;
+  const bytes = Buffer.from(await page.evaluate(() => (window as any).blocklyZip)); const files = unpack(bytes);
+  const manifest = JSON.parse(files.get([...files.keys()].find(name => name.endsWith('.manifest.json'))!)!.toString()); expect(manifest.version).toBe(EXPORT_MANIFEST_VERSION);
+  expect(JSON.parse(files.get(manifest.authority.file)!.toString())).toEqual(renamed);
+  const spec = JSON.parse(files.get([...files.keys()].find(name => name.endsWith('.implementation.json'))!)!.toString()); expect(spec.version).toBe(IMPLEMENTATION_SPEC_VERSION);
+  expect(spec.designIntent.selectionStatusBindings).toMatchObject([{ sourceIds: ['node_22', 'node_23'], sharedActionChain: true, ruleIndex: 1, actionIndex: 0 }]);
+  await mkdir(resolve('outputs/B1'), { recursive: true }); await writeFile(resolve(`outputs/B1/automation-export-${info.project.name}.zip`), bytes);
+});
+
+test('B1 preserves ordered actions and resets both sources and Status on self navigation', async ({ page }) => {
+  const doc = blocklyProject(); doc.schemaVersion = '0.31.0'; const rule = sharedStatusRule();
+  if ('actions' in rule) rule.actions.push({ type: 'set-status', targetId: 'node_26', optionMappings: [{ optionId: 'option_2', statusId: 'status_running' }] });
+  doc.screens[0].behaviors.push(rule, { id: 'rule_self', event: { type: 'button-click', sourceId: 'legacy_button' }, action: { type: 'open_screen', targetScreenId: 'target_self' } });
+  doc.screens[0].screenTargets = [{ id: 'target_self', name: '本页', boundScreenId: doc.screens[0].id }];
+  await page.goto('/'); await page.getByLabel('导入项目文件').setInputFiles({ name: 'ordered.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(doc)) });
+  await expect(page.locator('.statusbar [role="status"]')).toContainText('导入成功');
+  await page.getByRole('button', { name: 'Blockly 实验', exact: true }).click(); const editor = page.getByTestId('blockly-editor');
+  await expect(editor.locator('.blocklySvg .blocklyBlockCanvas [data-block-type="gui_set_status"]')).toHaveCount(2);
+  await expect(editor.getByLabel('Blockly 规则').locator('option[value="rule_legacy"]')).toHaveAttribute('disabled', '');
+  await expect(editor.getByRole('button', { name: '保存积木规则', exact: true })).toBeDisabled(); expect(await read(page)).toEqual(doc);
+  await page.getByRole('button', { name: 'GUI 设计模式' }).click();
+  await page.getByRole('button', { name: '行为', exact: true }).click(); await page.getByRole('button', { name: '交互预览', exact: true }).click();
+  const panel = page.getByTestId('behavior-panel');
+  await page.getByRole('radio', { name: '相同名称 (2/4)', exact: true }).click(); await expect(panel.getByTestId('behavior-preview')).toContainText('status_running');
+  const log = await panel.getByTestId('behavior-event-log').innerText(); expect(log.indexOf('/ status_warning 已执行')).toBeLessThan(log.indexOf('/ status_running 已执行'));
+  await panel.getByRole('button', { name: '模拟触发 legacy_button', exact: true }).click();
+  await expect(page.getByRole('radio', { name: '相同名称 (1/4)', exact: true })).toHaveAttribute('aria-checked', 'true'); await expect(panel.getByTestId('behavior-event-log')).toContainText('最近 0/30');
+  await expect(panel.getByTestId('behavior-preview')).not.toContainText('status_running'); expect(await read(page)).toEqual(doc);
+});
+
+test('B1 rejects duplicate-source drafts and stale document saves without mutating authority', async ({ page }) => {
+  const doc = blocklyProject(); doc.schemaVersion = '0.31.0'; doc.screens[0].behaviors.push(sharedStatusRule());
+  await page.goto('/'); await page.getByLabel('导入项目文件').setInputFiles({ name: 'refs.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(doc)) });
+  await expect(page.locator('.statusbar [role="status"]')).toContainText('导入成功');
+  await page.getByRole('button', { name: 'Blockly 实验', exact: true }).click(); const editor = page.getByTestId('blockly-editor');
+  const second = editor.locator('.blocklySvg .blocklyBlockCanvas [data-block-type="gui_selection_source"]').nth(1);
+  await second.locator('.blocklyDropdownField').click(); await page.getByRole('option', { name: /主选择/ }).click();
+  await expect(editor.getByTestId('blockly-diagnostic')).toContainText('来源 ID 不能重复'); await expect(editor.getByRole('button', { name: '保存积木规则', exact: true })).toBeDisabled(); expect(await read(page)).toEqual(doc);
+  await page.getByLabel('导入项目文件').setInputFiles({ name: 'blocked.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(blocklyProject())) });
+  await expect(page.locator('.statusbar [role="alert"]')).toContainText('Blockly 有未保存草稿'); expect(await read(page)).toEqual(doc);
+  await expect(page.getByTestId('save-status')).toContainText('本地已保存');
+  await page.getByRole('button', { name: '本地保存状态和副本', exact: true }).click();
+  const copies = page.getByLabel('本地副本', { exact: true }); const other = await copies.evaluate(select => Array.from((select as HTMLSelectElement).options).find(option => option.value !== (select as HTMLSelectElement).value)!.value);
+  await copies.selectOption(other); const openCopy = page.getByRole('button', { name: '打开本地副本', exact: true }); await openCopy.focus(); await openCopy.press('Enter');
+  await expect(page.locator('.statusbar [role="alert"]')).toContainText('Blockly 有未保存草稿'); expect(await read(page)).toEqual(doc);
+  await page.getByRole('button', { name: '本地保存状态和副本', exact: true }).click();
+  await page.getByRole('button', { name: 'GUI 设计模式' }).click();
+  await page.getByRole('button', { name: '撤销', exact: true }).click();
+  await page.getByRole('button', { name: 'Blockly 实验', exact: true }).click();
+  await expect(editor.getByTestId('blockly-diagnostic')).toContainText('项目已变化'); await expect(editor.getByRole('button', { name: '保存积木规则', exact: true })).toBeDisabled();
+  expect(await read(page)).not.toEqual(doc);
+  await page.getByRole('button', { name: 'GUI 设计模式' }).click();
+});

@@ -16,10 +16,10 @@ test('isolated two-screen fixture routes tree and canvas selection', async ({ pa
   });
   await expect(page.getByRole('button', { name: '选择 node_a' })).toBeVisible();
   await page.getByRole('button', { name: '选择 node_a' }).click();
-  await page.getByLabel('当前 Screen').selectOption('screen_second');
+  await page.getByLabel('当前画布', { exact: true }).selectOption('screen_second');
   await expect(page.getByRole('button', { name: '选择 node_b' })).toBeVisible();
   await expect(page.getByRole('button', { name: '选择 node_a' })).toHaveCount(0);
   await expect(page.getByRole('button', { name: '选择 node_b' })).toHaveAttribute('aria-pressed', 'false');
-  await page.getByLabel('当前 Screen').selectOption('screen_main');
+  await page.getByLabel('当前画布', { exact: true }).selectOption('screen_main');
   await expect(page.getByRole('button', { name: '选择 node_a' })).toHaveAttribute('aria-pressed', 'false');
 });

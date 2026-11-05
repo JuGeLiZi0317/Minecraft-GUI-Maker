@@ -3,7 +3,10 @@
   "version": "0.2.0",
   "private": true,
   "type": "module",
-  "engines": { "node": "24.17.0", "npm": "11.13.0" },
+  "engines": {
+    "node": "24.17.0",
+    "npm": "11.13.0"
+  },
   "packageManager": "npm@11.13.0",
   "scripts": {
     "dev": "vite --host 127.0.0.1",
@@ -15,6 +18,7 @@
     "test:perf": "playwright test --grep @performance"
   },
   "dependencies": {
+    "blockly": "13.4.0",
     "konva": "10.0.12",
     "react": "19.2.0",
     "react-dom": "19.2.0",

@@ -1,5 +1,18 @@
 import { test, expect } from '@playwright/test';
 
+test('selected preview font restores from browser storage after refresh', async ({ page }) => {
+  await page.goto('/');
+  const fontPath = 'node_modules/playwright-core/lib/vite/traceViewer/codicon.DCmgc-ay.ttf';
+  await page.getByLabel('选择预览字体').setInputFiles(fontPath);
+  await expect(page.getByTestId('font-status')).toContainText('codicon.DCmgc-ay.ttf');
+  await page.reload();
+  await expect(page.getByTestId('font-status')).toContainText('codicon.DCmgc-ay.ttf');
+  await page.getByText('视图', { exact: true }).click(); await page.getByLabel('编辑器菜单').getByText('字体', { exact: true }).hover();
+  await page.getByRole('button', { name: '使用系统字体', exact: true }).click();
+  await expect(page.getByTestId('font-status')).toContainText('系统字体近似预览');
+  await page.reload(); await expect(page.getByTestId('font-status')).toContainText('系统字体近似预览');
+});
+
 test('local client font definitions and bitmap can be read by existing resource index', async ({ page }, info) => {
   const jar=process.env.GUI_CLIENT_JAR;test.skip(!jar,'需要本机客户端 JAR');
   await page.goto('/'); await page.evaluate(()=>{const input=document.createElement('input');input.id='font-client';input.type='file';document.body.appendChild(input);});

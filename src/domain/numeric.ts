@@ -46,7 +46,9 @@ export function stepNumeric(c: NumericConfig, value: number, direction: -1 | 1):
 }
 export function numericFraction(c: NumericConfig, value: number) { return c.min === c.max ? 0 : (units(value)! - units(c.min)!) / (units(c.max)! - units(c.min)!); }
 
-export type NumericEvent = { type: 'numeric-commit' | 'slider-change'; screenId: string; nodeId: string; value: number; phase: 'commit' | 'change' };
+export type NumericCommitEvent = { type: 'numeric-commit'; screenId: string; nodeId: string; value: number; phase: 'commit' };
+export type SliderChangeEvent = { type: 'slider-change'; screenId: string; nodeId: string; value: number; phase: 'change' };
+export type NumericEvent = NumericCommitEvent | SliderChangeEvent;
 export type NumericState = { value: number; draft: string; error: string | null; focused: boolean };
 export const initialNumericState = (c: NumericConfig): NumericState => ({ value: c.initialValue, draft: formatNumber(c, c.initialValue), error: null, focused: false });
 export function commitNumeric(c: NumericConfig, state: NumericState): { state: NumericState; changed: boolean } {

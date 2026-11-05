@@ -39,7 +39,7 @@ describe('Scrollable Panel model and geometry', () => {
     store.getState().undo(); expect(store.getState().doc).toEqual(before);
     store.getState().redo(); expect(store.getState().doc).toEqual(after);
     const stable = store.getState().doc, history = store.getState().past;
-    expect(() => store.getState().add('minecraft:fill', { x: 106, y: 64 }, target)).toThrow('暂不支持');
+    expect(() => store.getState().add('minecraft:fill', { x: 106, y: 64 }, target)).toThrow('不能放入容器');
     expect(store.getState().doc).toBe(stable); expect(store.getState().past).toBe(history);
   });
 

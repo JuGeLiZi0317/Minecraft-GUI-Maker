@@ -22,4 +22,17 @@ describe('H2-P independent panel', () => {
     expect(() => store.getState().setPanelBounds({ x: 300, y: 28, w: 30, h: 100 })).toThrow();
     expect(() => store.getState().resizeScreen(100, 100)).toThrow(); expect(store.getState().doc).toEqual(before);
   });
+  it('repairs stale in-memory Panel geometry before adding a Screen', () => {
+    const store = createEditorStore(); store.getState().setPanel(true); store.getState().setPanelBounds({ x: 10, y: 10, w: 100, h: 80 });
+    const historyBefore = store.getState().past.length;
+    const stale = structuredClone(store.getState().doc);
+    if (stale.screens[0].background.kind === 'panel') stale.screens[0].background.bounds = { x: 300, y: 170, w: 40, h: 20 };
+    store.setState({ doc: stale }); // Simulates an old live workspace surviving an application update.
+    expect(() => store.getState().addScreen()).not.toThrow();
+    expect(store.getState().doc.screens[0].background).toMatchObject({ kind: 'panel', bounds: { x: 0, y: 0, w: 320, h: 180 } });
+    expect(store.getState().doc.screens).toHaveLength(2);
+    expect(store.getState().past).toHaveLength(historyBefore + 1);
+    store.getState().undo(); expect(store.getState().doc.screens).toHaveLength(1);
+    expect(store.getState().doc.screens[0].background).toMatchObject({ kind: 'panel', bounds: { x: 0, y: 0, w: 320, h: 180 } });
+  });
 });

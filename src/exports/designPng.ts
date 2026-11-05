@@ -16,7 +16,11 @@ import { drawScrollText } from '../render/scrollText';
 import { tabManaged, tabVisibility } from '../domain/tabGroups';
 import { screenNavigationSelected } from '../domain/screenTabNavigation';
 import type { VisualSnapshot } from './visualSnapshot';
-import { contentSize, contentViewport, isScrollablePanelNode } from '../domain/scrollablePanel';
+import { contentSize, isScrollablePanelNode } from '../domain/scrollablePanel';
+import { containerScreenViewport, containerChildScreenBounds, isCollapsiblePanelNode, isContainerNode } from '../domain/collapsiblePanel';
+import { displayText } from '../domain/model';
+import { isTreeViewNode } from '../domain/treeView';
+import { drawTreeView } from '../render/treeView';
 
 export const MAX_PNG_PIXELS = 16_777_216;
 export function assertPngSize(width: number, height: number) {
@@ -90,17 +94,23 @@ export async function renderDesignPng(snapshot: ExportSnapshot, reference: Expor
       const selected = screenNavigationSelected(original, activeScreen.id, snapshot.document.screenTabGroups ?? []);
       const node = selected === null || original.type !== 'minecraft:creative-tab' ? original : { ...original, props: { ...original.props, selected } };
       if ((!managed.has(node.id) && !node.state.visible) || !visibleInGroup(node.id)) return;
-      const { x, y, w, h } = drawBounds;
-      if (isScrollablePanelNode(node)) {
-        const viewport = contentViewport(node), metrics = contentSize(node);
+      const { x, y, w } = drawBounds, h = isCollapsiblePanelNode(node) && !node.props.initialExpanded ? node.props.headerHeight : drawBounds.h;
+      if (isContainerNode(node)) {
+        const viewport = containerScreenViewport(node, resolvedNodes), metrics = isScrollablePanelNode(node) ? contentSize(node) : { maxScroll: 0 };
         renderContext.save(); renderContext.fillStyle = rgba(node.props.backgroundColor); renderContext.fillRect(x, y, w, h); renderContext.strokeStyle = rgba(node.props.borderColor); renderContext.lineWidth = 1; renderContext.strokeRect(x + 0.5, y + 0.5, Math.max(0, w - 1), Math.max(0, h - 1));
-        renderContext.beginPath(); renderContext.rect(viewport.x, viewport.y, viewport.w, viewport.h); renderContext.clip();
-        for (const child of resolvedNodes) if (child.parentContainerId === node.id) drawNode(child, { x: viewport.x + child.bounds.x, y: viewport.y + child.bounds.y, w: child.bounds.w, h: child.bounds.h });
+        if (isCollapsiblePanelNode(node)) {
+          renderContext.fillStyle = rgba(node.props.headerColor); renderContext.fillRect(x, y, w, node.props.headerHeight); renderContext.fillStyle = rgba(node.props.textColor); renderContext.font = `9px ${font.family}`; renderContext.textBaseline = 'middle'; renderContext.textAlign = 'left'; renderContext.fillText(displayText(node.props.title), x + 6, y + node.props.headerHeight / 2); renderContext.textAlign = 'center'; renderContext.fillText(node.props.initialExpanded ? '⌄' : '›', x + w - 9, y + node.props.headerHeight / 2);
+        }
+        if (!isCollapsiblePanelNode(node) || node.props.initialExpanded) {
+          renderContext.beginPath(); renderContext.rect(viewport.x, viewport.y, viewport.w, viewport.h); renderContext.clip();
+          for (const child of resolvedNodes) if (child.parentContainerId === node.id) drawNode(child, containerChildScreenBounds(node, child, resolvedNodes));
+        }
         renderContext.restore();
-        if (metrics.maxScroll > 0) { const thumb = Math.max(8, viewport.h * viewport.h / node.props.contentHeight); renderContext.fillStyle = '#111821'; renderContext.fillRect(viewport.x + viewport.w + 2, viewport.y, 6, viewport.h); renderContext.fillStyle = '#8795a5'; renderContext.fillRect(viewport.x + viewport.w + 2, viewport.y, 6, thumb); }
+        if (isScrollablePanelNode(node) && metrics.maxScroll > 0) { const thumb = Math.max(8, viewport.h * viewport.h / node.props.contentHeight); renderContext.fillStyle = '#111821'; renderContext.fillRect(viewport.x + viewport.w + 2, viewport.y, 6, viewport.h); renderContext.fillStyle = '#8795a5'; renderContext.fillRect(viewport.x + viewport.w + 2, viewport.y, 6, thumb); }
         return;
       }
       if (isSelectionNode(node)) { renderContext.save(); renderContext.translate(x, y); drawSelectionWidget(renderContext, node, w, h, font.family); renderContext.restore(); return; }
+      if (isTreeViewNode(node)) { renderContext.save(); renderContext.translate(x, y); drawTreeView(renderContext, node, w, h, font.family); renderContext.restore(); return; }
       if (isNumericNode(node)) {
         renderContext.save(); renderContext.translate(x, y); drawNumericWidget(renderContext, node, w, h, font.family, visual?.entries ?? {}, visual?.cache ?? new SpriteRasterCache(), { resourceActive: visual?.active }); renderContext.restore(); return;
       }

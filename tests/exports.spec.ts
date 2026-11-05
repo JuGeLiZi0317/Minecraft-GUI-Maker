@@ -54,7 +54,7 @@ async function point(page: Page, x: number, y: number) {
 test.beforeEach(async ({ page }) => { await page.goto('/'); await expect(page.getByRole('heading', { name: 'Minecraft GUI Maker' })).toBeVisible(); });
 
 test('complete bundle has matching references/hashes and clean logical PNG, independent of view/preview/DPR', async ({ page }, info) => {
-  const doc = emptyProject();
+  const doc = emptyProject(); doc.schemaVersion = '0.17.0'; doc.entryScreenId = doc.screens[0].id; doc.screenTabGroups = [];
   const fill = createNode('minecraft:fill', 'rectangle'); fill.bounds = { x: 20, y: 40, w: 20, h: 10 }; if (fill.type === 'minecraft:fill') fill.props.color = '#FFFF0000';
   const hidden = createNode('minecraft:fill', 'hidden'); hidden.bounds = { x: 100, y: 100, w: 20, h: 10 }; hidden.state.visible = false;
   doc.screens[0].nodes = [createNode('minecraft:button', 'button'), createNode('minecraft:edit-box', 'input', { x: 20, y: 70 }), createNode('minecraft:string-widget', 'label', { x: 20, y: 140 }), fill, hidden];

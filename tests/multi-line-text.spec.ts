@@ -118,7 +118,7 @@ test('W1-A real multi-Screen ZIP contains authority, native agent contract, cons
   for (const file of manifest.files) expect(createHash('sha256').update(entries.get(file.name)!).digest('hex')).toBe(file.sha256);
   for (const screen of manifest.screens) { const png = entries.get(screen.designImage.name)!; expect(png.readUInt32BE(16)).toBe(320); expect(png.readUInt32BE(20)).toBe(180); }
   const spec = JSON.parse(entries.get([...entries.keys()].find(k => k.endsWith('.implementation.json'))!)!.toString());
-  expect(spec.version).toBe('0.8.0'); expect(spec.designIntent.screens[1].nodes[0].properties.text.key).toBe('gui.w1.description');
+  expect(spec.version).toBe('0.18.0'); expect(spec.designIntent.screens[1].nodes[0].properties.text.key).toBe('gui.w1.description');
   expect(spec.designIntent.widgetContracts.multiLineTextWidget.shadow).toContain('props.textShadow is explicit');
   expect(spec.designIntent.widgetContracts.multiLineTextWidget.shadow).toContain('no presumed native shadow setter');
   const prompt = entries.get([...entries.keys()].find(k => k.endsWith('.prompt.md'))!)!.toString(); expect(prompt).toContain('NEVER call setSize'); expect(prompt).toContain('PENDING');

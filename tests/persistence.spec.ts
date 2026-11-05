@@ -64,7 +64,9 @@ test('import creates a separate local copy, preserves previous edits and can reo
 });
 
 test('v1-to-v2 IndexedDB upgrade adds index and preserves seeded document', async ({ page, context }) => {
-  const document = emptyProject(); document.project.name = 'Upgrade fixture'; document.screens[0].nodes.push(createNode('minecraft:button', 'legacy_button'));
+  const document = emptyProject(); document.project.name = 'Upgrade fixture'; const legacyButton = createNode('minecraft:button', 'legacy_button');
+  if (legacyButton.type === 'minecraft:button') delete legacyButton.props.color;
+  document.screens[0].nodes.push(legacyButton);
   await seed(context, 1, document); await page.goto('/'); await saved(page);
   expect(await current(page)).toEqual(document); const db = await database(page);
   expect(db.version).toBe(2); expect(db.indexed).toBe(true); expect(db.rows[0].storageRevision).toBe(3); expect(db.workspace.revision).toBe(7);

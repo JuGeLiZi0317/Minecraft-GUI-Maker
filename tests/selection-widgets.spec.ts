@@ -34,9 +34,9 @@ async function canvasClick(page: Page, id: string) {
 test('W1-C Inspector option transactions, explicit replacement, reorder, geometry and persistence', async ({ page }, info) => {
   await page.goto('/'); await page.getByRole('button', { name: '添加 Radio Group', exact: true }).click();
   expect((await read(page)).schemaVersion).toBe('0.18.0');
-  await page.getByLabel('选项文字 option_2', { exact: true }).fill('Same label');
-  await page.getByRole('button', { name: '上移 option_2', exact: true }).click();
-  const old = await read(page); await page.getByRole('button', { name: '删除 option_1', exact: true }).click();
+  await page.getByLabel('选项名称 2', { exact: true }).fill('Same label');
+  await page.getByRole('button', { name: '上移选项 2', exact: true }).click();
+  const old = await read(page); await page.getByRole('button', { name: '删除选项 2', exact: true }).click();
   await page.getByRole('button', { name: '应用选择选项', exact: true }).click(); await expect(page.getByRole('alert')).toContainText('初始选择'); expect(await read(page)).toEqual(old);
   await page.getByRole('button', { name: '导出规格', exact: true }).click(); await expect(page.locator('.export-links a')).toHaveCount(0); expect(await read(page)).toEqual(old);
   await page.getByRole('button', { name: '关闭导出结果' }).click();
@@ -95,9 +95,9 @@ test('W1-C actual product ZIP preserves complete options, snapshot hashes and cl
   const download = page.waitForEvent('download'); await page.getByRole('button', { name: '一键导出 ZIP', exact: true }).click(); await download;
   const bytes = Buffer.from(await page.evaluate(() => (window as any).selectionZip)); const dir = resolve('outputs/W1-C'); await mkdir(dir, { recursive: true }); await writeFile(resolve(dir, `W1-C-${info.project.name}.zip`), bytes);
   await writeFile(resolve(dir, 'acceptance-project.json'), JSON.stringify(before, null, 2));
-  const files = unpack(bytes), manifest = JSON.parse(files.get([...files.keys()].find(k => k.endsWith('.manifest.json'))!)!.toString()); expect(manifest.version).toBe('0.14.0'); expect(manifest.screens).toHaveLength(2);
+  const files = unpack(bytes), manifest = JSON.parse(files.get([...files.keys()].find(k => k.endsWith('.manifest.json'))!)!.toString()); expect(manifest.version).toBe('0.22.0'); expect(manifest.screens).toHaveLength(2);
   expect(JSON.parse(files.get(manifest.authority.file)!.toString())).toEqual(before); for (const file of manifest.files) expect(createHash('sha256').update(files.get(file.name)!).digest('hex')).toBe(file.sha256);
-  const spec = JSON.parse(files.get([...files.keys()].find(k => k.endsWith('.implementation.json'))!)!.toString()); expect(spec.version).toBe('0.8.0'); expect(spec.designIntent.selectionEvents).toHaveLength(4); expect(spec.selectionRuntimeContract.overlay).toContain('matching release');
+  const spec = JSON.parse(files.get([...files.keys()].find(k => k.endsWith('.implementation.json'))!)!.toString()); expect(spec.version).toBe('0.18.0'); expect(spec.designIntent.selectionEvents).toHaveLength(4); expect(spec.selectionRuntimeContract.overlay).toContain('matching release');
   expect(manifest.screens[0].selectionControls[1].options).toHaveLength(14);
   for (const screen of manifest.screens) { const png = files.get(screen.designImage.name)!; expect(png.readUInt32BE(16)).toBe(320); expect(png.readUInt32BE(20)).toBe(180); await writeFile(resolve(dir, `${info.project.name}-${screen.screenId}.png`), png); }
   expect(await read(page)).toEqual(before);

@@ -8,6 +8,7 @@ import { parseProject, type GuiNode, type ScreenTabGroup, type TextSpec } from '
 import { currentScreen, screenById, editorStore } from '../editor/store';
 import { useExportDraft } from '../exports/useExportDraft';
 import { fontSession, previewCheckboxLayout } from '../render/previewFont';
+import { confirmDeleteSelected } from './confirmDeletion';
 import { multiLineLayout, type MultiLineTextNode } from '../render/multiLineText';
 import { SelectionFields } from './SelectionFields';
 import { isSelectionNode } from '../domain/selection';
@@ -16,6 +17,8 @@ import { isNumericNode, type NumericNode } from '../render/numericWidgets';
 import { isProgressNode, progressError, type ProgressNode } from '../domain/progress';
 import { isStatusNode, type StatusNode } from '../domain/statusIndicator';
 import { StatusFields } from './StatusFields';
+import { allDescendants, isCollapsiblePanelNode, isContainerNode } from '../domain/collapsiblePanel';
+import { isTreeViewNode, reconcileTreeViewProps, treeChildren, treeDescendantIds, treeViewError, type TreeItem, type TreeViewNode } from '../domain/treeView';
 
 type TextureImageProps = Extract<Extract<GuiNode, { type: 'minecraft:image' }>['props'], { kind: 'texture' }>;
 type SpriteImageProps = Extract<Extract<GuiNode, { type: 'minecraft:image' }>['props'], { kind: 'sprite' }>;
@@ -64,6 +67,67 @@ function ProgressRangeConstraints({ node, update }: { node: ProgressNode; update
     <button disabled={!dirty} onClick={() => { try { apply(true); apply(false); setError(''); } catch (e) { setError((e as Error).message); } }}>应用数值范围</button>
     {error && <p className="field-error" role="alert">{error}</p>}
     <p className="field-note">最小值、最大值和初始值作为一组原子应用；不使用步进或量化。min=max 表示唯一值并显示为 100%。</p>
+  </section>;
+}
+
+function TreeViewFields({ node, update }: { node: TreeViewNode; update: (change: (node: GuiNode) => GuiNode, dry?: boolean) => boolean }) {
+  const editProps = (change: (props: TreeViewNode['props']) => TreeViewNode['props'], dry = false) => update(current => {
+    if (!isTreeViewNode(current)) return current;
+    const props = reconcileTreeViewProps(change(structuredClone(current.props)));
+    const error = treeViewError(props); if (error) throw new Error(error);
+    return { ...current, props };
+  }, dry);
+  const createId = () => {
+    let index = 1, candidate = '';
+    do { candidate = `tree_item_${index++}`; } while (node.props.items.some(item => item.id === candidate));
+    return candidate;
+  };
+  const add = (parentId: string | null) => {
+    const siblings = treeChildren(node.props.items, parentId), item: TreeItem = { id: createId(), label: literal('新树项'), parentId, order: siblings.length, selectable: true, disabled: false };
+    editProps(props => ({ ...props, items: [...props.items, item], initialSelectedItemId: props.items.some(existing => existing.selectable && !existing.disabled) ? props.initialSelectedItemId : item.id }));
+  };
+  const remove = (itemId: string) => {
+    const removeIds = new Set([itemId, ...treeDescendantIds(itemId, node.props.items)]);
+    editProps(props => ({ ...props, items: props.items.filter(item => !removeIds.has(item.id)), initialExpandedIds: props.initialExpandedIds.filter(id => !removeIds.has(id)) }));
+  };
+  const reorder = (item: TreeItem, delta: -1 | 1) => {
+    const siblings = treeChildren(node.props.items, item.parentId), index = siblings.findIndex(entry => entry.id === item.id), target = index + delta;
+    if (target < 0 || target >= siblings.length) return;
+    [siblings[index], siblings[target]] = [siblings[target], siblings[index]];
+    const orders = new Map(siblings.map((entry, order) => [entry.id, order]));
+    editProps(props => ({ ...props, items: props.items.map(entry => entry.parentId === item.parentId ? { ...entry, order: orders.get(entry.id)! } : entry) }));
+  };
+  const eligible = node.props.items.filter(item => item.selectable && !item.disabled);
+  const parentsWithChildren = new Set(node.props.items.flatMap(item => item.parentId === null ? [] : [item.parentId]));
+  return <section className="tree-view-fields" aria-label="树形视图配置">
+    <TextFields label="控件名称" value={node.props.name} commit={(value, dry) => editProps(props => ({ ...props, name: value }), dry)}/>
+    <label className="field"><span>初始选中</span><select aria-label="初始选中树项" value={node.props.initialSelectedItemId} onChange={event => editProps(props => ({ ...props, initialSelectedItemId: event.target.value }))}>{eligible.map(item => <option key={item.id} value={item.id}>{item.id} · {displayText(item.label)}</option>)}</select></label>
+    <fieldset className="tree-item-list"><legend>树项（{node.props.items.length}/256）</legend>
+      {node.props.items.map(item => {
+        const siblings = treeChildren(node.props.items, item.parentId), index = siblings.findIndex(entry => entry.id === item.id);
+        return <details key={item.id} className="tree-item-editor">
+          <summary>{item.id} · {displayText(item.label)}</summary>
+          <div className="section-body">
+            <code>稳定 ID：{item.id}</code>
+            <TextFields label="显示名称" value={item.label} commit={(value, dry) => editProps(props => ({ ...props, items: props.items.map(entry => entry.id === item.id ? { ...entry, label: value } : entry) }), dry)}/>
+            <label className="field"><span>父项</span><select aria-label={`${item.id} 父项`} value={item.parentId ?? ''} onChange={event => {
+              const parentId = event.target.value || null;
+              if (parentId !== null && (parentId === item.id || treeDescendantIds(item.id, node.props.items).has(parentId))) return;
+              const order = treeChildren(node.props.items, parentId).filter(entry => entry.id !== item.id).length;
+              editProps(props => ({ ...props, items: props.items.map(entry => entry.id === item.id ? { ...entry, parentId, order } : entry) }));
+            }}><option value="">根项</option>{node.props.items.filter(candidate => candidate.id !== item.id && !treeDescendantIds(item.id, node.props.items).has(candidate.id)).map(candidate => <option key={candidate.id} value={candidate.id}>{candidate.id} · {displayText(candidate.label)}</option>)}</select></label>
+            <p className="field-note">同级顺序：{index + 1}/{siblings.length}</p>
+            <div className="tree-row-actions"><button type="button" disabled={index === 0} onClick={() => reorder(item, -1)}>上移</button><button type="button" disabled={index === siblings.length - 1} onClick={() => reorder(item, 1)}>下移</button>
+              <button type="button" disabled={node.props.items.length >= 256} onClick={() => add(item.id)}>添加子项</button><button type="button" disabled={node.props.items.length - treeDescendantIds(item.id, node.props.items).size < 1} onClick={() => remove(item.id)}>删除此项及子树</button></div>
+            <label className="check"><input type="checkbox" aria-label={`${item.id} 允许选择`} checked={item.selectable} onChange={event => editProps(props => ({ ...props, items: props.items.map(entry => entry.id === item.id ? { ...entry, selectable: event.target.checked } : entry) }))}/>允许选择</label>
+            <label className="check"><input type="checkbox" aria-label={`${item.id} 禁用`} checked={item.disabled} onChange={event => editProps(props => ({ ...props, items: props.items.map(entry => entry.id === item.id ? { ...entry, disabled: event.target.checked } : entry) }))}/>禁用</label>
+          </div>
+        </details>;
+      })}
+    </fieldset>
+    <button type="button" disabled={node.props.items.length >= 256} onClick={() => add(null)}>添加根项</button>
+    <div className="tree-initial-expanded"><span>初始展开</span>{[...parentsWithChildren].map(id => <label key={id} className="check"><input type="checkbox" aria-label={`${id} 初始展开`} checked={node.props.initialExpandedIds.includes(id)} onChange={event => editProps(props => ({ ...props, initialExpandedIds: event.target.checked ? [...props.initialExpandedIds, id] : props.initialExpandedIds.filter(value => value !== id) }))}/>{id}</label>)}</div>
+    <p className="field-note">最多 256 项、16 层。展开只控制可见行，选择需单独确认；Tree View 事件是未绑定的实现意图。</p>
   </section>;
 }
 
@@ -381,9 +445,9 @@ export function Inspector({ notify, readOnly = false, emptyControls, editTabs, s
             <p className="field-note">{node.parentContainerId ? '子节点 X/Y/W/H 使用父容器内容局部 GUI px；X/Y 从内容区左上角计算。' : node.type === 'minecraft:creative-tab' ? '固定 26×32 GUI px，位置为贴图左上角。' : node.type === 'minecraft:checkbox' ? 'W、H 仅为设计参考边界；原版尺寸由游戏字体、文字与构造最大宽度决定，不能强制按参考高度构造。' : '拖动边缘中点只调整宽或高；拖动右下或左上角手柄可同时调整宽高。拖左边或上边时，对侧位置保持不变。'} 超出所在坐标区域的精确输入会被拒绝。</p>
           </div>
         </details>
-        {node.type !== 'minecraft:scrollable-panel' && <section className="inspector-section"><h3 className="section-title">父容器</h3><div className="section-body">
-          <label className="field"><span>容器</span><select aria-label="父容器" value={node.parentContainerId ?? ''} onChange={e => { try { editorStore.getState().setNodeContainer(node.id, e.target.value || undefined, containerScroll); notify('父容器已更新'); } catch (error) { notify((error as Error).message, true); } }}><option value="">Screen 根节点</option>{screen.nodes.filter((candidate): candidate is Extract<GuiNode, { type: 'minecraft:scrollable-panel' }> => candidate.type === 'minecraft:scrollable-panel').map(candidate => <option key={candidate.id} value={candidate.id}>{candidate.id}</option>)}</select></label>
-          <p className="field-note">跨级转移保持屏幕位置；超出内容区域时会整笔拒绝。首版不支持嵌套。</p>
+        {node.type !== 'minecraft:tree-view' && <section className="inspector-section"><h3 className="section-title">父容器</h3><div className="section-body">
+          <label className="field"><span>容器</span><select aria-label="父容器" value={node.parentContainerId ?? ''} onChange={e => { try { editorStore.getState().setNodeContainer(node.id, e.target.value || undefined, containerScroll); notify('父容器已更新'); } catch (error) { notify((error as Error).message, true); } }}><option value="">Screen 根节点</option>{screen.nodes.filter(candidate => isContainerNode(candidate) && candidate.id !== node.id && !allDescendants(node.id, screen.nodes).some(child => child.id === candidate.id) && (!isContainerNode(node) || (node.type !== candidate.type && candidate.parentContainerId === undefined))).map(candidate => <option key={candidate.id} value={candidate.id}>{candidate.id}</option>)}</select></label>
+          <p className="field-note">跨级转移保持屏幕位置；仅允许 Scrollable Panel 与 Collapsible Panel 交叉嵌套，最多两层。</p>
         </div></section>}
         <details className="inspector-section" open>
           <summary><span>外观与文案</span></summary>
@@ -393,11 +457,26 @@ export function Inspector({ notify, readOnly = false, emptyControls, editTabs, s
             <Field key={node.props.contentHeight} label="内容高度" unit="px" type="number" min={1} max={8192} value={node.props.contentHeight} onCommit={(raw, dry) => { const value = raw.trim() ? Number(raw) : NaN; return update(n => n.type === 'minecraft:scrollable-panel' ? { ...n, props: { ...n.props, contentHeight: value } } : n, dry); }}/>
             <Field key={node.props.backgroundColor} label="背景色 ARGB" value={node.props.backgroundColor} onCommit={(value, dry) => update(n => n.type === 'minecraft:scrollable-panel' ? { ...n, props: { ...n.props, backgroundColor: value } } : n, dry)}/>
             <Field key={node.props.borderColor} label="边框色 ARGB" value={node.props.borderColor} onCommit={(value, dry) => update(n => n.type === 'minecraft:scrollable-panel' ? { ...n, props: { ...n.props, borderColor: value } } : n, dry)}/>
-            <p className="field-note">子节点以内容局部坐标保存；滚动条占用右侧 8px。首版仅支持一层容器和垂直滚动。</p>
+            <p className="field-note">子节点以内容局部坐标保存；滚动条占用右侧 8px。可与 Collapsible Panel 交叉嵌套一层。</p>
+          </>}
+          {isCollapsiblePanelNode(node) && <>
+            <TextFields label="标题" value={node.props.title} commit={(value, dry) => update(n => isCollapsiblePanelNode(n) ? { ...n, props: { ...n.props, title: value } } : n, dry)}/>
+            <Field key={node.props.headerHeight} label="标题栏高度" unit="px" type="number" min={16} max={40} value={node.props.headerHeight} onCommit={(raw, dry) => { const value = raw.trim() ? Number(raw) : NaN; return update(n => isCollapsiblePanelNode(n) ? { ...n, props: { ...n.props, headerHeight: value } } : n, dry); }}/>
+            {checkbox('初始展开', node.props.initialExpanded, value => ({ ...node, props: { ...node.props, initialExpanded: value } }))}
+            <p className="field-note">H 是固定的展开高度；收起时只显示标题栏。子项局部坐标和展开布局始终保留。</p>
+            <Field key={node.props.headerColor} label="标题栏色 ARGB" value={node.props.headerColor} onCommit={(value, dry) => update(n => isCollapsiblePanelNode(n) ? { ...n, props: { ...n.props, headerColor: value } } : n, dry)}/>
+            <Field key={node.props.backgroundColor} label="内容背景色 ARGB" value={node.props.backgroundColor} onCommit={(value, dry) => update(n => isCollapsiblePanelNode(n) ? { ...n, props: { ...n.props, backgroundColor: value } } : n, dry)}/>
+            <Field key={node.props.textColor} label="标题文字色 ARGB" value={node.props.textColor} onCommit={(value, dry) => update(n => isCollapsiblePanelNode(n) ? { ...n, props: { ...n.props, textColor: value } } : n, dry)}/>
+            {checkbox('边框', node.props.border, value => ({ ...node, props: { ...node.props, border: value } }))}
+            {node.props.border && <Field key={node.props.borderColor} label="边框色 ARGB" value={node.props.borderColor} onCommit={(value, dry) => update(n => isCollapsiblePanelNode(n) ? { ...n, props: { ...n.props, borderColor: value } } : n, dry)}/>}
           </>}
           {node.type === 'minecraft:image' && <ImageSourceFields node={node} update={update} cache={imageSourceCache}/>}
-          {node.type !== 'minecraft:fill' && node.type !== 'minecraft:image' && node.type !== 'minecraft:creative-tab' && node.type !== 'minecraft:fitting-multi-line-text-widget' && node.type !== 'minecraft:scrollable-panel' && 'textShadow' in node.props && checkbox('文字阴影', node.props.textShadow ?? false, v => { const next = structuredClone(node); if ('textShadow' in next.props) next.props.textShadow = v; return next; })}
+          {node.type !== 'minecraft:fill' && node.type !== 'minecraft:image' && node.type !== 'minecraft:creative-tab' && node.type !== 'minecraft:fitting-multi-line-text-widget' && node.type !== 'minecraft:scrollable-panel' && ('textShadow' in node.props || node.type === 'minecraft:checkbox' || node.type === 'minecraft:string-widget') && checkbox('文字阴影', 'textShadow' in node.props ? node.props.textShadow ?? false : false, (v): GuiNode => {
+            if (node.type === 'minecraft:checkbox' || node.type === 'minecraft:string-widget') return { ...node, props: { ...node.props, textShadow: v } } as GuiNode;
+            const next = structuredClone(node); if ('textShadow' in next.props) next.props.textShadow = v; return next;
+          })}
           {isSelectionNode(node) && <SelectionFields key={JSON.stringify([node.id, node.props.name, node.props.options, node.props.initialSelectedOptionId, node.type === 'minecraft:radio-group' ? node.props.orientation : node.props.visibleRows])} node={node} update={update}/>}
+          {isTreeViewNode(node) && <TreeViewFields node={node} update={update}/>}
           {isNumericNode(node) && <>
             <TextFields label="控件名称" value={node.props.name} commit={(v, dry) => update(n => { if (isNumericNode(n)) n.props.name = v; return n; }, dry)}/>
             <NumericConstraints key={JSON.stringify([node.id, node.props.min, node.props.max, node.props.step, node.props.initialValue, node.props.numericType, node.props.format])} node={node} update={update}/>
@@ -488,7 +567,7 @@ export function Inspector({ notify, readOnly = false, emptyControls, editTabs, s
           <summary><span>来源与限制</span></summary>
           <div className="section-body"><span className="source-tag">{node.source.category}</span><code>{node.source.className}</code><p>{CATALOG[node.type].evidence}</p><p>浏览器近似预览，不执行 Java Widget；来源表示设计规格对应的已审计 API。</p></div>
         </details>
-        <button className="delete-button" onClick={() => { try { editorStore.getState().deleteSelected(); } catch (error) { notify((error as Error).message, true); } }}>删除组件</button>
+        <button className="delete-button" onClick={() => { try { confirmDeleteSelected(); } catch (error) { notify((error as Error).message, true); } }}>删除组件</button>
       </fieldset>}
   </aside>;
 }

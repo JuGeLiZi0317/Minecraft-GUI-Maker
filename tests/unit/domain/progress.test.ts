@@ -68,9 +68,9 @@ describe('W1-D schema, history, persistence, PNG/ZIP specification', () => {
   it('retains pre-0.19 projects and exports initial-only, all-Screen Progress Bar contract in one ZIP batch', async () => {
     const store = createEditorStore(); store.getState().add('minecraft:progress-bar'); store.getState().addScreen(); store.getState().add('minecraft:progress-bar');
     const snap = beginExport(store.getState().doc), ref = await referenceFor(snap), renderer = async () => new Uint8Array([137, 80, 78, 71]);
-    const bundle = await buildBundle(snap, renderer, renderer); expect(bundle.manifest.version).toBe('0.17.0'); expect(bundle.manifest.screens.map(s => s.progressControls[0].initialValue)).toEqual([50, 50]);
+    const bundle = await buildBundle(snap, renderer, renderer); expect(bundle.manifest.version).toBe('0.22.0'); expect(bundle.manifest.screens.map(s => s.progressControls[0].initialValue)).toEqual([50, 50]);
     const implementation = JSON.parse(new TextDecoder().decode(bundle.files.find(f => f.name.endsWith('.implementation.json'))!.bytes));
-    expect(implementation.version).toBe('0.12.0'); expect(implementation.designIntent.progressBars).toHaveLength(2); expect(implementation.progressBarContract).toEqual(PROGRESS_BAR_CONTRACT);
+    expect(implementation.version).toBe('0.18.0'); expect(implementation.designIntent.progressBars).toHaveLength(2); expect(implementation.progressBarContract).toEqual(PROGRESS_BAR_CONTRACT);
     expect(implementation.designIntent.screens[1].nodes[0].sourcePath).toBe('/screens/1/nodes/0'); expect(buildPrompt(implementation)).toContain('GuiGraphics#fill');
     const zip = await buildZip(bundle.files); expect(zip.type).toBe('application/zip'); expect(zip.size).toBeGreaterThan(1000);
     expect(ref.documentSha256).toBe(bundle.manifest.authority.sha256);

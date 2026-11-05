@@ -12,7 +12,7 @@ export const SCROLLABLE_CHILD_TYPES = [
 export type ScrollablePanelNode = Extract<GuiNode, { type: 'minecraft:scrollable-panel' }>;
 export type ScrollableChildNode = Extract<GuiNode, { type: typeof SCROLLABLE_CHILD_TYPES[number] }>;
 export type ScrollOffsets = Readonly<Record<string, number>>;
-export type ContainerDrop = { parentContainerId: string; scrollOffsets: ScrollOffsets };
+export type ContainerDrop = { parentContainerId: string; scrollOffsets: ScrollOffsets; appendAtEnd?: boolean };
 
 export function isScrollablePanelNode(node: GuiNode): node is ScrollablePanelNode {
   return node.type === 'minecraft:scrollable-panel';

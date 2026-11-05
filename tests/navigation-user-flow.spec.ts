@@ -13,8 +13,8 @@ test('Rectangle navigation declaration, isolated canvas click, restore and ZIP',
   expect(saved.screens[0].behaviors[0]).toMatchObject({ event: { type: 'rectangle-click', sourceId: 'node_1' }, action: { type: 'open_screen', targetScreenId: 'screen_1' } });
   expect(saved.screens[0].nodes[0].source.category).toBe('vanilla-draw');
   const history = await page.getByTestId('history-count').textContent(); await page.getByRole('button', { name: '交互预览', exact: true }).click();
-  const host = page.getByTestId('canvas-host'), point = await host.evaluate(el => { const r = el.getBoundingClientRect(), z = Number((el as HTMLElement).dataset.zoom); return { x: r.x + Number((el as HTMLElement).dataset.originX) + 19 * z, y: r.y + Number((el as HTMLElement).dataset.originY) + 19 * z }; });
-  await page.mouse.click(point.x, point.y); await expect(panel.getByTestId('behavior-preview')).toContainText('导航意图：screen_1（高级设置）；未切换 Screen');
+  const host = page.getByTestId('canvas-host'), point = await host.evaluate(el => { const r = el.getBoundingClientRect(), data = el as HTMLElement, z = Number(data.dataset.zoom), doc = JSON.parse(document.querySelector('[data-testid="project-json"]')!.textContent!), bounds = doc.screens[0].nodes[0].bounds; return { x: r.x + Number(data.dataset.originX) + (bounds.x + bounds.w / 2) * z, y: r.y + Number(data.dataset.originY) + (bounds.y + bounds.h / 2) * z }; });
+  await page.mouse.click(point.x, point.y); await expect(panel.getByTestId('behavior-event-log')).toContainText('尚未绑定真实 Screen');
   await expect(page.getByRole('button', { name: '选择 node_1' })).toBeDisabled();
   await page.mouse.move(point.x, point.y); await page.mouse.down(); await page.mouse.move(point.x + 20, point.y, { steps: 3 }); await page.mouse.up();
   await page.evaluate(() => (document.activeElement as HTMLElement)?.blur()); await page.keyboard.press('ArrowRight'); await page.keyboard.press('Delete');

@@ -248,6 +248,9 @@
 .numeric-preview-events { position: absolute; z-index: 3; bottom: 48px; left: 16px; max-width: calc(100% - 32px); background: #121923; color: #b3c5d6; padding: 4px 7px; font: 10px/1.5 monospace; pointer-events: none; }
 .scroll-text-preview-layer { position: absolute; inset: 0; pointer-events: none; z-index: 6; overflow: hidden; }
 .runtime-preview-overlays { display: contents; }
+.design-panel-overlays { display: contents; }
+.design-panel-toggle { display: block; opacity: 0; }
+.design-panel-toggle:hover, .design-panel-toggle:focus-visible { opacity: 1; background: rgba(255, 205, 112, .14) !important; outline: 1px solid rgba(255, 205, 112, .72); outline-offset: -1px; }
 .canvas-host[data-runtime-preview-active="false"] .scroll-text-preview-layer { display: none !important; pointer-events: none !important; }
 .scroll-text-preview { position: absolute; box-sizing: border-box; overflow-x: hidden; overflow-y: auto; white-space: pre-wrap; overflow-wrap: anywhere; user-select: none; scrollbar-width: thin; pointer-events: auto; background: transparent; }
 .scroll-text-preview.is-overflowing { background: #151e2b; border: 1px solid #5a7185; }

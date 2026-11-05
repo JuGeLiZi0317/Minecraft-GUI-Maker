@@ -55,6 +55,19 @@ it('imports preserve the old pending snapshot under its own local identity even 
   expect(repo.rows.size).toBe(2); expect([...repo.rows.values()].some(r => JSON.stringify(r.document) === JSON.stringify(old))).toBe(true);
   expect(repo.rows.get(repo.workspace.localId!)!.document.screens[0].nodes).toHaveLength(0); session.stop();
 });
+it('repairs stale Panel geometry before preserving the old copy and creating a new project', async () => {
+  const { store, repo, session } = await setup(); await session.flush();
+  const oldLocalId = session.status.getState().localId!;
+  const stale = structuredClone(store.getState().doc);
+  stale.schemaVersion = '0.35.0'; stale.entryScreenId = stale.screens[0].id; stale.screenTabGroups = [];
+  stale.screens[0].background = { kind: 'panel', style: 'supplied-panel-16', bounds: { x: 310, y: 170, w: 40, h: 20 } };
+  store.setState({ doc: stale }); // Simulates a live workspace retained across an editor update.
+  await expect(session.createProject()).resolves.toBeUndefined(); await session.flush();
+  expect(repo.rows.get(oldLocalId)?.document.screens[0].background).toMatchObject({ kind: 'panel', bounds: { x: 0, y: 0, w: 320, h: 180 } });
+  expect(repo.workspace.localId).not.toBe(oldLocalId);
+  expect(repo.rows.get(repo.workspace.localId!)?.document.screens[0].background).toEqual({ kind: 'none' });
+  session.stop();
+});
 it('an import arriving during an old write retains both identities and activates only the new copy', async () => {
   const { store, repo, session } = await setup(); const gate = deferred(); repo.gate = gate;
   const flush = session.flush(); store.getState().add('minecraft:button'); const before = store.getState().doc;

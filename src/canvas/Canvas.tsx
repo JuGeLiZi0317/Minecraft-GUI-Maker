@@ -1,20 +1,25 @@
-import { memo, useEffect, useRef, useState, type DragEvent } from 'react';
+import { usesControlState } from '../domain/genericBehavior';
+import { memo, useEffect, useRef, useState, type DragEvent, type ReactNode } from 'react';
 import { SelectionPreview } from './SelectionPreview';
-import { isSelectionNode, selectionMinimum, type SelectionNode } from '../domain/selection';
+import { isSelectionNode, selectionMinimum, type SelectionEvent, type SelectionNode } from '../domain/selection';
 import { drawSelectionWidget } from '../render/selectionWidgets';
 import { NumericPreview } from './NumericPreview';
 import { isNumericNode, drawNumericWidget, type NumericNode } from '../render/numericWidgets';
 import { isProgressNode } from '../domain/progress';
 import { drawProgressBar } from '../render/progressBar';
 import { isStatusNode } from '../domain/statusIndicator';
-import { contentViewport, containerChildRect, containerScrollOffset, contentSize, intersectBounds, isScrollablePanelNode, nodeVisibleBounds, type ContainerDrop, type ScrollablePanelNode } from '../domain/scrollablePanel';
+import { containerScrollOffset, contentSize, intersectBounds, isScrollablePanelNode, type ContainerDrop, type ScrollablePanelNode } from '../domain/scrollablePanel';
+import { allDescendants, containerAncestorsEnabled, containerLocalViewport, containerScreenViewport, containerChildScreenBounds, designPanelExpansion, designSiblingOrder, isCollapsiblePanelNode, isContainerNode, nodeAbsoluteBounds, nodeVisibleBounds, type ContainerNode } from '../domain/collapsiblePanel';
 import { drawStatusIndicator } from '../render/statusIndicator';
 import { isImageNode } from '../domain/image';
 import { drawImageNode, type RenderedImageAsset } from '../render/imageWidget';
 import { drawScrollText } from '../render/scrollText';
 import { ScrollTextPreview } from './ScrollTextPreview';
+import { isTreeViewNode } from '../domain/treeView';
+import { drawTreeView } from '../render/treeView';
+import { TreeViewPreview } from './TreeViewPreview';
 import { decodePreviewRaster } from '../render/previewRaster';
-import type { NumericState } from '../domain/numeric';
+import type { NumericState, SliderChangeEvent } from '../domain/numeric';
 import { Group, Layer, Rect, Shape, Stage, Text } from 'react-konva';
 import type { KonvaEventObject } from 'konva/lib/Node';
 import { useStore } from 'zustand';
@@ -36,7 +41,7 @@ import { alignBounds, alignResizeBounds, equalSpacingCandidates, resolveEqualSpa
 
 export type View = { zoom: number; panX: number; panY: number; tool: 'select' | 'pan' };
 type ResizeEdge = 'left' | 'right' | 'top' | 'bottom' | 'top-left' | 'bottom-right';
-type Props = { onAddNode: (type: NodeType, position?: { x: number; y: number }, containerDrop?: ContainerDrop) => void; onEditError: (message: string) => void; containerScroll: Record<string, number>; setContainerScroll: (update: Record<string, number> | ((previous: Record<string, number>) => Record<string, number>)) => void; numericPreviewEpoch: number; statusValues: Record<string, string>; screenPositions: Record<string, {x: number; y: number}>; setScreenPositions: (update: (previous: Record<string, {x: number; y: number}>) => Record<string, {x: number; y: number}>) => void; onSelectScreen: (id: string) => void; view: View; setView: (view: View) => void; preview?: GuiScalePreview | null; readOnly?: boolean; behaviorPreview?: BehaviorPreview | null; behaviorMode?: boolean; interaction: boolean; onBehaviorTrigger?: (id: string) => void; editTabs?: Record<string, string>; grid: { visible: boolean; spacing: number }; alignment: { guides: boolean; snap: boolean }; resources: LayeredResources; resourceGeneration: number; font: FontChoice; theme: 'dark' | 'light' };
+type Props = { onAddNode: (type: NodeType, position?: { x: number; y: number }, containerDrop?: ContainerDrop) => void; onEditError: (message: string) => void; containerScroll: Record<string, number>; setContainerScroll: (update: Record<string, number> | ((previous: Record<string, number>) => Record<string, number>)) => void; numericPreviewEpoch: number; statusValues: Record<string, string>; screenPositions: Record<string, {x: number; y: number}>; setScreenPositions: (update: (previous: Record<string, {x: number; y: number}>) => Record<string, {x: number; y: number}>) => void; onSelectScreen: (id: string) => void; view: View; setView: (view: View) => void; preview?: GuiScalePreview | null; readOnly?: boolean; behaviorPreview?: BehaviorPreview | null; behaviorMode?: boolean; interaction: boolean; onBehaviorTrigger?: (id: string) => void; onBehaviorSliderChange?: (event: SliderChangeEvent) => void; onBehaviorSelectionChange?: (event: SelectionEvent) => void; editTabs?: Record<string, string>; grid: { visible: boolean; spacing: number }; alignment: { guides: boolean; snap: boolean }; resources: LayeredResources; resourceGeneration: number; font: FontChoice; theme: 'dark' | 'light' };
 type PreviewAsset = { sprite?: DecodedSprite; image?: RenderedImageAsset; error?: string };
 
 const C = {
@@ -59,21 +64,27 @@ const C = {
 } as const;
 const NO_SCREEN_TAB_GROUPS: import('../domain/schema').ScreenTabGroup[] = [];
 const rgba = (color: string) => `rgba(${parseInt(color.slice(3, 5), 16)},${parseInt(color.slice(5, 7), 16)},${parseInt(color.slice(7, 9), 16)},${parseInt(color.slice(1, 3), 16) / 255})`;
-const containerAtPoint = (nodes: readonly GuiNode[], x: number, y: number) => [...nodes].reverse().find((node): node is ScrollablePanelNode => {
-  if (!isScrollablePanelNode(node) || !node.state.visible) return false;
-  const viewport = contentViewport(node);
-  return x >= viewport.x && x < viewport.x + viewport.w && y >= viewport.y && y < viewport.y + viewport.h;
+const containerAtPoint = (nodes: readonly GuiNode[], x: number, y: number, scrollOffsets: Readonly<Record<string, number>> = {}, expanded: Readonly<Record<string, boolean>> = {}) => [...nodes].reverse().find((node): node is ContainerNode => {
+  if (!isContainerNode(node) || !node.state.visible) return false;
+  const bounds = nodeAbsoluteBounds(node, nodes, scrollOffsets, expanded);
+  const visible = nodeVisibleBounds(node, nodes, scrollOffsets, expanded);
+  if (!visible || x < visible.x || y < visible.y || x >= visible.x + visible.w || y >= visible.y + visible.h) return false;
+  const viewport = containerScreenViewport(node, nodes, scrollOffsets, expanded);
+  const inContent = x >= viewport.x && x < viewport.x + viewport.w && y >= viewport.y && y < viewport.y + viewport.h;
+  const collapsedHeader = isCollapsiblePanelNode(node) && !(expanded[node.id] ?? node.props.initialExpanded)
+    && x >= bounds.x && x < bounds.x + bounds.w && y >= bounds.y && y < bounds.y + node.props.headerHeight;
+  return inContent || collapsedHeader;
 });
 
-const NodeDrawing = memo(function NodeDrawing({ node, bounds, onDown, onEdit, assets, cache, resourceActive, focused, selected, font, panel, zoom, numericState, numericOverlay = false, runtimePreview = false, statusId }: {
+const NodeDrawing = memo(function NodeDrawing({ node, bounds, onDown, onEdit, assets, cache, resourceActive, focused, selected, font, panel, zoom, numericState, numericOverlay = false, runtimePreview = false, statusId, progressValue, expanded = true }: {
   node: GuiNode; bounds: Bounds; onDown: (e: KonvaEventObject<PointerEvent>, id: string, mode: 'move' | 'resize', edge?: ResizeEdge) => void;
-  numericState?: NumericState; numericOverlay?: boolean; runtimePreview?: boolean; statusId?: string; onEdit: (id: string) => void; assets: Record<string, PreviewAsset>; cache: SpriteRasterCache; resourceActive: boolean; focused: boolean; selected: boolean; font: FontChoice; panel: boolean; zoom: number;
+  numericState?: NumericState; numericOverlay?: boolean; runtimePreview?: boolean; statusId?: string; progressValue?: number; expanded?: boolean; onEdit: (id: string) => void; assets: Record<string, PreviewAsset>; cache: SpriteRasterCache; resourceActive: boolean; focused: boolean; selected: boolean; font: FontChoice; panel: boolean; zoom: number;
 }) {
   const [hovered, setHovered] = useState(false);
   const { w, h } = bounds;
-  const fill = node.type === 'minecraft:scrollable-panel' ? rgba(node.props.backgroundColor) : node.type === 'minecraft:fill' ? rgba(node.props.color)
+  const fill = node.type === 'minecraft:scrollable-panel' || node.type === 'minecraft:collapsible-panel' ? rgba(node.props.backgroundColor) : node.type === 'minecraft:fill' ? rgba(node.props.color)
     : node.type === 'minecraft:button' || node.type === 'minecraft:cycle-button' ? '#314354' : node.type === 'minecraft:edit-box' || node.type === 'minecraft:checkbox' ? '#151e2b' : 'rgba(255,255,255,0.01)';
-  const stroke = node.type === 'minecraft:scrollable-panel' ? rgba(node.props.borderColor) : node.type === 'minecraft:button' || node.type === 'minecraft:cycle-button' || node.type === 'minecraft:checkbox' ? '#5a7185' : node.type === 'minecraft:edit-box' && node.props.bordered ? '#5a7185' : undefined;
+  const stroke = node.type === 'minecraft:scrollable-panel' || (node.type === 'minecraft:collapsible-panel' && node.props.border) ? rgba(node.props.borderColor) : node.type === 'minecraft:button' || node.type === 'minecraft:cycle-button' || node.type === 'minecraft:checkbox' ? '#5a7185' : node.type === 'minecraft:edit-box' && node.props.bordered ? '#5a7185' : undefined;
   const id = isNumericNode(node) ? null : spriteForNode(node, hovered, focused);
   const asset = id ? assets[id] : undefined; let raster: HTMLCanvasElement | null = null; let renderError = '';
   if (id && asset?.sprite) { try { raster = cache.get(id, asset.sprite, node.type === 'minecraft:checkbox' ? 17 : w, node.type === 'minecraft:checkbox' ? 17 : h); } catch (error) { renderError = (error as Error).message; } }
@@ -81,11 +92,16 @@ const NodeDrawing = memo(function NodeDrawing({ node, bounds, onDown, onEdit, as
   const textureError = !!((resourceActive && id && (asset?.error || renderError)) || (isImageNode(node) && assets[`image:${node.id}`]?.error));
   return <Group x={bounds.x} y={bounds.y} listening={!(runtimePreview && (isProgressNode(node) || isStatusNode(node) || isImageNode(node)))} opacity={node.state.visible ? ('enabled' in node.state && !node.state.enabled && !raster && node.type !== 'minecraft:checkbox' && !isNumericNode(node) && !isSelectionNode(node) ? 0.45 : 1) : 0.22}
     onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}
-    onPointerDown={e => onDown(e, node.id, 'move')} onDblClick={e => { e.cancelBubble = true; onEdit(node.id); }}>
+    onPointerDown={e => { if (node.type === 'minecraft:collapsible-panel' && runtimePreview) return; onDown(e, node.id, 'move'); }} onDblClick={e => { e.cancelBubble = true; onEdit(node.id); }}>
     <Rect width={w} height={h} fill={isNumericNode(node) || isProgressNode(node) ? 'rgba(0,0,0,0.001)' : node.type === 'minecraft:checkbox' ? 'rgba(0,0,0,0.001)' : raster || unbordered ? 'rgba(0,0,0,0.001)' : fill} stroke={node.type === 'minecraft:checkbox' || raster || unbordered ? undefined : stroke} strokeWidth={0.6} />
+    {node.type === 'minecraft:collapsible-panel' && <>
+      <Rect width={w} height={node.props.headerHeight} fill={rgba(node.props.headerColor)} listening={false}/>
+      <Shape listening={false} sceneFunc={context => { const ctx = context._context; ctx.save(); ctx.fillStyle = rgba(node.props.textColor); ctx.font = `9px ${font.family}`; ctx.textBaseline = 'middle'; ctx.textAlign = 'left'; ctx.fillText(displayText(node.props.title), 6, node.props.headerHeight / 2); ctx.textAlign = 'center'; ctx.fillText(expanded ? '⌄' : '›', Math.max(8, w - 9), node.props.headerHeight / 2); ctx.restore(); }}/>
+    </>}
     {isSelectionNode(node) && <Shape listening={false} sceneFunc={context => drawSelectionWidget(context._context, node, w, h, font.family)}/>}
+    {isTreeViewNode(node) && <Shape listening={false} sceneFunc={context => drawTreeView(context._context, node, w, h, font.family)}/>}
     {isNumericNode(node) && <Shape listening={false} sceneFunc={context => drawNumericWidget(context._context, node, w, h, font.family, assets, cache, { state: numericState, hovered, focused, overlay: numericOverlay, resourceActive })}/>}
-    {isProgressNode(node) && <Shape listening={false} sceneFunc={context => drawProgressBar(context._context, node, w, h, font.family)}/>}
+    {isProgressNode(node) && <Shape listening={false} sceneFunc={context => drawProgressBar(context._context, node, w, h, font.family, progressValue)}/>}
     {isStatusNode(node) && <Shape listening={false} sceneFunc={context => drawStatusIndicator(context._context, node, w, h, font.family, statusId)}/>}
     {node.type === 'minecraft:fitting-multi-line-text-widget' && !runtimePreview && <Shape listening={false} sceneFunc={context => drawScrollText(context._context, node, font.family)}/>}
     {isImageNode(node) && <Shape listening={false} sceneFunc={context => {
@@ -100,7 +116,7 @@ const NodeDrawing = memo(function NodeDrawing({ node, bounds, onDown, onEdit, as
     {node.type === 'minecraft:creative-tab' && !raster && <Shape listening={false} sceneFunc={context => drawCreativeTabFallback(context._context, node.props.selected)}/>}
     {node.type === 'minecraft:checkbox' && !raster && <Shape listening={false} sceneFunc={context => drawCheckboxFallback(context._context, node.props.selected)}/>}
     {raster && <Shape listening={false} sceneFunc={context => { const ctx = context._context; ctx.save(); ctx.imageSmoothingEnabled = false; ctx.drawImage(raster, 0, 0); ctx.restore(); }} />}
-    {!isSelectionNode(node) && !isProgressNode(node) && !isStatusNode(node) && node.type !== 'minecraft:fill' && node.type !== 'minecraft:creative-tab' && node.type !== 'minecraft:fitting-multi-line-text-widget' && <Shape listening={false} sceneFunc={context => drawPreviewText(context._context, node, w, h, font.family, panel)}/>}
+    {!isSelectionNode(node) && !isTreeViewNode(node) && !isProgressNode(node) && !isStatusNode(node) && node.type !== 'minecraft:fill' && node.type !== 'minecraft:creative-tab' && node.type !== 'minecraft:fitting-multi-line-text-widget' && <Shape listening={false} sceneFunc={context => drawPreviewText(context._context, node, w, h, font.family, panel)}/>}
     {node.type === 'minecraft:checkbox' && <Shape listening={false} sceneFunc={context => { const ctx = context._context, layout = previewCheckboxLayout(ctx, node, font.family); if (layout.overflow || layout.truncated) { ctx.save(); ctx.font = '7px sans-serif'; ctx.textBaseline = 'top'; ctx.fillStyle = '#e8b86a'; ctx.fillText(layout.truncated ? '文字预览已截断' : '文字超出参考边界', 0, Math.max(h, 17) + 2); ctx.restore(); } }}/>}
     {textureError && <Group listening={false}>
       <Rect x={Math.max(0, w - 7 / zoom)} y={0} width={7 / zoom} height={7 / zoom} fill={C.danger} opacity={0.9}/>
@@ -111,28 +127,30 @@ const NodeDrawing = memo(function NodeDrawing({ node, bounds, onDown, onEdit, as
   </Group>;
 });
 
-function OtherScreen({ screen, assets, cache, resources, font, zoom, select, selectOnLeft, screenTabGroups = [] }: { screen: GuiScreen; assets: Record<string, PreviewAsset>; cache: SpriteRasterCache; resources: LayeredResources; font: FontChoice; zoom: number; select: () => void; selectOnLeft: boolean; screenTabGroups?: import('../domain/schema').ScreenTabGroup[] }) {
+function OtherScreen({ screen, assets, cache, resources, font, zoom, select, selectOnLeft, expanded, screenTabGroups = [] }: { screen: GuiScreen; assets: Record<string, PreviewAsset>; cache: SpriteRasterCache; resources: LayeredResources; font: FontChoice; zoom: number; select: () => void; selectOnLeft: boolean; expanded: Record<string, boolean>; screenTabGroups?: import('../domain/schema').ScreenTabGroup[] }) {
   const [image, setImage] = useState<HTMLImageElement | null>(null);
   const style = screen.background.kind === 'panel' ? screen.background.style : null;
   useEffect(() => { let active = true; setImage(null); if (style && isTextureStyle(style)) void getPanelImage(style).then(value => { if (active) setImage(value); }).catch(() => {}); return () => { active = false; }; }, [style]);
   const bounds = panelBounds(screen), managed = tabManaged(screen.nodes), visible = tabVisibility(screen.nodes);
-  const drawPlain = (original: GuiNode, nodeBounds = original.bounds) => {
+  const drawPlain = (original: GuiNode, nodeBounds = original.bounds, expanded = true) => {
     const selected = screenNavigationSelected(original, screen.id, screenTabGroups);
     const node: GuiNode = selected === null || original.type !== 'minecraft:creative-tab' ? original : { ...original, props: { ...original.props, selected } };
     const shown = managed.has(node.id) ? visible(node.id) : node.state.visible;
     const item = shown ? node : { ...node, state: { ...node.state, visible: false } } as GuiNode;
-    return <NodeDrawing key={node.id} node={item} bounds={nodeBounds} onDown={() => {}} onEdit={() => {}} assets={assets} cache={cache} resourceActive={!!(resources.baseName || resources.overlayName)} focused={false} selected={false} font={font} panel={screen.background.kind === 'panel'} zoom={zoom}/>;
+    return <NodeDrawing key={node.id} node={item} bounds={nodeBounds} expanded={expanded} onDown={() => {}} onEdit={() => {}} assets={assets} cache={cache} resourceActive={!!(resources.baseName || resources.overlayName)} focused={false} selected={false} font={font} panel={screen.background.kind === 'panel'} zoom={zoom}/>;
   };
-  const draw = (node: GuiNode) => {
-    if (!isScrollablePanelNode(node)) return drawPlain(node);
-    const viewport = contentViewport(node), dimensions = contentSize(node);
-    const thumbHeight = dimensions.maxScroll > 0 ? Math.max(8, viewport.h * viewport.h / node.props.contentHeight) : viewport.h;
+  const draw = (node: GuiNode, supplied?: Bounds): ReactNode => {
+    if (!isContainerNode(node)) return drawPlain(node, supplied ?? nodeAbsoluteBounds(node, screen.nodes, {}, expanded));
+    const open = isCollapsiblePanelNode(node) ? expanded[node.id] : true;
+    const absolute = supplied ?? nodeAbsoluteBounds(node, screen.nodes, {}, expanded), visibleBounds = isCollapsiblePanelNode(node) && !open ? { ...absolute, h: node.props.headerHeight } : absolute;
+    const viewport = containerScreenViewport(node, screen.nodes, {}, expanded), dimensions = isScrollablePanelNode(node) ? contentSize(node) : { maxScroll: 0 };
+    const thumbHeight = isScrollablePanelNode(node) && dimensions.maxScroll > 0 ? Math.max(8, viewport.h * viewport.h / node.props.contentHeight) : viewport.h;
     return <Group key={node.id}>
-      {drawPlain(node)}
-      <Group clipX={viewport.x} clipY={viewport.y} clipWidth={viewport.w} clipHeight={viewport.h}>
-        {screen.nodes.filter(child => child.parentContainerId === node.id).map(child => drawPlain(child, containerChildRect(node, child)))}
-      </Group>
-      {dimensions.maxScroll > 0 && <Group>
+      {drawPlain(node, visibleBounds, open)}
+      {open && <Group clipX={viewport.x} clipY={viewport.y} clipWidth={viewport.w} clipHeight={viewport.h}>
+        {designSiblingOrder(screen.nodes.filter(child => child.parentContainerId === node.id), expanded).map(child => draw(child, containerChildScreenBounds(node, child, screen.nodes, {}, expanded)))}
+      </Group>}
+      {isScrollablePanelNode(node) && dimensions.maxScroll > 0 && <Group>
         <Rect x={viewport.x + viewport.w + 2} y={viewport.y} width={6} height={viewport.h} fill="#111821"/>
         <Rect x={viewport.x + viewport.w + 2} y={viewport.y} width={6} height={thumbHeight} fill="#8795a5" cornerRadius={3}/>
       </Group>}
@@ -141,10 +159,10 @@ function OtherScreen({ screen, assets, cache, resources, font, zoom, select, sel
   return <>
     <Rect width={screen.designSize.width} height={screen.designSize.height} fill={C.design} stroke={C.designLine} strokeWidth={1 / zoom} onPointerDown={e => { if (e.evt.button === 0 && selectOnLeft) { e.cancelBubble = true; select(); } }}/>
     <Group listening={false}>
-      {screen.nodes.filter(node => !node.parentContainerId && beforePanel(node)).map(draw)}
+      {screen.nodes.filter(node => !node.parentContainerId && beforePanel(node)).map(node => draw(node))}
       {screen.background.kind === 'panel' && !isTextureStyle(screen.background.style) && panelRects(bounds.w, bounds.h).map((r, i) => <Rect key={i} x={bounds.x + r.x} y={bounds.y + r.y} width={r.w} height={r.h} fill={r.color}/>)}
       {screen.background.kind === 'panel' && image && <Shape x={bounds.x} y={bounds.y} sceneFunc={context => { const ctx = context._context, raster = panelPreviewRaster(image, bounds.w, bounds.h); if (raster) { ctx.save(); ctx.imageSmoothingEnabled = false; ctx.drawImage(raster, 0, 0); ctx.restore(); } else drawNativePanel(ctx, image, bounds.w, bounds.h); }}/>}
-      {screen.nodes.filter(node => !node.parentContainerId && !beforePanel(node)).map(draw)}
+      {designSiblingOrder(screen.nodes.filter(node => !node.parentContainerId && !beforePanel(node)), expanded).map(node => draw(node))}
     </Group>
   </>;
 }
@@ -198,7 +216,7 @@ function Rulers({ width, height, origin, zoom, design, theme }: { width: number;
   </Layer>;
 }
 
-export function Canvas({ onAddNode, onEditError, containerScroll, setContainerScroll, numericPreviewEpoch, statusValues, screenPositions, setScreenPositions, onSelectScreen, view, setView, preview = null, readOnly = false, behaviorPreview = null, behaviorMode = false, interaction, onBehaviorTrigger, editTabs = {}, grid, alignment, resources, resourceGeneration, font, theme }: Props) {
+export function Canvas({ onAddNode, onEditError, containerScroll, setContainerScroll, numericPreviewEpoch, statusValues, screenPositions, setScreenPositions, onSelectScreen, view, setView, preview = null, readOnly = false, behaviorPreview = null, behaviorMode = false, interaction, onBehaviorTrigger, onBehaviorSliderChange, onBehaviorSelectionChange, editTabs = {}, grid, alignment, resources, resourceGeneration, font, theme }: Props) {
   const runtimePreviewActive = interaction || behaviorPreview !== null;
   const chrome = theme === 'light' ? { bg: '#f3f1ec', line: '#d9d5cc', text: '#4d4a43' } : { bg: C.ruler, line: C.line, text: C.text2 };
   const host = useRef<HTMLDivElement>(null);
@@ -210,17 +228,67 @@ export function Canvas({ onAddNode, onEditError, containerScroll, setContainerSc
   const [spriteAssetsBusy, setSpriteAssetsBusy] = useState(false);
   const [imageAssetsBusy, setImageAssetsBusy] = useState(false);
   const [interactionValues, setInteractionValues] = useState<Record<string, boolean | string>>({});
+  const [runtimeExpandedPanels, setRuntimeExpandedPanels] = useState<Record<string, boolean>>({});
+  const [designExpandedByScreen, setDesignExpandedByScreen] = useState<Record<string, Record<string, boolean>>>({});
   const [interactionFocus, setInteractionFocus] = useState<string | null>(null);
   const [alignmentGuides, setAlignmentGuides] = useState<AlignmentGuides>({});
   const [spacingMark, setSpacingMark] = useState<SpacingMark | null>(null);
   const currentScreenId = useStore(editorStore, s => s.currentScreenId);
-  useEffect(() => { setInteractionValues({}); setInteractionFocus(null); setContainerScroll({}); if (interaction || behaviorPreview || behaviorMode) setEditingId(null); }, [interaction, behaviorPreview, behaviorMode, currentScreenId]);
+  useEffect(() => { setInteractionValues({}); setInteractionFocus(null); setContainerScroll({}); if (interaction || behaviorPreview || behaviorMode) setEditingId(null); }, [interaction, behaviorPreview, behaviorMode, currentScreenId, numericPreviewEpoch]);
   const screen = useStore(editorStore, s => currentScreen(s));
+  const initialExpanded = Object.fromEntries(screen.nodes.filter(isCollapsiblePanelNode).map(node => [node.id, node.props.initialExpanded]));
+  const designExpanded = designPanelExpansion(screen.nodes, designExpandedByScreen[screen.id]);
+  const runtimePanelMode = runtimePreviewActive || behaviorMode;
+  const expandedPanels = runtimePanelMode ? { ...initialExpanded, ...runtimeExpandedPanels }
+    : preview ? initialExpanded : designExpanded;
+  const setExpandedPanels = (update: Record<string, boolean> | ((previous: Record<string, boolean>) => Record<string, boolean>)) => {
+    if (runtimePanelMode) {
+      setRuntimeExpandedPanels(previous => typeof update === 'function' ? update({ ...initialExpanded, ...previous }) : update);
+      return;
+    }
+    if (preview || readOnly || behaviorMode) return;
+    setDesignExpandedByScreen(previous => {
+      const current = designPanelExpansion(screen.nodes, previous[screen.id]);
+      const next = typeof update === 'function' ? update(current) : update;
+      return { ...previous, [screen.id]: next };
+    });
+  };
+  const togglePanel = (id: string) => {
+    const panel = screen.nodes.find(node => node.id === id); if (!panel || !isCollapsiblePanelNode(panel)) return;
+    const next = !(expandedPanels[id] ?? panel.props.initialExpanded);
+    if (!runtimePreviewActive && !preview && !readOnly && !behaviorMode) editorStore.getState().select(id);
+    if (!next) {
+      const descendantIds = new Set(allDescendants(id, screen.nodes).map(node => node.id));
+      if (interactionFocus && descendantIds.has(interactionFocus)) setInteractionFocus(null);
+      for (const wrapper of host.current?.querySelectorAll<HTMLElement>('[data-numeric-node-id]') ?? []) {
+        if (descendantIds.has(wrapper.dataset.numericNodeId ?? '')) wrapper.querySelector('input')?.blur();
+      }
+    }
+    setExpandedPanels(value => ({ ...value, [id]: next }));
+  };
+  useEffect(() => { setRuntimeExpandedPanels(initialExpanded); }, [screen.id, numericPreviewEpoch, interaction, behaviorMode]);
   useEffect(() => { setContainerScroll({}); pointer.current = null; }, [currentScreenId, screen.designSize.width, screen.designSize.height]);
+  useEffect(() => {
+    setContainerScroll(previous => {
+      const next: Record<string, number> = {};
+      for (const node of screen.nodes) if (isScrollablePanelNode(node) && previous[node.id] !== undefined) {
+        const offset = containerScrollOffset(node, previous[node.id]);
+        if (offset !== 0) next[node.id] = offset;
+      }
+      const keys = Object.keys(previous), nextKeys = Object.keys(next);
+      return keys.length === nextKeys.length && keys.every(key => previous[key] === next[key]) ? previous : next;
+    });
+  }, [screen, setContainerScroll]);
+  useEffect(() => {
+    for (const slider of host.current?.querySelectorAll<HTMLElement>('.numeric-live-slider[data-pointer-id]') ?? []) {
+      const pointerId = Number(slider.dataset.pointerId);
+      if (Number.isInteger(pointerId)) slider.dispatchEvent(new PointerEvent('pointercancel', { bubbles: true, pointerId }));
+    }
+  }, [size.width, size.height, screen.designSize.width, screen.designSize.height, screen]);
   const [numericRuntime, setNumericRuntime] = useState<Record<string, NumericState>>({});
   useEffect(() => { setNumericRuntime({}); }, [numericPreviewEpoch, screen.id, interaction, behaviorMode]);
   useEffect(() => {
-    for (const node of screen.nodes) if (isNumericNode(node) && node.parentContainerId && numericRuntime[node.id]?.focused && !nodeVisibleBounds(node, screen.nodes, containerScroll)) {
+    for (const node of screen.nodes) if (isNumericNode(node) && node.parentContainerId && numericRuntime[node.id]?.focused && !nodeVisibleBounds(node, screen.nodes, containerScroll, expandedPanels)) {
       const wrapper = [...(host.current?.querySelectorAll<HTMLElement>('[data-numeric-node-id]') ?? [])].find(item => item.dataset.numericNodeId === node.id);
       wrapper?.querySelector('input')?.blur();
     }
@@ -310,7 +378,7 @@ export function Canvas({ onAddNode, onEditError, containerScroll, setContainerSc
     : runtimePreviewActive ? { x: Math.floor((size.width - screen.designSize.width * view.zoom) / 2), y: Math.floor((size.height - screen.designSize.height * view.zoom) / 2) }
     : { x: Math.floor((size.width - basis.width * view.zoom) / 2) + view.panX + basis.dx * view.zoom,
       y: Math.floor((size.height - basis.height * view.zoom) / 2) + view.panY + basis.dy * view.zoom };
-  const current = useRef({ view, setView, size, screen, editingId, preview, readOnly, interaction, runtimePreviewActive, basis, alignment, origin, containerScroll }); current.current = { view, setView, size, screen, editingId, preview, readOnly, interaction, runtimePreviewActive, basis, alignment, origin, containerScroll };
+  const current = useRef({ view, setView, size, screen, editingId, preview, readOnly, interaction, runtimePreviewActive, basis, alignment, origin, containerScroll, expandedPanels }); current.current = { view, setView, size, screen, editingId, preview, readOnly, interaction, runtimePreviewActive, basis, alignment, origin, containerScroll, expandedPanels };
   const header = (item: GuiScreen) => <Group y={-22 / renderZoom} draggable={!preview && !readOnly && !behaviorMode && !interaction && !gesture && view.tool !== 'pan'}
     onPointerDown={e => { if (e.evt.button === 0 && view.tool !== 'pan') e.cancelBubble = true; }}
     onDragEnd={e => { e.cancelBubble = true; const dx = e.target.x(), dy = e.target.y() + 22 / renderZoom; e.target.position({ x: 0, y: -22 / renderZoom }); if (Math.abs(dx) + Math.abs(dy) > 0.5) setScreenPositions(previous => ({ ...previous, [item.id]: { x: positions[item.id].x + dx, y: positions[item.id].y + dy } })); }}
@@ -369,10 +437,11 @@ export function Canvas({ onAddNode, onEditError, containerScroll, setContainerSc
       move(e);
       const c = current.current, state = editorStore.getState(), dragged = state.gesture && c.screen.nodes.find(node => node.id === state.gesture!.id);
       let target: ContainerDrop | undefined;
-      if (p.mode === 'move' && dragged && !dragged.parentContainerId && !isScrollablePanelNode(dragged) && host.current) {
+      if (p.mode === 'move' && dragged && !dragged.parentContainerId && !isContainerNode(dragged) && host.current) {
         const rect = host.current.getBoundingClientRect();
-        const parent = containerAtPoint(c.screen.nodes, (e.clientX - rect.left - c.origin.x) / c.view.zoom, (e.clientY - rect.top - c.origin.y) / c.view.zoom);
-        if (parent) target = { parentContainerId: parent.id, scrollOffsets: c.containerScroll };
+        const parent = containerAtPoint(c.screen.nodes, (e.clientX - rect.left - c.origin.x) / c.view.zoom, (e.clientY - rect.top - c.origin.y) / c.view.zoom, c.containerScroll, c.expandedPanels);
+        if (parent) target = { parentContainerId: parent.id, scrollOffsets: c.containerScroll,
+          appendAtEnd: isCollapsiblePanelNode(parent) && !(c.expandedPanels[parent.id] ?? parent.props.initialExpanded) };
       }
       pointer.current = null; setAlignmentGuides({}); setSpacingMark(null);
       try { editorStore.getState().commitGesture(target); } catch (error) { editError.current((error as Error).message); }
@@ -391,7 +460,7 @@ export function Canvas({ onAddNode, onEditError, containerScroll, setContainerSc
     if (interaction) {
       if (e.evt.button !== 0) return;
       const node = screen.nodes.find(n => n.id === id);
-      if (!node || !('enabled' in node.state) || !node.state.enabled || !node.state.visible) return;
+      if (!node || !('enabled' in node.state) || !node.state.enabled || !node.state.visible || !containerAncestorsEnabled(node, screen.nodes)) return;
       setInteractionFocus(id);
       setInteractionValues(values => {
         if (node.type === 'minecraft:checkbox') return { ...values, [id]: !(typeof values[id] === 'boolean' ? values[id] : node.props.selected) };
@@ -415,8 +484,10 @@ export function Canvas({ onAddNode, onEditError, containerScroll, setContainerSc
     const node = currentScreen(state).nodes.find(n => n.id === id); if (!node) { state.cancelGesture(); return; }
     const bounds = node.bounds, visibleInGroup = tabVisibility(currentScreen(state).nodes, editSelection);
     const parent = node.parentContainerId ? currentScreen(state).nodes.find(item => item.id === node.parentContainerId) : undefined;
-    const localSize = parent && isScrollablePanelNode(parent) ? { width: contentViewport(parent).w, height: parent.props.contentHeight } : currentScreen(state).designSize;
-    const peers = currentScreen(state).nodes.filter(item => item.id !== id && item.parentContainerId === node.parentContainerId && item.state.visible && visibleInGroup(item.id)).map(item => ({ id: item.id, bounds: item.bounds }));
+    const localSize = parent && isContainerNode(parent) ? { width: containerLocalViewport(parent, true).w, height: isScrollablePanelNode(parent) ? parent.props.contentHeight : parent.bounds.h - parent.props.headerHeight } : currentScreen(state).designSize;
+    const peers = currentScreen(state).nodes.filter(item => item.id !== id && item.parentContainerId === node.parentContainerId && item.state.visible && visibleInGroup(item.id)
+      && !!nodeVisibleBounds(item, currentScreen(state).nodes, containerScroll, expandedPanels)).map(item => ({ id: item.id,
+        bounds: isCollapsiblePanelNode(item) && !expandedPanels[item.id] ? { ...item.bounds, h: item.props.headerHeight } : item.bounds }));
     pointer.current = { pointerId, x, y, mode, resizeEdge, bounds: { ...bounds }, zoom: view.zoom, panX: view.panX, panY: view.panY, screenId: state.currentScreenId, designSize: localSize, peers,
       min: isSelectionNode(node) ? selectionMinimum(node) : CATALOG[node.type].min, spacingCandidates: mode === 'move' ? equalSpacingCandidates(bounds, peers, localSize) : undefined };
     setAlignmentGuides({}); setSpacingMark(null);
@@ -432,6 +503,9 @@ export function Canvas({ onAddNode, onEditError, containerScroll, setContainerSc
   useEffect(() => {
     const element = host.current!;
     const wheel = (e: WheelEvent) => {
+      // Let the runtime Tree View's own overflow viewport consume native wheel scrolling
+      // before the host-level Canvas listener can preventDefault or zoom the editor.
+      if (e.target instanceof Element && e.target.closest('[data-tree-view-scroll]')) return;
       if (e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return;
       const c = current.current;
       if (e.target instanceof Element && e.target.closest('input,textarea,select')) {
@@ -455,7 +529,11 @@ export function Canvas({ onAddNode, onEditError, containerScroll, setContainerSc
             return { ...values, [node.id]: node.props.options[(Math.max(0, index) + delta + node.props.options.length) % node.props.options.length].id }; });
           setInteractionFocus(node.id);
         }
-        const container = [...c.screen.nodes].reverse().find((n): n is ScrollablePanelNode => isScrollablePanelNode(n) && n.state.visible && n.state.enabled && x >= n.bounds.x && y >= n.bounds.y && x < n.bounds.x + n.bounds.w && y < n.bounds.y + n.bounds.h);
+        const container = [...c.screen.nodes].reverse().find((n): n is ScrollablePanelNode => {
+          if (!isScrollablePanelNode(n) || !n.state.visible || !n.state.enabled) return false;
+          const visible = nodeVisibleBounds(n, c.screen.nodes, c.containerScroll, c.expandedPanels), viewport = containerScreenViewport(n, c.screen.nodes, c.containerScroll, c.expandedPanels);
+          return !!visible && x >= visible.x && y >= visible.y && x < visible.x + visible.w && y < visible.y + visible.h && x >= viewport.x && y >= viewport.y && x < viewport.x + viewport.w && y < viewport.y + viewport.h;
+        });
         if (container) { setContainerScroll(values => ({ ...values, [container.id]: containerScrollOffset(container, (values[container.id] ?? 0) + (e.deltaY < 0 ? -24 : 24)) })); return; }
         return;
       }
@@ -478,16 +556,32 @@ export function Canvas({ onAddNode, onEditError, containerScroll, setContainerSc
     if (!NODE_TYPES.includes(type)) return;
     const rect = host.current!.getBoundingClientRect();
     const position = { x: Math.round((e.clientX - rect.left - origin.x) / view.zoom), y: Math.round((e.clientY - rect.top - origin.y) / view.zoom) };
-    const parent = containerAtPoint(screen.nodes, position.x, position.y);
-    onAddNode(type, position, parent ? { parentContainerId: parent.id, scrollOffsets: containerScroll } : undefined);
+  const parent = containerAtPoint(screen.nodes, position.x, position.y, containerScroll, expandedPanels);
+  onAddNode(type, position, parent ? { parentContainerId: parent.id, scrollOffsets: containerScroll,
+    appendAtEnd: isCollapsiblePanelNode(parent) && !(expandedPanels[parent.id] ?? parent.props.initialExpanded) } : undefined);
   };
   const selectedParent = selectedNode?.parentContainerId ? screen.nodes.find(node => node.id === selectedNode.parentContainerId) : undefined;
-  const selectedContainer = selectedParent && isScrollablePanelNode(selectedParent) ? selectedParent : undefined;
-  const selectedOffset = selectedContainer && !preview ? containerScrollOffset(selectedContainer, containerScroll[selectedContainer.id] ?? 0) : 0;
-  const selectedBounds = selectedNode && selectedContainer ? containerChildRect(selectedContainer, selectedNode, selectedOffset) : selectedNode?.bounds;
-  const b = gesture?.id === selected ? selectedNode && selectedContainer ? containerChildRect(selectedContainer, { ...selectedNode, bounds: gesture.draft }, selectedOffset) : gesture.draft : selectedBounds;
-  const selectedViewport = selectedContainer ? contentViewport(selectedContainer) : undefined;
-  const guideOrigin = selectedViewport ? { x: origin.x + selectedViewport.x * renderZoom, y: origin.y + (selectedViewport.y - selectedOffset) * renderZoom } : origin;
+  const selectedContainer = selectedParent && isContainerNode(selectedParent) ? selectedParent : undefined;
+  const expandedGeometry = expandedPanels;
+  const selectedBoundsRaw = selectedNode ? nodeAbsoluteBounds(selectedNode, screen.nodes, preview ? {} : containerScroll, expandedGeometry) : undefined;
+  const selectedBounds = selectedBoundsRaw && selectedNode && isCollapsiblePanelNode(selectedNode) && !(expandedGeometry[selectedNode.id] ?? selectedNode.props.initialExpanded)
+    ? { ...selectedBoundsRaw, h: selectedNode.props.headerHeight } : selectedBoundsRaw;
+  const gestureBounds = gesture?.id === selected ? selectedNode?.parentContainerId ? (() => { const changed = { ...selectedNode, bounds: gesture.draft }; return selectedParent && isContainerNode(selectedParent) ? containerChildScreenBounds(selectedParent, changed, screen.nodes, preview ? {} : containerScroll, expandedGeometry) : gesture.draft; })() : gesture.draft : selectedBounds;
+  const b = gestureBounds && selectedNode && isCollapsiblePanelNode(selectedNode) && !(expandedGeometry[selectedNode.id] ?? selectedNode.props.initialExpanded)
+    ? { ...gestureBounds, h: selectedNode.props.headerHeight } : gestureBounds;
+  const parentViewport = selectedContainer ? containerScreenViewport(selectedContainer, screen.nodes, preview ? {} : containerScroll, expandedGeometry) : undefined;
+  const selectedViewport = parentViewport && selectedContainer ? (() => {
+    let clip = parentViewport, parentId = selectedContainer.parentContainerId;
+    while (parentId) {
+      const ancestor = screen.nodes.find(node => node.id === parentId);
+      if (!ancestor || !isContainerNode(ancestor)) break;
+      clip = intersectBounds(clip, containerScreenViewport(ancestor, screen.nodes, containerScroll, expandedGeometry)) ?? { ...clip, w: 0, h: 0 };
+      parentId = ancestor.parentContainerId;
+    }
+    return clip;
+  })() : undefined;
+  const parentScroll = selectedContainer && isScrollablePanelNode(selectedContainer) && !preview ? containerScrollOffset(selectedContainer, containerScroll[selectedContainer.id] ?? 0) : 0;
+  const guideOrigin = parentViewport ? { x: origin.x + parentViewport.x * renderZoom, y: origin.y + (parentViewport.y - parentScroll) * renderZoom } : origin;
   const guideClip = selectedViewport ? { x: origin.x + selectedViewport.x * renderZoom, y: origin.y + selectedViewport.y * renderZoom, w: selectedViewport.w * renderZoom, h: selectedViewport.h * renderZoom }
     : { x: origin.x, y: origin.y, w: screen.designSize.width * renderZoom, h: screen.designSize.height * renderZoom };
   // Editing selection is session-only; behavior testing always starts from the document initial state.
@@ -495,29 +589,68 @@ export function Canvas({ onAddNode, onEditError, containerScroll, setContainerSc
   const editSelection = Object.fromEntries(screen.nodes.filter(n => n.type === 'minecraft:creative-tab' && n.props.groupId && validEditGroups.has(n.props.groupId)).map(n => [n.id, { tabSelected: n.type === 'minecraft:creative-tab' && editTabs[n.props.groupId!] === n.id }]));
   const visualSelection = behaviorPreview ?? (preview ? null : editSelection);
   const visibleInGroup = tabVisibility(screen.nodes, visualSelection), managed = tabManaged(screen.nodes);
+  const runtimeNodeVisible = (node: GuiNode) => (behaviorPreview?.[node.id]?.visible ?? (managed.has(node.id) ? true : node.state.visible)) && visibleInGroup(node.id);
+  const runtimeAncestorsVisible = (node: GuiNode) => {
+    let parentId = node.parentContainerId; const visited = new Set<string>();
+    while (parentId) {
+      if (visited.has(parentId)) return false;
+      visited.add(parentId);
+      const parent = screen.nodes.find(candidate => candidate.id === parentId);
+      if (!parent || !isContainerNode(parent) || !runtimeNodeVisible(parent) || (isCollapsiblePanelNode(parent) && !(expandedPanels[parent.id] ?? parent.props.initialExpanded))) return false;
+      parentId = parent.parentContainerId;
+    }
+    return true;
+  };
+  useEffect(() => {
+    const capture = pointer.current;
+    if (capture?.mode !== 'scrollbar' || !capture.containerId) return;
+    const container = screen.nodes.find(node => node.id === capture.containerId);
+    if (!container || !isScrollablePanelNode(container) || container !== capture.container || !runtimeNodeVisible(container) || !runtimeAncestorsVisible(container) || !container.state.enabled) pointer.current = null;
+  }, [screen, behaviorPreview, interaction, containerScroll, expandedPanels]);
   const renderNodes = screen.nodes.map(node => {
     if (node.type !== 'minecraft:creative-tab') return node;
     const navigationSelected = screenNavigationSelected(node, screen.id, screenTabGroups);
     if (navigationSelected !== null) return { ...node, props: { ...node.props, selected: navigationSelected } };
     return visualSelection?.[node.id]?.tabSelected !== undefined ? { ...node, props: { ...node.props, selected: visualSelection[node.id].tabSelected! } } : node;
   });
+  useEffect(() => {
+    if (!interactionFocus) return;
+    const focused = renderNodes.find(node => node.id === interactionFocus);
+    if (!focused || !runtimeNodeVisible(focused) || !runtimeAncestorsVisible(focused) || ('enabled' in focused.state && !focused.state.enabled) || !containerAncestorsEnabled(focused, renderNodes) || (focused.parentContainerId && !nodeVisibleBounds(focused, renderNodes, runtimePreviewActive ? containerScroll : {}, expandedPanels))) setInteractionFocus(null);
+  }, [interactionFocus, behaviorPreview, containerScroll, expandedPanels, currentScreenId, screen]);
+  const drawingNodes = gesture ? renderNodes.map(node => node.id === gesture.id ? { ...node, bounds: gesture.draft } : node) : renderNodes;
+  const designPaintNodes: GuiNode[] = [];
+  const collectDesignPaint = (parentId?: string) => {
+    for (const node of designSiblingOrder(drawingNodes.filter(item => item.parentContainerId === parentId), expandedGeometry)) {
+      designPaintNodes.push(node);
+      if (isContainerNode(node) && (!isCollapsiblePanelNode(node) || expandedGeometry[node.id])) collectDesignPaint(node.id);
+    }
+  };
+  if (!runtimePanelMode && !preview) collectDesignPaint();
+  const designVisualBounds = (node: GuiNode) => {
+    const visible = nodeVisibleBounds(node, drawingNodes, containerScroll, expandedGeometry);
+    if (!visible || !isCollapsiblePanelNode(node) || expandedGeometry[node.id]) return visible;
+    return intersectBounds(visible, { ...nodeAbsoluteBounds(node, drawingNodes, containerScroll, expandedGeometry), h: node.props.headerHeight });
+  };
   const projectRuntimeNode = (node: GuiNode): GuiNode => {
     if (!node.parentContainerId) return node;
     const panel = renderNodes.find(candidate => candidate.id === node.parentContainerId);
-    return panel && isScrollablePanelNode(panel) ? { ...node, bounds: containerChildRect(panel, node, runtimePreviewActive ? containerScrollOffset(panel, containerScroll[panel.id] ?? 0) : 0) } as GuiNode : node;
+    return panel && isContainerNode(panel) ? { ...node, bounds: containerChildScreenBounds(panel, node, renderNodes, runtimePreviewActive ? containerScroll : {}, expandedPanels) } as GuiNode : node;
   };
-  const overlayNodes = (nodes: GuiNode[]) => nodes.filter(node => !node.parentContainerId || !!nodeVisibleBounds(node, renderNodes, containerScroll)).map(node => projectRuntimeNode(node));
+  const overlayNodes = (nodes: GuiNode[]) => nodes.filter(node => (!node.parentContainerId || !!nodeVisibleBounds(node, renderNodes, runtimePreviewActive ? containerScroll : {}, expandedPanels)) && (!runtimePreviewActive || (containerAncestorsEnabled(node, renderNodes) && runtimeAncestorsVisible(node)))).map(node => projectRuntimeNode(node));
   const overlayClips = (nodes: GuiNode[]) => Object.fromEntries(nodes.flatMap(node => {
     if (!node.parentContainerId) return [];
-    const panel = renderNodes.find(item => item.id === node.parentContainerId);
-    const visible = nodeVisibleBounds(node, renderNodes, containerScroll);
-    if (!panel || !isScrollablePanelNode(panel) || !visible) return [];
+    const visible = nodeVisibleBounds(node, renderNodes, runtimePreviewActive ? containerScroll : {}, expandedPanels);
+    if (!visible) return [];
     const b = projectRuntimeNode(node).bounds;
     return [[node.id, { top: Math.max(0, (visible.y - b.y) * renderZoom), right: Math.max(0, (b.x + b.w - visible.x - visible.w) * renderZoom), bottom: Math.max(0, (b.y + b.h - visible.y - visible.h) * renderZoom), left: Math.max(0, (visible.x - b.x) * renderZoom) }]];
   }));
   const selectionRuntimeNodes = overlayNodes(renderNodes.filter(isSelectionNode).filter(node => (behaviorPreview?.[node.id]?.visible ?? (managed.has(node.id) ? true : node.state.visible)) && visibleInGroup(node.id)));
+  const treeRuntimeNodes = overlayNodes(renderNodes.filter(isTreeViewNode).filter(node => (behaviorPreview?.[node.id]?.visible ?? (managed.has(node.id) ? true : node.state.visible)) && visibleInGroup(node.id))) as Extract<GuiNode, { type: 'minecraft:tree-view' }>[];
   const numericRuntimeNodes = overlayNodes(renderNodes.filter(isNumericNode).filter(node => (behaviorPreview?.[node.id]?.visible ?? (managed.has(node.id) ? true : node.state.visible)) && visibleInGroup(node.id))) as NumericNode[];
-  const selectionClipInsets = overlayClips(selectionRuntimeNodes), numericClipInsets = overlayClips(numericRuntimeNodes);
+  const treeOverlayNodes = renderNodes.filter(isTreeViewNode).map(node => projectRuntimeNode(node)) as Extract<GuiNode, { type: 'minecraft:tree-view' }>[];
+  const numericOverlayNodes = renderNodes.filter(isNumericNode).map(node => projectRuntimeNode(node)) as NumericNode[];
+  const selectionClipInsets = overlayClips(selectionRuntimeNodes), numericClipInsets = overlayClips(numericRuntimeNodes), treeClipInsets = overlayClips(treeRuntimeNodes);
   const editingNode = editingId === selected ? screen.nodes.find(n => n.id === editingId) : undefined;
   const drawPlainNode = (original: GuiNode, bounds = original.bounds) => { const override = behaviorPreview?.[original.id];
           if (behaviorPreview && (!(override?.visible ?? (managed.has(original.id) ? true : original.state.visible)) || !visibleInGroup(original.id))) return null;
@@ -525,31 +658,40 @@ export function Canvas({ onAddNode, onEditError, containerScroll, setContainerSc
           if (!behaviorPreview && !visibleInGroup(node.id)) node = { ...node, state: { ...node.state, visible: false } } as GuiNode;
           if (behaviorPreview && node.type === 'minecraft:string-widget' && override?.text !== undefined) node = { ...node, props: { ...node.props, text: { kind: 'literal', value: override.text } } };
           if (behaviorPreview && node.type === 'minecraft:checkbox' && override?.checked !== undefined) node = { ...node, props: { ...node.props, selected: override.checked } };
+          if (behaviorPreview && node.type === 'minecraft:progress-bar' && override?.progressValue !== undefined) node = { ...node, props: { ...node.props, initialValue: override.progressValue } };
           const value = interactionValues[node.id];
           const checkedValue = behaviorPreview?.[node.id]?.checked ?? (typeof value === 'boolean' ? value : undefined);
           const shown = interaction && node.type === 'minecraft:checkbox' && checkedValue !== undefined ? { ...node, props: { ...node.props, selected: checkedValue } }
             : interaction && node.type === 'minecraft:cycle-button' && typeof value === 'string' && node.props.options.some(o => o.id === value) ? { ...node, props: { ...node.props, initialOptionId: value } } : node;
-          const gestureBounds = gesture?.id === node.id ? node.parentContainerId ? (() => { const parent = screen.nodes.find(item => item.id === node.parentContainerId); return parent && isScrollablePanelNode(parent) ? containerChildRect(parent, { ...node, bounds: gesture.draft }, preview ? 0 : containerScrollOffset(parent, containerScroll[parent.id] ?? 0)) : gesture.draft; })() : gesture.draft : bounds;
-          return <NodeDrawing key={node.id} node={shown} numericState={numericRuntime[node.id]} numericOverlay={runtimePreviewActive} runtimePreview={runtimePreviewActive} statusId={isStatusNode(node) ? statusValues[node.id] : undefined} bounds={gestureBounds} onDown={stableDown} onEdit={interaction ? () => {} : stableEdit} assets={assets} cache={cache} resourceActive={!!(resources.baseName || resources.overlayName)} focused={interaction ? interactionFocus === node.id : editingId === node.id} selected={node.id === selected} font={font} panel={screen.background.kind === 'panel'} zoom={renderZoom}/>; };
-  const drawNode = (original: GuiNode) => {
-    if (!isScrollablePanelNode(original)) return drawPlainNode(original);
-    const panelVisible = behaviorPreview ? (behaviorPreview[original.id]?.visible ?? (managed.has(original.id) ? true : original.state.visible)) && visibleInGroup(original.id) : original.state.visible && visibleInGroup(original.id);
-    if (runtimePreviewActive && !panelVisible) return null;
-    const viewport = contentViewport(original), dimensions = contentSize(original), offset = preview ? 0 : containerScrollOffset(original, containerScroll[original.id] ?? 0);
-    const children = renderNodes.filter(node => node.parentContainerId === original.id);
-    const thumbHeight = dimensions.maxScroll > 0 ? Math.max(8, viewport.h * viewport.h / original.props.contentHeight) : viewport.h;
-    const thumbY = viewport.y + (dimensions.maxScroll ? (viewport.h - thumbHeight) * offset / dimensions.maxScroll : 0);
+          const gestureBounds = gesture?.id === node.id && !isContainerNode(node) ? node.parentContainerId ? (() => { const parent = screen.nodes.find(item => item.id === node.parentContainerId); return parent && isContainerNode(parent) ? containerChildScreenBounds(parent, { ...node, bounds: gesture.draft }, screen.nodes, preview ? {} : containerScroll, expandedGeometry) : gesture.draft; })() : gesture.draft : bounds;
+          return <NodeDrawing key={node.id} node={shown} numericState={numericRuntime[node.id]} numericOverlay={runtimePreviewActive} runtimePreview={runtimePreviewActive} statusId={isStatusNode(node) ? behaviorPreview?.[node.id]?.statusId ?? statusValues[node.id] : undefined} progressValue={behaviorPreview?.[node.id]?.progressValue} expanded={node.type === 'minecraft:collapsible-panel' ? (expandedGeometry[node.id] ?? node.props.initialExpanded) : true} bounds={gestureBounds} onDown={stableDown} onEdit={interaction ? () => {} : stableEdit} assets={assets} cache={cache} resourceActive={!!(resources.baseName || resources.overlayName)} focused={interaction ? interactionFocus === node.id : editingId === node.id} selected={node.id === selected} font={font} panel={screen.background.kind === 'panel'} zoom={renderZoom}/>; };
+  const drawNode = (original: GuiNode, suppliedBounds?: Bounds): ReactNode => {
+    original = drawingNodes.find(node => node.id === original.id) ?? original;
+    const geometryNodes = drawingNodes;
+    if (!isContainerNode(original)) return drawPlainNode(original, suppliedBounds ?? (original.parentContainerId ? nodeAbsoluteBounds(original, renderNodes, runtimePreviewActive ? containerScroll : {}, expandedGeometry) : original.bounds));
+    const visible = behaviorPreview ? (behaviorPreview[original.id]?.visible ?? (managed.has(original.id) ? true : original.state.visible)) && visibleInGroup(original.id) : original.state.visible && visibleInGroup(original.id);
+    if (runtimePreviewActive && !visible) return null;
+    const expanded = isCollapsiblePanelNode(original) ? (expandedGeometry[original.id] ?? original.props.initialExpanded) : true;
+    const abs = suppliedBounds ?? (original.parentContainerId ? nodeAbsoluteBounds(original, geometryNodes, preview ? {} : containerScroll, expandedGeometry) : original.bounds);
+    const displayBounds = isCollapsiblePanelNode(original) && !expanded ? { ...abs, h: original.props.headerHeight } : abs;
+    const viewport = containerScreenViewport(original, geometryNodes, preview ? {} : containerScroll, expandedGeometry);
+    const dims = isScrollablePanelNode(original) ? contentSize(original) : { maxScroll: 0 };
+    const offset = isScrollablePanelNode(original) ? (runtimePreviewActive || !preview ? containerScrollOffset(original, containerScroll[original.id] ?? 0) : 0) : 0;
+    const thumbHeight = isScrollablePanelNode(original) && dims.maxScroll > 0 ? Math.max(8, viewport.h * viewport.h / original.props.contentHeight) : viewport.h;
+    const thumbY = viewport.y + (dims.maxScroll ? (viewport.h - thumbHeight) * offset / dims.maxScroll : 0);
+    const siblings = geometryNodes.filter(node => node.parentContainerId === original.id);
+    const children = expanded ? (!runtimePanelMode && !preview ? designSiblingOrder(siblings, expandedGeometry) : siblings) : [];
     return <Group key={original.id}>
-      {drawPlainNode(original)}
-      <Group clipX={viewport.x} clipY={viewport.y} clipWidth={viewport.w} clipHeight={viewport.h}>
-        {children.map(child => drawPlainNode(child, containerChildRect(original, child, offset)))}
-      </Group>
-      {dimensions.maxScroll > 0 && <Group listening={runtimePreviewActive || (!preview && !readOnly && !behaviorMode && view.tool === 'select')}>
+      {drawPlainNode(original, displayBounds)}
+      {children.length > 0 && viewport.w > 0 && viewport.h > 0 && <Group clipX={viewport.x} clipY={viewport.y} clipWidth={viewport.w} clipHeight={viewport.h}>
+        {children.map(child => drawNode(child, containerChildScreenBounds(original, child, geometryNodes, preview ? {} : containerScroll, expandedGeometry)))}
+      </Group>}
+      {isScrollablePanelNode(original) && dims.maxScroll > 0 && <Group listening={runtimePreviewActive || (!preview && !readOnly && !behaviorMode && view.tool === 'select')}>
         <Rect x={viewport.x + viewport.w + 2} y={viewport.y} width={6} height={viewport.h} fill="#111821"/>
         <Rect x={viewport.x + viewport.w + 2} y={thumbY} width={6} height={thumbHeight} fill="#8795a5" cornerRadius={3} onPointerDown={e => {
           if ((!runtimePreviewActive && (preview || readOnly || behaviorMode || view.tool !== 'select' || !!gesture)) || e.evt.button !== 0) return;
           e.cancelBubble = true; e.evt.preventDefault(); const { clientX, clientY, pointerId } = e.evt;
-          pointer.current = { pointerId, x: clientX, y: clientY, mode: 'scrollbar', zoom: renderZoom, panX: view.panX, panY: view.panY, containerId: original.id, container: original, maxScroll: dimensions.maxScroll, trackTravel: Math.max(1, viewport.h - thumbHeight), initialOffset: offset };
+          pointer.current = { pointerId, x: clientX, y: clientY, mode: 'scrollbar', zoom: renderZoom, panX: view.panX, panY: view.panY, containerId: original.id, container: original, maxScroll: dims.maxScroll, trackTravel: Math.max(1, viewport.h - thumbHeight), initialOffset: offset };
         }}/>
       </Group>}
     </Group>;
@@ -584,7 +726,7 @@ export function Canvas({ onAddNode, onEditError, containerScroll, setContainerSc
       <Layer><Group clipX={frame?.x} clipY={frame?.y} clipWidth={frame?.w} clipHeight={frame?.h}>
         {frame && <Rect x={frame.x} y={frame.y} width={frame.w} height={frame.h} fill="#080a0c" stroke="#6a7d91" strokeWidth={1}/>}
         {!preview && !interaction && !behaviorMode && screens.filter(item => item.id !== screen.id).map(item => <Group key={item.id} x={origin.x + (positions[item.id].x - activePosition.x) * renderZoom} y={origin.y + (positions[item.id].y - activePosition.y) * renderZoom} scaleX={renderZoom} scaleY={renderZoom}>
-          <OtherScreen screen={item} assets={assets} cache={cache} resources={resources} font={font} zoom={renderZoom} select={() => onSelectScreen(item.id)} selectOnLeft={view.tool === 'select'} screenTabGroups={screenTabGroups}/>
+          <OtherScreen screen={item} assets={assets} cache={cache} resources={resources} font={font} zoom={renderZoom} select={() => onSelectScreen(item.id)} selectOnLeft={view.tool === 'select'} expanded={designPanelExpansion(item.nodes, designExpandedByScreen[item.id])} screenTabGroups={screenTabGroups}/>
           {header(item)}
         </Group>)}
         <Group x={origin.x} y={origin.y} scaleX={renderZoom} scaleY={renderZoom} listening={!preview}>
@@ -600,18 +742,18 @@ export function Canvas({ onAddNode, onEditError, containerScroll, setContainerSc
           ];
           return <Group listening={false}>{marks.map(([x, y, w, h], index) => <Rect key={index} x={x} y={y} width={w} height={h} fill={C.accent} opacity={0.4}/>)}</Group>;
         })()}
-        {renderNodes.filter(node => node.parentContainerId === undefined && beforePanel(node)).map(drawNode)}
+        {renderNodes.filter(node => node.parentContainerId === undefined && beforePanel(node)).map(node => drawNode(node))}
         {screen.background.kind === 'panel' && !isTextureStyle(screen.background.style) && panelRects(panel.w, panel.h).map((r, i) => <Rect key={i} x={r.x + panel.x} y={r.y + panel.y} width={r.w} height={r.h} fill={r.color} listening={false}/>)}
         {screen.background.kind === 'panel' && isTextureStyle(screen.background.style) && panelImage?.style === screen.background.style && <Shape x={panel.x} y={panel.y} listening={false} sceneFunc={context => {
           const ctx = context._context, raster = panelPreviewRaster(panelImage.image, panel.w, panel.h);
           if (!raster) { drawNativePanel(ctx, panelImage.image, panel.w, panel.h); return; }
           ctx.save(); ctx.imageSmoothingEnabled = false; ctx.drawImage(raster, 0, 0); ctx.restore();
         }}/>}
-        {renderNodes.filter(node => node.parentContainerId === undefined && !beforePanel(node)).map(drawNode)}
+        {(!runtimePanelMode && !preview ? designSiblingOrder(renderNodes.filter(node => node.parentContainerId === undefined && !beforePanel(node)), expandedGeometry) : renderNodes.filter(node => node.parentContainerId === undefined && !beforePanel(node))).map(node => drawNode(node))}
         {b && !preview && !interaction && !behaviorPreview && <Group clipX={selectedViewport?.x} clipY={selectedViewport?.y} clipWidth={selectedViewport?.w} clipHeight={selectedViewport?.h}>
           <Rect x={b.x} y={b.y} width={b.w} height={b.h} stroke="#080a0c" opacity={0.9} strokeWidth={3 / renderZoom} listening={false}/>
           <Rect x={b.x} y={b.y} width={b.w} height={b.h} stroke={C.accent} strokeWidth={1.5 / renderZoom} listening={false}/>
-          {!readOnly && selectedNode?.type !== 'minecraft:creative-tab' && <Group>
+          {!readOnly && selectedNode?.type !== 'minecraft:creative-tab' && !(selectedNode && isCollapsiblePanelNode(selectedNode) && !(expandedGeometry[selectedNode.id] ?? selectedNode.props.initialExpanded)) && <Group>
             {([
               { edge: 'left', x: b.x - 4 / renderZoom, y: b.y + b.h / 2 - 4 / renderZoom, cursor: 'ew-resize' },
               { edge: 'right', x: b.x + b.w - 4 / renderZoom, y: b.y + b.h / 2 - 4 / renderZoom, cursor: 'ew-resize' },
@@ -665,9 +807,31 @@ export function Canvas({ onAddNode, onEditError, containerScroll, setContainerSc
       {!preview && <Rulers width={size.width} height={size.height} origin={origin} zoom={renderZoom} design={screen.designSize} theme={theme}/>}
     </Stage>
     {runtimePreviewActive && !preview && <div className="runtime-preview-overlays" key={`runtime:${screen.id}:${numericPreviewEpoch}`}>
-      <SelectionPreview screenId={screen.id} design={screen.designSize} nodes={selectionRuntimeNodes as SelectionNode[]} clipInsets={selectionClipInsets} origin={origin} zoom={renderZoom} family={font.family}/>
+      <SelectionPreview screenId={screen.id} design={screen.designSize} nodes={selectionRuntimeNodes as SelectionNode[]} clipInsets={selectionClipInsets} origin={origin} zoom={renderZoom} family={font.family} runtimeValues={behaviorMode && behaviorPreview && usesControlState(screen) ? Object.fromEntries(Object.entries(behaviorPreview).flatMap(([id, state]) => state.optionId !== undefined ? [[id,state.optionId]] : [])) : undefined} onSelectionChange={behaviorMode ? onBehaviorSelectionChange : undefined}/>
+      <TreeViewPreview key={`tree:${screen.id}:${numericPreviewEpoch}`} nodes={treeOverlayNodes} activeNodeIds={treeRuntimeNodes.map(node => node.id)} clipInsets={treeClipInsets} screenId={screen.id} resetKey={numericPreviewEpoch} origin={origin} zoom={renderZoom}/>
       <ScrollTextPreview resetKey={numericPreviewEpoch} nodes={renderNodes.filter((node): node is Extract<GuiNode, { type: 'minecraft:fitting-multi-line-text-widget' }> => node.type === 'minecraft:fitting-multi-line-text-widget' && (behaviorPreview?.[node.id]?.visible ?? (managed.has(node.id) ? true : node.state.visible)) && visibleInGroup(node.id)).map(node => projectRuntimeNode(node) as typeof node)} origin={origin} zoom={renderZoom} family={font.family}/>
-      <NumericPreview key={`${screen.id}:${numericPreviewEpoch}`} screenId={screen.id} nodes={numericRuntimeNodes} clipInsets={numericClipInsets} origin={origin} zoom={renderZoom} family={font.family} onVisualChange={setNumericRuntime}/>
+      <NumericPreview key={`${screen.id}:${numericPreviewEpoch}`} screenId={screen.id} nodes={numericOverlayNodes} activeNodeIds={numericRuntimeNodes.map(node => node.id)} clipInsets={numericClipInsets} origin={origin} zoom={renderZoom} family={font.family} runtimeValues={behaviorMode && behaviorPreview && usesControlState(screen) ? Object.fromEntries(Object.entries(behaviorPreview).flatMap(([id, state]) => state.sliderValue !== undefined ? [[id,state.sliderValue]] : [])) : undefined} onSliderValueChange={behaviorMode ? onBehaviorSliderChange : undefined} onVisualChange={setNumericRuntime}/>
+      {renderNodes.filter(isCollapsiblePanelNode).filter(node => runtimeNodeVisible(node) && runtimeAncestorsVisible(node) && (!node.parentContainerId || !!nodeVisibleBounds(node, renderNodes, containerScroll, expandedPanels))).map(node => {
+        const bounds = nodeAbsoluteBounds(node, renderNodes, containerScroll, expandedPanels), open = expandedPanels[node.id] ?? node.props.initialExpanded;
+        return <button key={`collapse-${node.id}`} type="button" data-collapse-toggle={node.id} aria-label={`${displayText(node.props.title)}，${open ? '已展开' : '已收起'}`} aria-expanded={open} disabled={!node.state.enabled}
+          onClick={() => togglePanel(node.id)} style={{ position: 'absolute', left: origin.x + bounds.x * renderZoom, top: origin.y + bounds.y * renderZoom, width: bounds.w * renderZoom, height: node.props.headerHeight * renderZoom, padding: 0, border: 0, background: 'transparent', color: 'transparent', cursor: 'pointer', zIndex: 40 }}/ >;
+      })}
+    </div>}
+    {!runtimePreviewActive && !preview && !readOnly && !behaviorMode && <div className="design-panel-overlays">
+      {renderNodes.filter(isCollapsiblePanelNode).filter(node => node.state.visible && (!node.parentContainerId || !!nodeVisibleBounds(node, renderNodes, containerScroll, expandedGeometry))).map(node => {
+        const bounds = nodeAbsoluteBounds(node, renderNodes, containerScroll, expandedGeometry), open = expandedGeometry[node.id] ?? node.props.initialExpanded;
+        const visible = designVisualBounds(node);
+        const action = visible && intersectBounds(visible, { x: bounds.x + bounds.w - node.props.headerHeight, y: bounds.y, w: node.props.headerHeight, h: node.props.headerHeight });
+        if (!action || designPaintNodes.slice(designPaintNodes.findIndex(item => item.id === node.id) + 1).some(item => {
+          const covered = designVisualBounds(item); return covered && !!intersectBounds(action, covered);
+        })) return null;
+        return <button key={`design-collapse-${node.id}`} type="button" className="design-panel-toggle" data-design-collapse-toggle={node.id}
+          aria-label={`${displayText(node.props.title)}，${open ? '收起设计视图' : '展开设计视图'}；仅影响编辑器显示`} aria-expanded={open}
+          title="折叠仅影响设计视图，不改变游戏初始状态"
+          onPointerDown={event => event.stopPropagation()} onClick={() => togglePanel(node.id)}
+          style={{ position: 'absolute', left: origin.x + action.x * renderZoom, top: origin.y + action.y * renderZoom,
+            width: action.w * renderZoom, height: action.h * renderZoom, padding: 0, border: 0, background: 'transparent', cursor: 'pointer', zIndex: 40 }}/ >;
+      })}
     </div>}
     {editingNode && b && !preview && !readOnly && <InlineTextEditor key={editingNode.id} node={editingNode} left={origin.x + b.x * view.zoom}
       top={origin.y + b.y * view.zoom} width={b.w * view.zoom} height={b.h * view.zoom}
@@ -681,6 +845,7 @@ export function Canvas({ onAddNode, onEditError, containerScroll, setContainerSc
         <button aria-label="新建 Button" disabled={readOnly || behaviorMode || !!gesture} onClick={() => onAddNode('minecraft:button')}>Button</button>
         <button aria-label="新建 StringWidget" disabled={readOnly || behaviorMode || !!gesture} onClick={() => onAddNode('minecraft:string-widget')}>StringWidget</button>
         <button aria-label="新建 Scrollable Panel" disabled={readOnly || behaviorMode || !!gesture} onClick={() => onAddNode('minecraft:scrollable-panel')}>Scrollable Panel</button>
+        <button aria-label="新建 Collapsible Panel" disabled={readOnly || behaviorMode || !!gesture} onClick={() => onAddNode('minecraft:collapsible-panel')}>Collapsible Panel</button>
         <button aria-label="新建 Rectangle" disabled={readOnly || behaviorMode || !!gesture} onClick={() => onAddNode('minecraft:fill')}>Rectangle</button>
       </div>
       <p className="canvas-empty-note">这是规格设计器，不运行 Java GUI。也可以从文件菜单导入 JSON。</p>

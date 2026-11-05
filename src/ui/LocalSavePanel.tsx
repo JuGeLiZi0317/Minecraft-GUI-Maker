@@ -5,7 +5,7 @@ import { editorStore } from '../editor/store';
 import { useDismissOutside } from './useDismissOutside';
 import { exportFilename } from '../exports/filenames';
 
-export function LocalSavePanel({ notify, onBackup }: { notify: (text: string, error?: boolean) => void; onBackup: () => void }) {
+export function LocalSavePanel({ notify, onBackup, beforeOpen }: { notify: (text: string, error?: boolean) => void; onBackup: () => void; beforeOpen?: () => void }) {
   const state = useStore(localSession.status);
   const blocked = useStore(editorStore, s => s.blocked);
   const [picked, setPicked] = useState('');
@@ -40,7 +40,7 @@ export function LocalSavePanel({ notify, onBackup }: { notify: (text: string, er
         {!state.copies.some(c => c.localId === selected) && <option value={selected}>当前副本（等待保存）</option>}
         {state.copies.map(c => <option key={c.localId} value={c.localId}>{c.name} · {new Date(c.updatedAt).toLocaleString()} · {c.localId.slice(0, 6)}</option>)}
       </select><button disabled={!!blocked || !selected || selected === state.localId} onClick={async () => {
-        try { await localSession.openCopy(selected); notify('已打开本地副本，编辑历史已重置'); } catch (e) { notify((e as Error).message, true); }
+        try { beforeOpen?.(); await localSession.openCopy(selected); notify('已打开本地副本，编辑历史已重置'); } catch (e) { notify((e as Error).message, true); }
       }}>打开本地副本</button>
     </div><p>仅保存本浏览器、当前网址的已提交设计。清理站点数据或私密模式可能丢失，请定期导出JSON。导入会保留旧本地副本；缩放、预览和未提交文字不自动保存。并发保护：{state.lockMode === 'web-lock' ? '标签页写入锁 + 事务版本校验' : '事务版本校验（无标签页写入锁）'}。</p></div>
   </div>;

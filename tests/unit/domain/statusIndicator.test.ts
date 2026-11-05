@@ -92,9 +92,9 @@ describe('Status Indicator', () => {
     const second = structuredClone(doc.screens[0]); second.id = 'screen_other'; second.title = { kind: 'literal', value: 'Other' }; second.nodes = [createNode('minecraft:status-indicator', 'status_other')]; doc.screens.push(second);
     const renderer = (async (_snapshot: unknown, _ref: unknown, scale: number) => new Uint8Array([scale])) as never;
     const { buildBundle } = await import('../../../src/exports/bundle'); const bundle = await buildBundle((await import('../../../src/exports/snapshot')).beginExport(doc), renderer);
-    expect(bundle.manifest.version).toBe('0.17.0'); expect(bundle.manifest.screens.map(screen => screen.statusIndicators[0].initialStatusId)).toEqual(['status_stopped', 'status_stopped']);
+    expect(bundle.manifest.version).toBe('0.22.0'); expect(bundle.manifest.screens.map(screen => screen.statusIndicators[0].initialStatusId)).toEqual(['status_stopped', 'status_stopped']);
     const spec = JSON.parse(new TextDecoder().decode(bundle.files.find(file => file.name.endsWith('.implementation.json'))!.bytes));
-    expect(spec.version).toBe('0.12.0'); expect(spec.designIntent.statusIndicators).toHaveLength(2);
+    expect(spec.version).toBe('0.18.0'); expect(spec.designIntent.statusIndicators).toHaveLength(2);
     expect(spec.statusIndicatorContract.runtime).toMatchObject({ repaint: expect.any(String), businessSource: expect.stringContaining('no variables') });
     expect(bundle.manifest.files.every(file => !!file.sha256)).toBe(true);
   });

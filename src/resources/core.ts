@@ -20,7 +20,7 @@ function u16(v: DataView, i: number) { return v.getUint16(i, true); }
 function u32(v: DataView, i: number) { return v.getUint32(i, true); }
 async function slice(blob: Blob, start: number, end: number) { return new Uint8Array(await blob.slice(start, end).arrayBuffer()); }
 type Entry = { path: string; size: number; compressed: number; crc?: number; method: number; flags?: number; offset?: number; limit?: number; lazy?: boolean; file?: Blob };
-type Input = { kind: 'zip'; blob: Blob } | { kind: 'directory'; files: ReadonlyArray<{ path: string; file: Blob }> };
+export type ResourceInput = { kind: 'zip'; blob: Blob } | { kind: 'directory'; files: ReadonlyArray<{ path: string; file: Blob }> };
 export type Query = { status: 'valid'; path: string; layer: string; size: number } | { status: 'missing' | 'invalid' | 'unsupported'; diagnostic: string };
 const crcTable = Uint32Array.from({ length: 256 }, (_, n) => { for (let i = 0; i < 8; i++) n = n & 1 ? 0xedb88320 ^ (n >>> 1) : n >>> 1; return n >>> 0; });
 function crcUpdate(crc: number, bytes: Uint8Array) { for (const byte of bytes) crc = crcTable[(crc ^ byte) & 255] ^ (crc >>> 8); return crc >>> 0; }
@@ -87,7 +87,7 @@ async function zipEntries(blob: Blob, signal?: AbortSignal, client = false): Pro
   return out;
 }
 
-async function read(entry: Entry, input: Input, signal?: AbortSignal): Promise<Uint8Array> {
+async function read(entry: Entry, input: ResourceInput, signal?: AbortSignal): Promise<Uint8Array> {
   check(signal);
   let dataOffset = entry.offset;
   if (entry.lazy && input.kind === 'zip') {
@@ -149,7 +149,12 @@ function packMeta(data: Uint8Array) {
 
 export class ResourceSession {
   private closed = false; private readonly abort = new AbortController(); private actualClientBytes = 0;
-  constructor(private input: Input | null, private readonly entries: Map<string, Entry>, readonly layer: string, private readonly client = false) {}
+  constructor(private input: ResourceInput | null, private readonly entries: Map<string, Entry>, readonly layer: string, private readonly client = false) {}
+  snapshotInput(): ResourceInput {
+    if (!this.input || this.closed) throw new ResourceError('invalid', '资源会话已关闭，无法保存本地选择');
+    return this.input.kind === 'zip' ? { kind: 'zip', blob: this.input.blob }
+      : { kind: 'directory', files: this.input.files.map(item => ({ path: item.path, file: item.file })) };
+  }
   private charge(length: number) { if (this.client) { this.actualClientBytes += length; if (this.actualClientBytes > LIMITS.total) fail('客户端会话实际读取总量超限'); } }
   close() { this.closed = true; this.abort.abort(); this.input = null; this.entries.clear(); }
   query(path: string): Query {
@@ -172,7 +177,7 @@ export class ResourceSession {
 
 export async function prepareClient(blob: Blob, layer: string, signal?: AbortSignal): Promise<ResourceSession> {
   check(signal); if (!layer || layer.length > 128) fail('资源层标识无效');
-  const input: Input = { kind: 'zip', blob }, entries = await zipEntries(blob, signal, true);
+  const input: ResourceInput = { kind: 'zip', blob }, entries = await zipEntries(blob, signal, true);
   const map = new Map(entries.map(e => [e.path, e])), session = new ResourceSession(input, map, layer, true);
   try {
     let version: { id?: string; pack_version?: { resource?: number } };
@@ -186,7 +191,7 @@ export async function prepareClient(blob: Blob, layer: string, signal?: AbortSig
   } catch (error) { session.close(); throw error; }
 }
 
-export async function prepareSession(input: Input, layer: string, signal?: AbortSignal): Promise<ResourceSession> {
+export async function prepareSession(input: ResourceInput, layer: string, signal?: AbortSignal): Promise<ResourceSession> {
   check(signal); if (!layer || layer.length > 128) fail('资源层标识无效');
   let entries: Entry[];
   if (input.kind === 'zip') entries = await zipEntries(input.blob, signal);
@@ -218,7 +223,7 @@ export async function prepareSession(input: Input, layer: string, signal?: Abort
 export class ResourceSessionManager {
   private generation = 0; private active?: AbortController;
   current: ResourceSession | null = null;
-  async replace(input: Input, layer: string, signal?: AbortSignal): Promise<ResourceSession> {
+  async replace(input: ResourceInput, layer: string, signal?: AbortSignal): Promise<ResourceSession> {
     this.active?.abort(); const controller = new AbortController(); this.active = controller; const generation = ++this.generation;
     const abort = () => controller.abort(); signal?.addEventListener('abort', abort, { once: true }); if (signal?.aborted) controller.abort();
     try { const next = await prepareSession(input, layer, controller.signal); check(controller.signal);
@@ -230,7 +235,7 @@ export class ResourceSessionManager {
 }
 
 /** Adapter for an explicitly selected webkitdirectory FileList; no filesystem traversal. */
-export function directoryFiles(files: readonly File[]): Input {
+export function directoryFiles(files: readonly File[]): ResourceInput {
   if (!files.length) fail('未选择文件');
   const paths = files.map(file => file.webkitRelativePath); const first = paths[0]?.split('/')[0];
   if (!first || paths.some(path => !path.startsWith(first + '/'))) fail('请选择单一根目录');

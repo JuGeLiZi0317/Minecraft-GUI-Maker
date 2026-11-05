@@ -1,0 +1,61 @@
+import { expect, test, type Page } from '@playwright/test';
+import { simpleStatusRule, usabilityProject } from './fixtures/blocklyUsabilityProject';
+const read = async (page: Page) => JSON.parse((await page.getByTestId('project-json').textContent())!);
+const importDoc = async (page: Page, doc: unknown) => {
+  await page.goto('/'); await page.getByLabel('导入项目文件').setInputFiles({ name: 'B1.4.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(doc)) });
+  await expect(page.locator('.statusbar [role="status"]')).toContainText('导入成功');
+};
+
+test('B1.4 authors a four-block start/running else/warning rule through real dropdowns and saves its F2 semantics', async ({ page }, info) => {
+  const errors: string[] = []; page.on('pageerror', error => errors.push(error.message));
+  const doc = usabilityProject(); await importDoc(page, doc);
+  await page.getByRole('button', { name: 'Blockly 实验', exact: true }).click();
+  const editor = page.getByTestId('blockly-editor'), main = editor.locator('.blocklySvg .blocklyBlockCanvas');
+  await editor.getByRole('button', { name: '新建简单条件规则', exact: true }).click();
+  await expect(main.locator('[data-block-type]')).toHaveCount(4);
+  const condition = main.locator('[data-block-type="gui_if_selection"]'), assignments = main.locator('[data-block-type="gui_set_status_direct"]');
+  const positions = await assignments.evaluateAll(blocks => blocks.map(block => ({ id: block.getAttribute('data-block-id')!, y: block.getBoundingClientRect().y })).sort((a, b) => a.y - b.y));
+  const thenAction = main.locator(`[data-block-id=${JSON.stringify(positions[0].id)}]`), elseAction = main.locator(`[data-block-id=${JSON.stringify(positions[1].id)}]`);
+  await condition.locator(':scope > .blocklyDropdownField').click(); await page.getByRole('option', { name: '启动', exact: true }).click();
+  await thenAction.locator(':scope > .blocklyDropdownField').nth(1).click(); await page.getByRole('option', { name: '运行', exact: true }).click();
+  await elseAction.locator(':scope > .blocklyDropdownField').nth(1).click(); await page.getByRole('option', { name: '警告', exact: true }).click();
+  await expect(main).not.toContainText('node_26'); await expect(condition).not.toContainText('option_1');
+  await editor.getByRole('button', { name: '保存积木规则', exact: true }).click();
+  const saved = await read(page); expect(saved.schemaVersion).toBe('0.34.0');
+  await page.screenshot({ path: `outputs/B1.4/simple-condition-${info.project.name}.png` });
+  const rule = saved.screens[0].behaviors[1]; expect(rule).toEqual({ ...simpleStatusRule(), id: rule.id });
+  await expect(editor.getByTestId('blockly-diagnostic')).toContainText('与项目一致');
+  await page.getByRole('button', { name: 'GUI 设计模式' }).click(); await page.getByRole('button', { name: '行为', exact: true }).click();
+  await page.getByRole('button', { name: '交互预览', exact: true }).click();
+  const panel = page.getByTestId('behavior-panel'), preview = panel.getByTestId('behavior-preview'), log = panel.getByTestId('behavior-event-log');
+  await expect(log).toContainText('最近 0/30');
+  await page.getByRole('radio', { name: '启动 (1/4)', exact: true }).click();
+  await expect(preview).toContainText('status_running'); await expect(log).toContainText('进入 then'); await expect(log).not.toContainText('/ status_warning 已执行');
+  await page.getByRole('radio', { name: '其他 (2/4)', exact: true }).click(); await expect(preview).toContainText('status_warning'); await expect(log).toContainText('进入 else');
+  await page.getByRole('radio', { name: '未映射 (3/4)', exact: true }).click(); await expect(preview).toContainText('status_warning');
+  const trace = await log.innerText(); await page.getByRole('radio', { name: '未映射 (3/4)', exact: true }).click(); expect(await log.innerText()).toBe(trace);
+  expect(await read(page)).toEqual(saved);
+  await panel.getByRole('button', { name: '重置预览', exact: true }).click(); await expect(preview).toHaveCount(0);
+  await page.getByRole('button', { name: 'Blockly 实验', exact: true }).click(); await expect(assignments).toHaveCount(2); expect(await read(page)).toEqual(saved);
+  await page.getByRole('button', { name: 'GUI 设计模式' }).click(); await importDoc(page, saved); expect(await read(page)).toEqual(saved);
+  await page.getByRole('button', { name: 'Blockly 实验', exact: true }).click(); await expect(page.locator('.blocklySvg .blocklyBlockCanvas [data-block-type="gui_if_selection"]')).toHaveCount(1);
+  expect(errors).toEqual([]);
+});
+
+test('B1.4 multi-source direct and shared actions retain last-valid order, candidate-only isolation and reset', async ({ page }) => {
+  const doc = usabilityProject(); doc.schemaVersion = '0.34.0'; const rule = simpleStatusRule();
+  if (rule.event.type === 'selection-change') rule.event.additionalSourceIds = ['node_23'];
+  if ('actions' in rule && rule.actions[0].type === 'if') rule.actions[0].thenActions.push({ type: 'set-status', targetId: 'node_26', mapRef: 'map_shared' });
+  doc.screens[0].behaviorMaps = [{ id: 'map_shared', name: '公共映射', mappings: [{ optionId: 'option_1', statusId: 'status_warning' }] }]; doc.screens[0].behaviors.push(rule);
+  await importDoc(page, doc); await page.getByRole('button', { name: '行为', exact: true }).click(); await page.getByRole('button', { name: '交互预览', exact: true }).click();
+  const panel = page.getByTestId('behavior-panel'), preview = panel.getByTestId('behavior-preview'), log = panel.getByTestId('behavior-event-log');
+  const trigger = page.getByRole('button', { name: '备用选择: 其他', exact: true }); await trigger.focus(); await trigger.press('Enter');
+  const list = page.getByRole('listbox', { name: '备用选择', exact: true }); await list.press('Home'); await expect(log).toContainText('最近 0/30'); await list.press('Enter');
+  await expect(preview).toContainText('status_warning'); await expect(log).toContainText('selection-change · node_23 · optionId option_1');
+  const first = await log.innerText(); expect(first.indexOf('/ status_running 已执行')).toBeLessThan(first.indexOf('/ status_warning 已执行'));
+  await page.getByRole('radio', { name: '启动 (1/4)', exact: true }).click(); await expect(log).toContainText('selection-change · node_22'); await expect(preview).toContainText('status_warning');
+  await page.getByRole('radio', { name: '其他 (2/4)', exact: true }).click(); await expect(preview).toContainText('status_warning');
+  await expect(page.getByRole('radio', { name: '禁用 (4/4)', exact: true })).toBeDisabled(); expect(await read(page)).toEqual(doc);
+  await panel.getByRole('button', { name: '重置预览', exact: true }).click(); await page.getByRole('button', { name: '交互预览', exact: true }).click();
+  await expect(log).toContainText('最近 0/30'); await expect(preview).not.toContainText('status_warning'); await expect(page.getByRole('radio', { name: '其他 (2/4)', exact: true })).toHaveAttribute('aria-checked', 'true');
+});

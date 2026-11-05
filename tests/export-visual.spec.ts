@@ -11,7 +11,8 @@ async function setup(page: Page, small = false) {
   const jar = zipFixture([{ name:'version.json',data:JSON.stringify({id:'1.21.1',pack_version:{resource:34}}) },
     { name:'assets/minecraft/atlases/gui.json',data:JSON.stringify({sources:[{type:'directory',source:'gui/sprites',prefix:''}]}) },
     ...GUI_SPRITES.flatMap((id,i)=>[{name:path(id),data:Buffer.from(images[i],'base64')},{name:path(id)+'.mcmeta',data:JSON.stringify({gui:{scaling:{type:'nine_slice',width:8,height:8,border:2}}})}])]);
-  const doc=emptyProject(), button=createNode('minecraft:button','button',{x:20,y:20}), edit=createNode('minecraft:edit-box','edit',{x:20,y:60}), disabled=createNode('minecraft:button','disabled',{x:20,y:100});
+  const doc=emptyProject(); doc.schemaVersion='0.17.0'; doc.entryScreenId=doc.screens[0].id; doc.screenTabGroups=[];
+  const button=createNode('minecraft:button','button',{x:20,y:20}), edit=createNode('minecraft:edit-box','edit',{x:20,y:60}), disabled=createNode('minecraft:button','disabled',{x:20,y:100});
   if (small && button.type === 'minecraft:button') { button.bounds.w = 9; button.bounds.h = 9; button.props.message = { kind:'literal', value:'' }; }
   if(disabled.type==='minecraft:button')disabled.state.enabled=false; doc.screens[0].nodes.push(button,edit,disabled);
   await page.getByLabel('导入项目文件').setInputFiles({name:'project.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(doc))});

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type ChangeEvent } from 'react';
 import { directoryFiles, ResourceError, type Query } from '../resources/core';
 import { GUI_SPRITES, LayeredResources, type SpriteResult } from '../resources/layered';
+import { previewAssets } from '../io/previewAssets';
 import { useDismissOutside } from './useDismissOutside';
 
 /** Experimental, session-only resource validation; unrelated to the project document. */
@@ -18,7 +19,10 @@ export function ResourceTestPanel({ manager: shared, onChange, openRequest = 0, 
   useEffect(() => {
     const input = directory.current;
     if (input) { setDirectorySupported('webkitdirectory' in input); input.setAttribute('webkitdirectory', ''); }
-    return () => { sequence.current++; controller.current?.abort(); manager.current?.close(); };
+    // The resource manager is owned by App and shared with previews/exports.
+    // This panel can unmount when switching editor workspaces, so only cancel
+    // this component's pending UI request here; do not clear the shared session.
+    return () => { sequence.current++; controller.current?.abort(); };
   }, []);
   const load = async (event: ChangeEvent<HTMLInputElement>, kind: 'zip' | 'directory' | 'client') => {
     const files = Array.from(event.currentTarget.files ?? []); event.currentTarget.value = '';
@@ -31,19 +35,29 @@ export function ResourceTestPanel({ manager: shared, onChange, openRequest = 0, 
       else await manager.current!.setOverlay(kind === 'zip' ? { kind: 'zip', blob: files[0] } : directoryFiles(files), name.slice(0, 128), abort.signal);
       if (id !== sequence.current) return;
       setBase(manager.current!.baseName); setLayer(manager.current!.overlayName); setResult(null); setSpriteResult(null); onChange();
-      setMessage(kind === 'client' ? '客户端自报版本符合 1.21.1 / 资源格式 34，来源未认证' : '资源包已检查并载入本次会话');
+      try {
+        await previewAssets.saveResources(manager.current!.selectionSnapshot);
+        setMessage(kind === 'client' ? '客户端资源已检查并保存在本机；刷新后会恢复，自报版本来源未认证' : '资源包已检查并保存在本机；刷新后会恢复');
+      } catch {
+        setMessage('资源包已检查并载入当前页面，但浏览器本地缓存写入失败；刷新后需重新选择');
+      }
     } catch (err) {
       if (id !== sequence.current) return;
       const cancelled = err instanceof ResourceError && err.code === 'cancelled';
       setError(!cancelled); setMessage(cancelled ? '已取消读取，原有会话保留' : `读取失败：${err instanceof Error ? err.message : '未知错误'}；原有会话保留`);
     } finally { if (id === sequence.current) { controller.current = null; setBusy(false); } }
   };
-  const clear = () => { sequence.current++; querySequence.current++; controller.current?.abort(); controller.current = null; manager.current!.close(); onChange(); setBusy(false); setBase(null); setLayer(null); setResult(null); setSpriteResult(null); setError(false); setMessage('资源会话已清除'); };
+  const persistCurrentSelection = () => { void previewAssets.saveResources(manager.current!.selectionSnapshot).catch(() => setMessage('当前资源已切换，但本机缓存写入失败；刷新后需重新选择')); };
+  const clear = () => {
+    sequence.current++; querySequence.current++; controller.current?.abort(); controller.current = null; manager.current!.close(); onChange();
+    setBusy(false); setBase(null); setLayer(null); setResult(null); setSpriteResult(null); setError(false);
+    void previewAssets.clearResources().then(() => setMessage('资源会话和本机缓存已清除')).catch(() => setMessage('当前页面资源已清除，但本机缓存清理失败；刷新后可能恢复原资源'));
+  };
   return <div className="resource-test" ref={root}>
     {!hideTrigger && <button aria-expanded={open} aria-controls="resource-test-menu" onClick={() => setOpen(!open)}>资源包检查</button>}
     <section id="resource-test-menu" className="resource-test-popover resource-test-popover-menu" hidden={!open} aria-label="资源包检查">
       <div className="resource-test-heading"><strong>资源包检查 · 实验功能</strong><button aria-label="关闭资源包检查" onClick={() => setOpen(false)}>✕</button></div>
-      <p>选择客户端 JAR 和可选资源包；仅在本页读取，不上传或保存。Button 与有边框的 EditBox 使用纹理预览，字体仍为网页近似。</p>
+      <p>选择客户端 JAR 和可选资源包；验证后的选择保存在本机浏览器，不上传。浏览器清理站点数据或存储空间不足时需要重新选择。Button 与有边框的 EditBox 使用纹理预览，字体仍为网页近似。</p>
       <div className="resource-test-actions">
         <label className="resource-file">选择客户端 JAR<input type="file" aria-label="选择客户端 JAR" accept=".jar,application/java-archive" disabled={busy} onChange={e => void load(e, 'client')}/></label>
         <label className="resource-file">选择 ZIP<input type="file" aria-label="选择资源包 ZIP" accept=".zip,application/zip" disabled={busy} onChange={e => void load(e, 'zip')}/></label>
@@ -54,8 +68,8 @@ export function ResourceTestPanel({ manager: shared, onChange, openRequest = 0, 
       {!directorySupported && <p>当前浏览器不支持文件夹选择，请使用 ZIP。</p>}
       <p role={error ? 'alert' : 'status'} className={error ? 'field-error' : ''}>{message}</p>
       <p>基础资源：<strong>{base ?? '无'}</strong>；当前资源层：<strong>{layer ?? '无'}</strong>（覆盖包，须兼容 format 34）</p>
-      {manager.current!.baseChoices.length > 0 && <label>已载入的客户端<select aria-label="已载入的客户端" value={manager.current!.baseIndex} onChange={e => { querySequence.current++; manager.current!.selectResource('base', Number(e.target.value)); setBase(manager.current!.baseName); setResult(null); setSpriteResult(null); onChange(); }}><option value={-1} disabled>未使用</option>{manager.current!.baseChoices.map((name, i) => <option key={i} value={i}>{name}</option>)}</select></label>}
-      {manager.current!.overlayChoices.length > 0 && <label>已载入的资源包<select aria-label="已载入的资源包" value={manager.current!.overlayIndex} onChange={e => { querySequence.current++; manager.current!.selectResource('overlay', Number(e.target.value)); setLayer(manager.current!.overlayName); setResult(null); setSpriteResult(null); onChange(); }}><option value={-1} disabled>未使用</option>{manager.current!.overlayChoices.map((name, i) => <option key={i} value={i}>{name}</option>)}</select></label>}
+      {manager.current!.baseChoices.length > 0 && <label>已载入的客户端<select aria-label="已载入的客户端" value={manager.current!.baseIndex} onChange={e => { querySequence.current++; manager.current!.selectResource('base', Number(e.target.value)); setBase(manager.current!.baseName); setResult(null); setSpriteResult(null); onChange(); persistCurrentSelection(); }}><option value={-1} disabled>未使用</option>{manager.current!.baseChoices.map((name, i) => <option key={i} value={i}>{name}</option>)}</select></label>}
+      {manager.current!.overlayChoices.length > 0 && <label>已载入的资源包<select aria-label="已载入的资源包" value={manager.current!.overlayIndex} onChange={e => { querySequence.current++; manager.current!.selectResource('overlay', Number(e.target.value)); setLayer(manager.current!.overlayName); setResult(null); setSpriteResult(null); onChange(); persistCurrentSelection(); }}><option value={-1} disabled>未使用</option>{manager.current!.overlayChoices.map((name, i) => <option key={i} value={i}>{name}</option>)}</select></label>}
       <label className="resource-query">资源路径<input aria-label="资源路径" placeholder="assets/minecraft/textures/…" value={path} onChange={e => { setPath(e.target.value); setResult(null); }}/></label>
       <button disabled={(!layer && !base) || busy || !path} onClick={() => setResult(manager.current!.query(path))}>查询资源</button>
       {result && <p data-testid="resource-query-result" role="status">{result.status === 'valid' ? `找到：${result.path} · 来源 ${result.layer} · ${result.size} 字节` : `${result.status}：${result.diagnostic}`}</p>}

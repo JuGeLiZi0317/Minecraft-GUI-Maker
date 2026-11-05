@@ -1,5 +1,6 @@
 import { CATALOG, CATALOG_VERSION, TARGET, type NodeType } from './catalog';
 import type { Bounds, GuiNode, GuiProject, TextSpec } from './schema';
+import { PANEL_MIN_SIZE } from './panel';
 
 export const literal = (value: string): TextSpec => ({ kind: 'literal', value });
 export const displayText = (text: TextSpec): string => text.kind === 'literal' ? text.value : text.fallback;
@@ -22,11 +23,36 @@ export function emptyProject(): GuiProject {
       nodes: [], variables: [], behaviors: [] }], assets: [],
   };
 }
+/** Repairs stale in-memory Panel geometry before a workspace-changing operation. Strict JSON parsing remains unchanged. */
+export function repairInvalidPanelBounds(project: GuiProject): GuiProject {
+  let repaired: GuiProject | undefined;
+  for (let index = 0; index < project.screens.length; index++) {
+    const screen = project.screens[index];
+    if (screen.background.kind !== 'panel' || !screen.background.bounds) continue;
+    const bounds = screen.background.bounds;
+    if ([bounds.x, bounds.y, bounds.w, bounds.h].every(Number.isInteger) && bounds.x >= 0 && bounds.y >= 0 && bounds.w >= PANEL_MIN_SIZE && bounds.h >= PANEL_MIN_SIZE && bounds.x + bounds.w <= screen.designSize.width && bounds.y + bounds.h <= screen.designSize.height) continue;
+    repaired ??= structuredClone(project);
+    const target = repaired.screens[index];
+    if (target.background.kind === 'panel') target.background.bounds = { x: 0, y: 0, w: target.designSize.width, h: target.designSize.height };
+  }
+  return repaired ?? project;
+}
 export function createNode(type: NodeType, id: string, position = { x: 16, y: 16 }): GuiNode {
   const bounds = { ...position, ...CATALOG[type].size };
   const visible = { visible: true };
   switch (type) {
     case 'minecraft:scrollable-panel': return { id, type, bounds, source: { ...CATALOG[type].source }, state: { ...visible, enabled: true }, props: { padding: 4, contentHeight: 180, initialScroll: 'top', backgroundColor: '#B020252D', borderColor: '#FF8795A5' }, events: {} };
+    case 'minecraft:collapsible-panel': return { id, type, bounds, source: { ...CATALOG[type].source }, state: { ...visible, enabled: true }, props: { title: literal('Collapsible Panel'), headerHeight: 20, initialExpanded: true, headerColor: '#FF303D4B', backgroundColor: '#B020252D', textColor: '#FFFFFFFF', border: true, borderColor: '#FF8795A5' }, events: {} };
+    case 'minecraft:tree-view': return { id, type, bounds, source: { ...CATALOG[type].source }, state: { ...visible, enabled: true }, props: {
+      name: literal('Tree View'),
+      items: [
+        { id: 'item_root', label: literal('Root'), parentId: null, order: 0, selectable: false, disabled: false },
+        { id: 'item_branch', label: literal('Branch'), parentId: 'item_root', order: 0, selectable: true, disabled: false },
+        { id: 'item_leaf_a', label: literal('Leaf A'), parentId: 'item_branch', order: 0, selectable: true, disabled: false },
+        { id: 'item_leaf_b', label: literal('Leaf B'), parentId: 'item_branch', order: 1, selectable: true, disabled: false },
+        { id: 'item_other', label: literal('Other'), parentId: null, order: 1, selectable: true, disabled: false },
+      ], initialExpandedIds: ['item_root', 'item_branch'], initialSelectedItemId: 'item_leaf_a',
+    }, events: { change: 'tree-selection-change' } };
     case 'minecraft:status-indicator': return { id, type, bounds, source: { ...CATALOG[type].source }, state: visible, props: { name: literal('状态'), statuses: [{ statusId: 'status_running', label: literal('运行'), color: '#FF54B56A', text: literal('运行') }, { statusId: 'status_stopped', label: literal('停止'), color: '#FF808080', text: literal('停止') }, { statusId: 'status_warning', label: literal('警告'), color: '#FFFFB347', text: literal('警告') }], initialStatusId: 'status_stopped', shape: 'circle', showLabel: true, color: '#FFFFFFFF', textShadow: false }, events: { change: 'status-change' } };
     case 'minecraft:image': return { id, type, bounds, source: { ...CATALOG[type].source }, state: visible, props: { kind: 'texture', resourceId: 'minecraft:textures/gui/container/dispenser.png', textureWidth: 256, textureHeight: 256, uv: { x: 0, y: 0, width: 256, height: 256 } }, events: {} };
     case 'minecraft:fitting-multi-line-text-widget': return { id, type, bounds: { ...position, ...CATALOG[type].size }, source: { ...CATALOG[type].source }, state: visible, props: { text: literal('只读滚动文本区域\nRead only scrollable text'), color: '#FFE0E0E0', initialScroll: 'top', textShadow: true }, events: {} };
@@ -55,7 +81,7 @@ export function constrainBounds(bounds: Bounds, type: NodeType, screen: { width:
 }
 
 export function upgradeTextStyleEdit(doc: GuiProject) {
-  if (doc.runtimePolicy || doc.screens.some(s => s.nodes.some(n => n.type !== 'minecraft:creative-tab' && n.type !== 'minecraft:fill' && n.type !== 'minecraft:image' && n.type !== 'minecraft:scrollable-panel' && ((n.type !== 'minecraft:string-widget' && n.type !== 'minecraft:multi-line-text-widget' && 'color' in n.props && n.props.color !== undefined) || ((n.type === 'minecraft:multi-line-text-widget' || n.type === 'minecraft:slider') && !n.props.textShadow))))) {
-    if (!['0.18.0', '0.19.0', '0.20.0', '0.21.0', '0.22.0', '0.23.0', '0.24.0', '0.25.0', '0.26.0'].includes(doc.schemaVersion)) doc.schemaVersion = '0.17.0'; doc.entryScreenId ??= doc.screens[0].id; doc.screenTabGroups ??= [];
+  if (doc.runtimePolicy || doc.screens.some(s => s.nodes.some(n => n.type !== 'minecraft:creative-tab' && n.type !== 'minecraft:fill' && n.type !== 'minecraft:image' && n.type !== 'minecraft:scrollable-panel' && n.type !== 'minecraft:collapsible-panel' && ((n.type !== 'minecraft:string-widget' && n.type !== 'minecraft:multi-line-text-widget' && 'color' in n.props && n.props.color !== undefined) || ((n.type === 'minecraft:multi-line-text-widget' || n.type === 'minecraft:slider') && !n.props.textShadow))))) {
+    if (!['0.18.0', '0.19.0', '0.20.0', '0.21.0', '0.22.0', '0.23.0', '0.24.0', '0.25.0', '0.26.0', '0.27.0', '0.28.0', '0.29.0', '0.30.0', '0.31.0', '0.32.0', '0.33.0', '0.34.0', '0.35.0', '0.36.0', '0.37.0', '0.38.0'].includes(doc.schemaVersion)) doc.schemaVersion = '0.17.0'; doc.entryScreenId ??= doc.screens[0].id; doc.screenTabGroups ??= [];
   }
 }

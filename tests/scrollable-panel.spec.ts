@@ -66,7 +66,9 @@ test('W2-A behavior preview scrolls child coordinates within the clipped viewpor
   const before = await projectJson(page);
   await page.getByRole('button', { name: '交互预览', exact: true }).click();
   const input = page.getByLabel('数值输入 number_1', { exact: true });
-  await expect(input).toHaveCount(0);
+  await expect(input).toHaveCount(1);
+  await expect(input).toBeHidden();
+  await expect.poll(() => input.evaluate(element => document.activeElement !== element)).toBe(true);
   const point = await page.getByTestId('canvas-host').evaluate(host => {
     const r = host.getBoundingClientRect(), zoom = Number(host.getAttribute('data-zoom'));
     const originY = r.y + Number(host.getAttribute('data-origin-y'));

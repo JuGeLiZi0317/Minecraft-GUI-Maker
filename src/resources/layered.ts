@@ -1,4 +1,7 @@
-import { prepareClient, prepareSession, ResourceError, type ResourceSession } from './core';
+import { prepareClient, prepareSession, ResourceError, type ResourceInput, type ResourceSession } from './core';
+
+export type SelectedResource = { name: string; input: ResourceInput } | null;
+export type ResourceSelectionSnapshot = { base: SelectedResource; overlay: SelectedResource };
 
 export const GUI_SPRITES = ['minecraft:widget/button', 'minecraft:widget/button_highlighted', 'minecraft:widget/button_disabled', 'minecraft:widget/text_field', 'minecraft:widget/text_field_highlighted'] as const;
 /** Checkbox sprites audited for 1.21.1; loaded only when requested by an H1 node. */
@@ -60,6 +63,20 @@ export class LayeredResources {
   get overlayChoices() { return this.savedOverlay.map(s => s.layer); }
   get baseIndex() { return this.savedBase.indexOf(this.base!); }
   get overlayIndex() { return this.savedOverlay.indexOf(this.overlay!); }
+  get selectionSnapshot(): ResourceSelectionSnapshot {
+    const selected = (session: ResourceSession | null): SelectedResource => session ? { name: session.layer, input: session.snapshotInput() } : null;
+    const base = selected(this.base);
+    if (base && base.input.kind !== 'zip') throw new ResourceError('invalid', '客户端资源快照类型无效');
+    return { base, overlay: selected(this.overlay) };
+  }
+  async restoreSelection(snapshot: ResourceSelectionSnapshot | null) {
+    if (!snapshot) return;
+    if (snapshot.base) {
+      if (snapshot.base.input.kind !== 'zip') throw new ResourceError('invalid', '缓存的客户端资源格式无效');
+      await this.setBase(snapshot.base.input.blob, snapshot.base.name);
+    }
+    if (snapshot.overlay) await this.setOverlay(snapshot.overlay.input, snapshot.overlay.name);
+  }
   useDefault() { this.active?.abort(); this.active = null; this.base = this.overlay = null; this.generation++; }
   selectResource(kind: 'base' | 'overlay', index: number) {
     const session = (kind === 'base' ? this.savedBase : this.savedOverlay)[index];

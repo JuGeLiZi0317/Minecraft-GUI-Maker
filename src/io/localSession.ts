@@ -167,6 +167,8 @@ export class LocalSession {
   }
   async createProject() {
     if (this.store.getState().blocked || !this.lease?.acquired || this.paused) throw new Error('当前本地会话不可写，请先保存或恢复');
+    // Preserve the old copy even when it contains Panel bounds left stale by an earlier workspace version.
+    this.store.getState().repairPanelBounds();
     this.store.getState().setBlocked('正在新建项目');
     try {
       await this.flush();

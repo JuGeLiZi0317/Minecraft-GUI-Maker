@@ -280,3 +280,17 @@
   .screen-size-controls, .inspector-section, .tab-views { margin-left: -10px; margin-right: -10px; padding-left: 10px; padding-right: 10px; }
   .inspector > .panel-heading { margin-left: -10px; margin-right: -10px; padding-left: 10px; padding-right: 10px; }
 }
+.tree-view-fields { display: grid; gap: 8px; margin-top: 10px; }
+.tree-item-list { display: grid; gap: 6px; margin: 0; padding: 8px; border: 1px solid var(--line, #333941); min-width: 0; }
+.tree-item-editor { border: 1px solid var(--line, #333941); border-radius: 4px; padding: 4px 7px; }
+.tree-item-editor > summary { cursor: pointer; overflow-wrap: anywhere; }
+.tree-item-editor .section-body { display: grid; gap: 7px; padding: 7px 0 3px; }
+.tree-row-actions { display: flex; flex-wrap: wrap; gap: 4px; }
+.tree-initial-expanded { display: grid; gap: 4px; }
+
+/* Behavior labels belong to the editor structure tree and preview log only. */
+.layer .behavior-binding-badge { color: var(--accent); font-size: 10px; }
+.layers-heading button { font-size: 10px; padding: 2px 4px; white-space: nowrap; }
+.behavior-related { border-top: 1px solid var(--line-subtle); padding: 6px 0; }
+.behavior-diagnostic-kind { font-weight: 600; }
+[data-severity="warning"] .behavior-diagnostic-kind, [data-severity="error"] .behavior-diagnostic-kind { color: #e7a961; }

@@ -9,10 +9,10 @@ function SelectionImage({ node, selected, family }: { node: SelectionNode; selec
   return <canvas ref={ref} width={node.bounds.w} height={node.bounds.h} style={{ width: '100%', height: '100%', pointerEvents: 'none', position: 'absolute', inset: 0, imageRendering: 'pixelated' }} aria-hidden="true"/>;
 }
 type Open = { nodeId: string; active: string };
-export function SelectionPreview({ nodes, screenId, design, origin, zoom, family, clipInsets = {} }: { nodes: SelectionNode[]; screenId: string; design: { width: number; height: number }; origin: { x: number; y: number }; zoom: number; family: string; clipInsets?: Record<string, { top: number; right: number; bottom: number; left: number }> }) {
+export function SelectionPreview({ nodes, screenId, design, origin, zoom, family, clipInsets = {}, onSelectionChange, runtimeValues }: { nodes: SelectionNode[]; screenId: string; design: { width: number; height: number }; origin: { x: number; y: number }; zoom: number; family: string; clipInsets?: Record<string, { top: number; right: number; bottom: number; left: number }>; onSelectionChange?: (event: SelectionEvent) => void; runtimeValues?: Record<string, string> }) {
   const [values, setValues] = useState<Record<string, string>>({}), [events, setEvents] = useState<SelectionEvent[]>([]), [open, setOpen] = useState<Open | null>(null);
   const root = useRef<HTMLDivElement>(null), list = useRef<HTMLDivElement>(null), triggers = useRef<Record<string, HTMLButtonElement | null>>({});
-  const state = useRef({ nodes, open, values, zoom }); state.current = { nodes, open, values, zoom };
+  const state = useRef({ nodes, open, values, zoom }); state.current = { nodes, open, values: runtimeValues ?? values, zoom };
   const release = useRef(new Set<number>());
   const scrollDrag = useRef<{ pointerId: number; y: number; scroll: number } | null>(null);
   const confirm = (node: SelectionNode, optionId: string, source: SelectionEvent['source']) => {
@@ -21,17 +21,19 @@ export function SelectionPreview({ nodes, screenId, design, origin, zoom, family
     const previous = node.props.options.some(o => o.id === stored && !o.disabled) ? stored : node.props.initialSelectedOptionId;
     if (previous === optionId) return;
     state.current.values = { ...state.current.values, [node.id]: optionId }; setValues(state.current.values);
-    setEvents(old => [...old.slice(-49), { type: 'selection-change', screenId, nodeId: node.id, optionId, phase: 'confirm', source }]);
+    const event: SelectionEvent = { type: 'selection-change', screenId, nodeId: node.id, optionId, phase: 'confirm', source };
+    setEvents(old => [...old.slice(-49), event]); onSelectionChange?.(event);
   };
   const close = (restore = true) => { const id = state.current.open?.nodeId; state.current.open = null; scrollDrag.current = null; setOpen(null); if (restore && id) triggers.current[id]?.focus(); };
   // Relayout and owner invalidation close the transient overlay; selection survives a resize.
   const layoutKey = JSON.stringify([origin, zoom, design, family, nodes.map(n => [n.id, n.bounds, n.state, n.props])]);
-  useEffect(() => { close(false); }, [layoutKey]); // eslint-disable-line react-hooks/exhaustive-deps
+  useLayoutEffect(() => { close(false); }, [layoutKey]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => { const resize = () => close(false); window.addEventListener('resize', resize); return () => window.removeEventListener('resize', resize); }, []);
   useEffect(() => {
     const consume = (event: Event) => { event.preventDefault(); event.stopImmediatePropagation(); };
     const down = (e: PointerEvent) => {
       const current = state.current.open; if (!current) return;
+      if (e.target instanceof Element && e.target.closest('[data-collapse-toggle]')) { close(false); return; }
       release.current.add(e.pointerId); consume(e);
       const node = state.current.nodes.find(n => n.id === current.nodeId); if (!node) { close(false); return; }
       const element = e.target instanceof Element ? e.target.closest<HTMLElement>('[data-choice-option]') : null;
@@ -79,7 +81,7 @@ export function SelectionPreview({ nodes, screenId, design, origin, zoom, family
   }, [open]);
   return <div ref={root} style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 30 }}>
     {nodes.map(node => {
-      const stored = values[node.id];
+      const stored = (runtimeValues ?? values)[node.id];
       const selected = node.props.options.some(o => o.id === stored && !o.disabled) ? stored : node.props.initialSelectedOptionId;
       const clip = clipInsets[node.id], style = { position: 'absolute' as const, left: origin.x + node.bounds.x * zoom, top: origin.y + node.bounds.y * zoom, width: node.bounds.w * zoom, height: node.bounds.h * zoom, pointerEvents: 'auto' as const, ...(clip ? { clipPath: `inset(${clip.top}px ${clip.right}px ${clip.bottom}px ${clip.left}px)` } : {}) };
       const enabled = node.props.options.filter(o => !o.disabled);
@@ -97,7 +99,7 @@ export function SelectionPreview({ nodes, screenId, design, origin, zoom, family
       </div>;
     })}
     {owner && placement && open && <div ref={list} tabIndex={-1} id={`choices-${owner.id}`} role="listbox" aria-label={displayText(owner.props.name)} aria-activedescendant={`choice-${owner.id}-${open.active}`} style={{ position: 'absolute', pointerEvents: 'auto', zIndex: 2, left: origin.x + placement.x * zoom, top: origin.y + placement.y * zoom, width: placement.w * zoom, height: placement.h * zoom, overflowY: 'auto', background: '#b0b0b0', color: '#303030', fontFamily: family, fontSize: 9 * zoom, outline: '1px solid #555' }}>
-      {owner.props.options.map((o, i) => <div key={o.id} id={`choice-${owner.id}-${o.id}`} role="option" aria-selected={(values[owner.id] ?? owner.props.initialSelectedOptionId) === o.id} aria-disabled={o.disabled} aria-label={`${displayText(o.label)} (${i + 1}/${owner.props.options.length})`} data-choice-option={o.id} style={{ boxSizing: 'border-box', height: 20 * zoom, padding: `${5 * zoom}px ${4 * zoom}px`, whiteSpace: 'nowrap', overflow: 'hidden', background: open.active === o.id ? '#d4d4d4' : undefined, color: o.disabled ? '#777' : '#' + owner.props.color.slice(3) + owner.props.color.slice(1, 3), textShadow: owner.props.textShadow ? `${zoom}px ${zoom}px #383838` : 'none' }}>{displayText(o.label)}</div>)}
+      {owner.props.options.map((o, i) => <div key={o.id} id={`choice-${owner.id}-${o.id}`} role="option" aria-selected={((runtimeValues ?? values)[owner.id] ?? owner.props.initialSelectedOptionId) === o.id} aria-disabled={o.disabled} aria-label={`${displayText(o.label)} (${i + 1}/${owner.props.options.length})`} data-choice-option={o.id} style={{ boxSizing: 'border-box', height: 20 * zoom, padding: `${5 * zoom}px ${4 * zoom}px`, whiteSpace: 'nowrap', overflow: 'hidden', background: open.active === o.id ? '#d4d4d4' : undefined, color: o.disabled ? '#777' : '#' + owner.props.color.slice(3) + owner.props.color.slice(1, 3), textShadow: owner.props.textShadow ? `${zoom}px ${zoom}px #383838` : 'none' }}>{displayText(o.label)}</div>)}
     </div>}
     <output aria-label="选择事件预览" data-testid="selection-preview-events" data-events={JSON.stringify(events)} aria-live="polite" style={{ position: 'absolute', bottom: 30, left: 24, fontSize: 11 }}>{events.length ? `${events.at(-1)!.nodeId}: ${events.at(-1)!.optionId}` : '选择事件：暂无有效变更'}</output>
   </div>;

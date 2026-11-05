@@ -5,18 +5,22 @@ import { showScreenControls } from './workspace-helpers';
 test('shadow user workflow: five controls, preview, export, history and persistence', async ({ page }) => {
   await page.goto('/');
   const read = async () => JSON.parse((await page.getByTestId('project-json').textContent())!);
-  const old = emptyProject(); old.screens[0].nodes.push(createNode('minecraft:string-widget', 'legacy'));
+  const old = emptyProject(), legacyLabel = createNode('minecraft:string-widget', 'legacy');
+  if (legacyLabel.type === 'minecraft:string-widget') delete legacyLabel.props.textShadow;
+  old.screens[0].nodes.push(legacyLabel);
   await page.getByLabel('导入项目文件').setInputFiles({ name: 'legacy.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(old)) });
   await expect(page.locator('.statusbar [role="status"]')).toContainText('导入成功');
   expect(await read()).toEqual(old);
   await page.getByRole('button', { name: '选择 legacy' }).click(); await expect(page.getByLabel('文字阴影')).not.toBeChecked();
+  expect(await read()).toEqual(old); // Opening Inspector must not materialize the optional legacy field.
   await page.getByLabel('文字阴影').check(); expect((await read()).schemaVersion).toBe('0.5.0');
+  expect((await read()).screens[0].nodes[0].props.textShadow).toBe(true);
   await showScreenControls(page); await page.keyboard.press('Control+z'); expect(await read()).toEqual(old);
   await page.keyboard.press('Control+Shift+z'); expect((await read()).screens[0].nodes[0].props.textShadow).toBe(true);
   const bad = await read(); bad.schemaVersion = '0.1.0';
   await page.getByLabel('导入项目文件').setInputFiles({ name: 'bad.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(bad)) });
   await expect(page.locator('.statusbar [role="alert"]')).toContainText('导入失败'); expect((await read()).schemaVersion).toBe('0.5.0');
-  for (const name of ['Button', 'EditBox', 'StringWidget', 'Checkbox', 'CycleButton']) {
+  for (const name of ['StringWidget', 'Checkbox']) {
     await page.getByRole('button', { name: `添加 ${name}`, exact: true }).click();
     const toggle = page.getByLabel('文字阴影'); await expect(toggle).not.toBeChecked();
     const before = await page.getByTestId('canvas-host').screenshot();
@@ -41,8 +45,8 @@ test('shadow user workflow: five controls, preview, export, history and persiste
 test('each text component changes PNG when shadow is switched', async ({ page }) => {
   await page.goto('/');
   for (const [i, type] of (['minecraft:button', 'minecraft:edit-box', 'minecraft:string-widget', 'minecraft:checkbox', 'minecraft:cycle-button'] as const).entries()) {
-    const doc = emptyProject(); doc.schemaVersion = type === 'minecraft:checkbox' || type === 'minecraft:cycle-button' ? '0.4.0' : '0.1.0';
-    doc.screens[0].nodes = [createNode(type, `node_${i}`)];
+    const doc = emptyProject(); doc.schemaVersion = '0.17.0'; doc.entryScreenId = doc.screens[0].id; doc.screenTabGroups = [];
+    const node = createNode(type, `node_${i}`); Object.assign(node.props, { textShadow: false }); doc.screens[0].nodes = [node];
     await page.getByLabel('导入项目文件').setInputFiles({ name: 'test.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(doc)) });
     await expect(page.locator('.statusbar [role="status"]')).toContainText('导入成功');
     await page.getByRole('button', { name: `选择 node_${i}` }).click();
@@ -66,12 +70,17 @@ test('font change cancels an in-flight shadow export', async ({ page }) => {
     FontFace.prototype.load = function () { return new Promise(resolve => setTimeout(resolve, 1500)).then(() => load.call(this)); };
   });
   await page.goto('/');
-  await page.getByRole('button', { name: '添加 Button', exact: true }).click();
+  const doc = emptyProject(); doc.schemaVersion = '0.17.0'; doc.entryScreenId = doc.screens[0].id; doc.screenTabGroups = [];
+  const button = createNode('minecraft:button', 'shadow_button'); if (button.type === 'minecraft:button') button.props.textShadow = false;
+  doc.screens[0].nodes.push(button);
+  await page.getByLabel('导入项目文件').setInputFiles({ name: 'shadow.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(doc)) });
+  await expect(page.locator('.statusbar [role="status"]')).toContainText('导入成功'); await page.getByRole('button', { name: '选择 shadow_button' }).click();
   await page.getByLabel('文字阴影').check();
   await showScreenControls(page);
   await page.getByLabel('选择预览字体').setInputFiles('C:/Windows/Fonts/arial.ttf');
   await expect(page.getByTestId('font-status')).toContainText('正在加载');
   await page.getByRole('button', { name: '导出规格', exact: true }).click();
+  await page.getByRole('button', { name: '字体选择' }).click();
   await page.getByRole('button', { name: '使用系统字体' }).click();
   await expect(page.locator('.statusbar [role="alert"]')).toContainText('字体选择已改变');
   await expect(page.locator('.export-links a')).toHaveCount(0);

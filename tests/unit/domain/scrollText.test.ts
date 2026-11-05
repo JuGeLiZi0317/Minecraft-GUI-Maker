@@ -46,9 +46,9 @@ describe('ReadOnlyScrollText', () => {
     const old = structuredClone(edited); old.schemaVersion = '0.22.0'; expect(() => parseProject(exportProject(old))).toThrow('Schema 0.23.0');
     const second = structuredClone(edited.screens[0]); second.id = 'screen_other'; second.title = { kind: 'literal', value: 'Other' }; second.nodes = [createNode('minecraft:fitting-multi-line-text-widget', 'scroll_other')]; edited.screens.push(second);
     const snapshot = beginExport(edited), reference = await referenceFor(snapshot), { buildSpecification } = await import('../../../src/exports/specification');
-    const spec = buildSpecification(snapshot, reference, 'project.json'); expect(spec.version).toBe('0.12.0'); expect(spec.readOnlyScrollTextContract.scroll.initial).toContain('top');
+    const spec = buildSpecification(snapshot, reference, 'project.json'); expect(spec.version).toBe('0.18.0'); expect(spec.readOnlyScrollTextContract.scroll.initial).toContain('top');
     const renderer = (async (_snapshot: unknown, _ref: unknown, scale: number) => new Uint8Array([scale])) as never;
-    const bundle = await buildBundle(snapshot, renderer); expect(bundle.manifest.version).toBe('0.17.0');
+    const bundle = await buildBundle(snapshot, renderer); expect(bundle.manifest.version).toBe('0.22.0');
     expect(bundle.manifest.screens.map(screen => screen.readOnlyScrollTexts.map(item => item.nodeId))).toEqual([['node_1'], ['scroll_other']]);
   });
 });

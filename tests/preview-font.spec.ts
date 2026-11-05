@@ -7,7 +7,7 @@ test('shared text preview and PNG, user font, fallback and delayed load', async 
     FontFace.prototype.load = function () { return new Promise(resolve => setTimeout(resolve, 500)).then(() => original.call(this)); };
   });
   await page.goto('/');
-  const doc = emptyProject();
+  const doc = emptyProject(); doc.schemaVersion = '0.17.0'; doc.entryScreenId = doc.screens[0].id; doc.screenTabGroups = [];
   for (const [i, type] of (['minecraft:button', 'minecraft:edit-box', 'minecraft:string-widget'] as const).entries()) {
     const n = createNode(type, `n${i}`, { x: 20, y: 20 + 35 * i });
     if (n.type === 'minecraft:button') n.props.message = { kind: 'literal', value: 'Hello 123! 中文' };

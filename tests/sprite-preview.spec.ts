@@ -35,7 +35,8 @@ test('decoded sprite states update the real editor without changing its document
   const jar = zipFixture([{ name: 'version.json', data: JSON.stringify({ id:'1.21.1', pack_version:{ resource:34 } }) },
     { name:'assets/minecraft/atlases/gui.json', data:JSON.stringify({ sources:[{ type:'directory', source:'gui/sprites', prefix:'' }] }) },
     ...GUI_SPRITES.flatMap((id, i) => [{ name: pngPath(id), data: Buffer.from(images[i], 'base64') }, { name: pngPath(id) + '.mcmeta', data: JSON.stringify({gui:{scaling:{type:'nine_slice',width:8,height:8,border:2}}}) }])]);
-  const doc = emptyProject(), button = createNode('minecraft:button', 'button', { x: 20, y: 20 }), edit = createNode('minecraft:edit-box', 'edit', { x: 20, y: 60 });
+  const doc = emptyProject(); doc.schemaVersion = '0.17.0'; doc.entryScreenId = doc.screens[0].id; doc.screenTabGroups = [];
+  const button = createNode('minecraft:button', 'button', { x: 20, y: 20 }), edit = createNode('minecraft:edit-box', 'edit', { x: 20, y: 60 });
   doc.screens[0].nodes.push(button, edit);
   await page.getByLabel('导入项目文件').setInputFiles({ name:'project.json', mimeType:'application/json', buffer:Buffer.from(JSON.stringify(doc)) });
   await expect(page.locator('.statusbar [role="status"]')).toContainText('导入成功');

@@ -17,7 +17,7 @@ test('F0 normal workflow: rule, simulation, reset, save, restore and exports', a
   await expect(panel.getByLabel('行为事件')).toHaveValue('button-click'); await expect(panel.getByLabel('目标组件')).toHaveValue('node_2');
   await panel.getByLabel('行为文本').fill('已激活'); await panel.getByRole('button', { name: '保存规则' }).click();
   const read = async () => JSON.parse((await page.getByTestId('project-json').textContent())!);
-  const saved = await read(); expect(saved.schemaVersion).toBe('0.6.0'); expect(saved.screens[0].behaviors[0]).toMatchObject({ id: 'rule_1', event: { type: 'button-click', sourceId: 'node_1' }, action: { type: 'set-text', targetId: 'node_2', text: '已激活' } });
+  const saved = await read(); expect(saved.schemaVersion).toBe('0.17.0'); expect(saved.screens[0].behaviors[0]).toMatchObject({ id: 'rule_1', event: { type: 'button-click', sourceId: 'node_1' }, action: { type: 'set-text', targetId: 'node_2', text: '已激活' } });
   await expect(page.getByTestId('save-status')).toContainText('已保存'); const database = await stored(page);
   const history = await page.getByTestId('history-count').textContent(), canvas = page.getByTestId('canvas-host');
   await page.getByRole('button', { name: '交互预览', exact: true }).click();

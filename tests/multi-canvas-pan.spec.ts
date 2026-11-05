@@ -2,9 +2,9 @@ import { test, expect } from '@playwright/test';
 
 test('right drag over an inactive Screen pans without selecting it', async ({page}) => {
  await page.goto('/'); await expect(page.getByTestId('save-status')).toContainText('本地已保存');
- await page.getByRole('button',{name:'新增 Screen',exact:true}).click();
+ await page.getByRole('button',{name:'新增画布',exact:true}).click();
  const doc=JSON.parse((await page.getByTestId('project-json').textContent())!), history=await page.getByTestId('history-count').textContent();
- const select=page.getByLabel('当前 Screen'); await expect(select).toHaveValue(doc.screens[1].id);
+ const select=page.getByLabel('当前画布', { exact: true }); await expect(select).toHaveValue(doc.screens[1].id);
  const host=page.getByTestId('canvas-host'), box=(await host.boundingBox())!, zoom=Number(await host.getAttribute('data-zoom'));
  let originX=box.x+Number(await host.getAttribute('data-origin-x'))-380*zoom, originY=box.y+Number(await host.getAttribute('data-origin-y'));
  for (const offset of [20, -10]) {

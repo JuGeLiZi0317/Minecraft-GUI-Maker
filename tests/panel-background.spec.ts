@@ -7,8 +7,14 @@ const documentOf = async (page: import('@playwright/test').Page) => JSON.parse((
 const digest = (data: number[]) => createHash('sha256').update(Buffer.from(data)).digest('hex');
 async function importLegacy(page: import('@playwright/test').Page, base = emptyProject()) {
   base.schemaVersion = '0.2.0'; base.screens[0].background = { kind: 'panel', style: 'custom-bevel-1' };
+  delete base.entryScreenId; delete base.screenTabGroups;
+  for (const node of base.screens[0].nodes) {
+    if ('textShadow' in node.props) delete node.props.textShadow;
+    if ('color' in node.props && node.type !== 'minecraft:fill' && node.type !== 'minecraft:image' && node.type !== 'minecraft:string-widget' && node.type !== 'minecraft:multi-line-text-widget') delete node.props.color;
+  }
   await page.getByLabel('导入项目文件').setInputFiles({ name: 'legacy.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(base)) });
   await expect(page.locator('.statusbar [role="status"]')).toContainText('导入成功');
+  return base;
 }
 
 test('panel background is a separate 1:1 texture, stable across edits and local recovery', async ({ page }, info) => {
@@ -16,12 +22,12 @@ test('panel background is a separate 1:1 texture, stable across edits and local 
   const original = await documentOf(page); expect(original.schemaVersion).toBe('0.1.0');
   await page.getByRole('button', { name: '添加 Button', exact: true }).click();
   const before = await documentOf(page), history = await page.getByTestId('history-count').textContent();
-  await importLegacy(page, structuredClone(before));
+  const compatiblePanelDocument = await importLegacy(page, structuredClone(before));
   const panel = await documentOf(page);
   await page.locator('.screen-settings summary').click();
   await expect(page.getByLabel('设计区底板')).toHaveValue('custom-bevel-1'); await expect(page.locator('option[value="custom-bevel-1"]')).toHaveAttribute('disabled', '');
   expect(panel.schemaVersion).toBe('0.2.0'); expect(panel.screens[0].background).toEqual({ kind: 'panel', style: 'custom-bevel-1' });
-  expect(panel.screens[0].nodes).toEqual(before.screens[0].nodes);
+  expect(panel.screens[0].nodes).toEqual(compatiblePanelDocument.screens[0].nodes);
   expect(parseInt((await page.getByTestId('history-count').textContent())!)).toBe(parseInt(history!) + 1);
   await page.getByRole('button', { name: '撤销', exact: true }).click(); expect(await documentOf(page)).toEqual(before);
   await page.locator('.studio-footer').click(); await page.keyboard.press('Control+Shift+z'); expect(await documentOf(page)).toEqual(panel);
@@ -35,7 +41,7 @@ test('panel background is a separate 1:1 texture, stable across edits and local 
   const json = (index: number) => JSON.parse(Buffer.from(files[index].bytes).toString());
   const doc = json(0), spec = json(2), manifest = json(6), png = Buffer.from(files[5].bytes);
   expect(doc.screens[0].designSize).toEqual({ width: 360, height: 200, unit: 'gui-px' });
-  expect(doc.screens[0].nodes).toEqual(before.screens[0].nodes);
+  expect(doc.screens[0].nodes).toEqual(panel.screens[0].nodes);
   expect([png.readUInt32BE(16), png.readUInt32BE(20)]).toEqual([512, 512]);
   expect(manifest.panelTexture).toMatchObject({ file: files[5].name, width: 512, height: 512, contentWidth: 360, contentHeight: 200, pixelRatio: 1, source: 'project-drawn-custom', layers: 'panel-only' });
   expect(manifest.reference).toEqual(spec.reference); expect(manifest.reference.revision).toBe(doc.project.revision);

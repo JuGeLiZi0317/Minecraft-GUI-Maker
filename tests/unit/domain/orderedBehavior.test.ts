@@ -3,6 +3,7 @@ import { createEditorStore } from '../../../src/editor/store';
 import { actionsOf, parseProject, type Behavior } from '../../../src/domain/schema';
 import { beginExport, referenceFor } from '../../../src/exports/snapshot';
 import { buildPrompt, buildSpecification } from '../../../src/exports/specification';
+import { buildBundle } from '../../../src/exports/bundle';
 
 describe('F2 ordered behavior', () => {
   it('upgrades only when ordered actions are committed and preserves their references and order', async () => {
@@ -19,7 +20,8 @@ describe('F2 ordered behavior', () => {
     expect(() => store.getState().importJson(JSON.stringify(missing))).toThrow(); expect(store.getState().doc).toEqual(saved);
     for (const id of ['node_1', 'node_2', 'node_3']) { store.getState().select(id); expect(() => store.getState().deleteSelected()).toThrow('引用'); expect(store.getState().doc).toEqual(saved); }
     store.getState().add('minecraft:checkbox'); store.getState().setPanel(true); expect(store.getState().doc.schemaVersion).toBe('0.17.0');
-    const snapshot = beginExport(saved), spec = buildSpecification(snapshot, await referenceFor(snapshot), 'x.json'); expect(spec.designIntent.behaviors).toEqual(saved.screens[0].behaviors); expect(buildPrompt(spec)).toContain('actions 数组按顺序执行');
+    const snapshot = beginExport(saved), spec = buildSpecification(snapshot, await referenceFor(snapshot), 'x.json'); expect(spec.designIntent.behaviors).toEqual(saved.screens[0].behaviors); expect(spec.designIntent.behaviorCapability).toMatchObject({ supportedEvents: ['button-click', 'checkbox-change', 'rectangle-click', 'slider-change', 'selection-change'], supportedActions: ['set-text', 'set-visible', 'open_screen', 'set-progress-value', 'set-status', 'if'], rulesAreExecutable: false, ruleOrder: 'screen.behaviors array order; actions array order' }); expect(spec.designIntent.behaviorCapability.unboundEventIntents).toEqual([]); expect(buildPrompt(spec)).toContain('actions 数组按顺序执行');
+    const bundle = await buildBundle(snapshot, async () => new Uint8Array([137, 80, 78, 71])); expect(bundle.manifest.behavior.capabilities).toMatchObject({ events: ['button-click', 'checkbox-change', 'rectangle-click', 'slider-change', 'selection-change'], actions: ['set-text', 'set-visible', 'open_screen', 'set-progress-value', 'set-status', 'if'], executableByGuiMaker: false });
   });
   it('keeps old single-action F0 documents unchanged and blocks unsupported shapes', () => {
     const store = createEditorStore(); store.getState().add('minecraft:button'); store.getState().add('minecraft:string-widget');

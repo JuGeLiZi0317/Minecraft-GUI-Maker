@@ -47,7 +47,7 @@ test('four types add/move/resize/export/import/recover in one history transactio
   const downloadEvent = page.waitForEvent('download'); await page.getByRole('button', { name: '导出 JSON' }).click();
   const download = await downloadEvent, file = info.outputPath('roundtrip.json'); await download.saveAs(file);
   const exported = await readFile(file, 'utf8'); expect(JSON.parse(exported)).toEqual(expected);
-  await page.getByRole('button', { name: '删除组件' }).click(); const beforeImport = await documentOf(page);
+  page.once('dialog', dialog => dialog.accept()); await page.getByRole('button', { name: '删除组件' }).click(); const beforeImport = await documentOf(page);
   const history = parseInt((await page.getByTestId('history-count').textContent())!);
   await importFile(page, exported); await expect(page.getByRole('status')).toContainText('导入成功');
   expect(await documentOf(page)).toEqual(expected); expect(parseInt((await page.getByTestId('history-count').textContent())!)).toBe(history + 1);

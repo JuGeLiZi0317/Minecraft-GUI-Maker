@@ -9,8 +9,8 @@ export function safeExportStem(name: string): string {
   if (/^(con|prn|aux|nul|conin\$|conout\$|com[1-9¹²³]|lpt[1-9¹²³])[ .]*(?:\.|$)/i.test(stem)) stem = `_${stem}`;
   return stem;
 }
-export type ExportKind = 'project' | 'design' | 'implementation' | 'prompt' | 'reference' | 'background' | 'manifest' | 'zip' | 'recovery';
-const suffix: Record<ExportKind, string> = { project: '.json', design: '.png', implementation: '.implementation.json', prompt: '.prompt.md', reference: '.reference.png', background: '.background.png', manifest: '.manifest.json', zip: '.zip', recovery: '.recovery-record.json' };
+export type ExportKind = 'project' | 'design' | 'implementation' | 'prompt' | 'reference' | 'background' | 'manifest' | 'behavior-diagnostics' | 'zip' | 'recovery';
+const suffix: Record<ExportKind, string> = { project: '.json', design: '.png', implementation: '.implementation.json', prompt: '.prompt.md', reference: '.reference.png', background: '.background.png', manifest: '.manifest.json', 'behavior-diagnostics': '.behavior-diagnostics.json', zip: '.zip', recovery: '.recovery-record.json' };
 export function exportFilename(name: string, kind: ExportKind): string {
   return `${safeExportStem(name)}${suffix[kind]}`;
 }

@@ -28,7 +28,7 @@ test('one click captures the current design and downloads ZIP directly', async (
   await page.goto('/'); await page.getByLabel('项目名称').fill('直接导出');
   const download = page.waitForEvent('download'); await page.getByRole('button', { name: '一键导出 ZIP' }).click();
   const zip = await download; expect(zip.suggestedFilename()).toBe('直接导出.zip');
-  await expect(page.locator('.export-links a')).toHaveCount(6);
+  await expect(page.locator('.export-links a')).toHaveCount(7);
   const path = info.outputPath('one-click.zip'); await zip.saveAs(path); const zipped = unpack(await readFile(path)), files = await entries(page);
   expect(zipped.size).toBe(files.length); for (const file of files) expect(zipped.get(file.name)).toEqual(Buffer.from(file.bytes));
   expect((await doc(page)).project.name).toBe('直接导出');
@@ -44,7 +44,7 @@ for (const panel of [false, true]) test(`named same-batch ZIP and individual dow
   const before = await doc(page), history = await page.getByTestId('history-count').textContent(), stored = await idb(page);
   const jsonDownload = page.waitForEvent('download'); await page.getByRole('button', { name: '导出 JSON ↗' }).click();
   const json = await jsonDownload; expect(json.suggestedFilename()).toBe('测试 GUI_ 方案.json');
-  await page.getByRole('button', { name: '导出规格', exact: true }).click(); await expect(page.locator('.export-links a')).toHaveCount(panel ? 7 : 6);
+  await page.getByRole('button', { name: '导出规格', exact: true }).click(); await expect(page.locator('.export-links a')).toHaveCount(panel ? 8 : 7);
   const files = await entries(page); expect(files.every(f => f.name.startsWith('测试 GUI_ 方案.'))).toBe(true);
   const imageDownload = page.waitForEvent('download'); await page.locator('.export-links a').nth(1).click();
   const image = await imageDownload; expect(image.suggestedFilename()).toBe(files[1].name);
@@ -80,7 +80,7 @@ test('special, reserved and long names only change download filenames', async ({
 
 test('changing font while ZIP is packing cancels download', async ({ page }) => {
   await page.goto('/'); await showScreenControls(page); await page.getByRole('button', { name: '导出规格', exact: true }).click();
-  await expect(page.locator('.export-links a')).toHaveCount(6);
+  await expect(page.locator('.export-links a')).toHaveCount(7);
   let downloads = 0; page.on('download', () => downloads++);
   await page.evaluate(() => { const zip = document.querySelector('[data-testid="export-panel"] button:not([aria-label])') as HTMLButtonElement; const font = [...document.querySelectorAll('button')].find(b => b.textContent === '使用系统字体')!; zip.click(); font.click(); });
   await expect(page.locator('.statusbar [role="alert"]')).toContainText('字体选择已改变'); expect(downloads).toBe(0);
@@ -91,7 +91,7 @@ test('changing resources while ZIP is packing cancels download', async ({ page }
   const panel = page.getByRole('region', { name: '资源包检查' });
   await panel.getByLabel('选择资源包 ZIP').setInputFiles({ name: 'synthetic.zip', mimeType: 'application/zip', buffer: zipFixture(packFiles()) });
   await expect(panel).toContainText('资源包已检查并载入本次会话');
-  await page.getByRole('button', { name: '导出规格', exact: true }).click(); await expect(page.locator('.export-links a')).toHaveCount(6);
+  await page.getByRole('button', { name: '导出规格', exact: true }).click(); await expect(page.locator('.export-links a')).toHaveCount(7);
   let downloads = 0; page.on('download', () => downloads++);
   await page.evaluate(() => { const zip = document.querySelector('[data-testid="export-panel"] button:not([aria-label])') as HTMLButtonElement; const clear = [...document.querySelectorAll('button')].find(b => b.textContent === '清除会话')!; zip.click(); clear.click(); });
   await expect(page.locator('.statusbar [role="alert"]')).toContainText('资源会话已改变'); expect(downloads).toBe(0);

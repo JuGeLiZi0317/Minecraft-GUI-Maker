@@ -32,10 +32,10 @@ describe('Image / Sprite node', () => {
     expect(parseProject(exportProject(edited))).toEqual(edited);
     const second = structuredClone(edited.screens[0]); second.id = 'screen_other'; second.title = { kind: 'literal', value: 'Other' }; second.nodes = [createNode('minecraft:image', 'image_other')]; edited.screens.push(second);
     const snap = beginExport(edited), spec = buildSpecification(snap, await referenceFor(snap), 'project.json');
-    expect(spec.version).toBe('0.12.0'); expect(spec.imageRuntimeContract.interaction).toContain('draw-only');
+    expect(spec.version).toBe('0.18.0'); expect(spec.imageRuntimeContract.interaction).toContain('draw-only');
     const renderer = (async (_snapshot: unknown, _ref: unknown, scale: number) => new Uint8Array([scale])) as never;
     const bundle = await buildBundle(snap, renderer);
-    expect(bundle.manifest.version).toBe('0.17.0'); expect(bundle.manifest.screens.map(screen => screen.images.map(image => image.nodeId))).toEqual([['node_1'], ['image_other']]);
+    expect(bundle.manifest.version).toBe('0.22.0'); expect(bundle.manifest.screens.map(screen => screen.images.map(image => image.nodeId))).toEqual([['node_1'], ['image_other']]);
     expect(bundle.files.some(file => file.name.endsWith('.json') && !file.name.endsWith('.implementation.json'))).toBe(true);
   });
 });

@@ -16,6 +16,7 @@ const CATEGORY_LABEL: Record<string, string> = {
   custom: '自定义',
 };
 const kindOf = (label: string) => label.includes('权威') ? 'JSON'
+  : label.includes('行为诊断') ? 'JSON'
   : label.includes('PNG') ? 'PNG'
   : label.includes('Prompt') ? 'MD'
   : label.includes('结构化') ? 'SPEC'

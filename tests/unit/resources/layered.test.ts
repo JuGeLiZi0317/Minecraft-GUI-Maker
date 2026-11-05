@@ -20,6 +20,14 @@ it('switches to default without discarding loaded resources and can restore them
   expect(await r.sprite(GUI_SPRITES[0])).toMatchObject({ status: 'valid', imageLayer: '基础：client' }); r.close();
 });
 
+it('snapshots and restores the selected client and overlay resource inputs', async () => {
+  const original = new LayeredResources(); await original.setBase(client(), 'client'); await original.setOverlay(overlay([{ name: 'assets/example/test.txt', data: 'persisted payload' }]), 'pack');
+  const restored = new LayeredResources(); await restored.restoreSelection(structuredClone(original.selectionSnapshot));
+  expect(restored.baseName).toBe('client'); expect(restored.overlayName).toBe('pack');
+  expect(restored.query('assets/example/test.txt')).toMatchObject({ status: 'valid', layer: '覆盖：pack', size: 17 });
+  original.close(); restored.close();
+});
+
 it('uses separate image and metadata layers, with no inheritance below an overriding image', async () => {
   const r = new LayeredResources(), path = location(GUI_SPRITES[0]); await r.setBase(client(), 'client');
   const base = await r.sprite(GUI_SPRITES[0]); expect(base).toMatchObject({ status: 'valid', imageLayer: '基础：client', metadataLayer: '基础：client', scaling: { type: 'nine_slice', border: { left: 1 } } });

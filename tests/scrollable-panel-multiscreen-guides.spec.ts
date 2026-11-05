@@ -55,6 +55,26 @@ async function scrollToBottom(page: Page) {
   await expect.poll(async () => JSON.parse((await page.getByTestId('canvas-host').getAttribute('data-scroll-offsets'))!).panel_1).toBe(152);
 }
 
+test('multiple panels keep snapping scoped to visible siblings in the same content space', async ({ page }) => {
+  const { project, panel } = panelFixture();
+  project.screens[0].designSize = { ...project.screens[0].designSize, width: 512, height: 256 };
+  const other = structuredClone(panel); other.id = 'panel_other'; other.bounds.x = 300;
+  project.screens[0].nodes.push(other,
+    child('moving_scope', panel.id, 10, 160, 30), child('peer_scope', panel.id, 60, 190, 30),
+    child('hidden_scope', panel.id, 59, 0, 30), child('other_scope', other.id, 59, 189, 30));
+  await importProject(page, project); await scrollToBottom(page);
+  const p = await point(page, 84 + 25, 44 + 160 - 152 + 10);
+  await page.mouse.move(p.x, p.y); await page.mouse.down();
+  await page.mouse.move(p.x + 49 * p.zoom, p.y + 29 * p.zoom);
+  const host = page.getByTestId('canvas-host');
+  await expect(host).toHaveAttribute('data-alignment-x', '60');
+  await expect(host).toHaveAttribute('data-alignment-y', '190');
+  expect(await hasGuidePixel(page, 384, 60, 'green')).toBe(false);
+  await page.mouse.up();
+  const moved = (await read(page)).screens[0].nodes.find((node: { id: string }) => node.id === 'moving_scope');
+  expect(moved.bounds).toEqual({ x: 60, y: 190, w: 30, h: 20 });
+});
+
 test('inactive Screen preserves container child coordinates and viewport clipping', async ({ page }) => {
   const { project, panel } = panelFixture();
   project.screens[0].nodes.push(child('visible_1', panel.id, 10, 10, 60), child('hidden_1', panel.id, 10, 120, 60));

@@ -2,6 +2,7 @@ import { displayText } from '../domain/model';
 import type { GuiNode } from '../domain/schema';
 import { checkboxLayout, cycleLabel } from './h1Layout';
 import { multiLineLayout } from './multiLineText';
+import { previewAssets } from '../io/previewAssets';
 
 type Checkbox = Extract<GuiNode, { type: 'minecraft:checkbox' }>;
 const layoutCache = new Map<string, ReturnType<typeof checkboxLayout>>();
@@ -20,14 +21,32 @@ export function previewCheckboxLayout(ctx: CanvasRenderingContext2D, node: Check
   return layout;
 }
 
-// User-supplied fonts live only in this page session. Unique families prevent old
-// asynchronous loads from changing an already captured export.
+// User-supplied fonts are cached locally in IndexedDB. Unique families prevent
+// old asynchronous loads from changing an already captured export.
 export type FontChoice = { family: string; generation: number; status: string; cached: { id: number; name: string }[] };
-const fonts: { id: number; name: string; family: string; face: FontFace }[] = [];
+const fonts: { id: number; name: string; family: string; face: FontFace; bytes: ArrayBuffer }[] = [];
 let current: FontChoice = { family: 'monospace', generation: 0, status: '系统字体近似预览', cached: [] };
 let pending: Promise<void> = Promise.resolve();
+let restoring: Promise<void> | null = null;
 const listeners = new Set<() => void>();
 const emit = () => listeners.forEach(fn => fn());
+async function activateFont(name: string, bytes: ArrayBuffer, generation: number, persist: boolean) {
+  const familyName = `GuiMakerUserFont${generation}`;
+  const face = new FontFace(familyName, bytes.slice(0));
+  await face.load();
+  if (current.generation !== generation) return;
+  document.fonts.add(face);
+  if (fonts.length === 3) document.fonts.delete(fonts.shift()!.face);
+  fonts.push({ id: generation, name, family: `"${familyName}", monospace, sans-serif`, face, bytes: bytes.slice(0) });
+  current = { family: fonts[fonts.length - 1].family, generation, status: `用户字体：${name}；缺字使用系统回退`, cached: fonts.map(({ id, name }) => ({ id, name })) };
+  emit();
+  if (persist) {
+    try { await previewAssets.saveFont({ name, bytes: bytes.slice(0) }); }
+    catch {
+      if (current.generation === generation) { current = { ...current, status: `用户字体：${name}；本机缓存失败，刷新后需重新选择` }; emit(); }
+    }
+  }
+}
 export const fontSession = {
   get: () => current,
   subscribe: (fn: () => void) => { listeners.add(fn); return () => { listeners.delete(fn); }; },
@@ -38,14 +57,7 @@ export const fontSession = {
       try {
         if (file.size > 10 * 1024 * 1024) throw new Error('字体文件超过 10 MiB');
         const bytes = await file.arrayBuffer();
-        const family = `GuiMakerUserFont${generation}`;
-        const face = new FontFace(family, bytes);
-        await face.load();
-        if (current.generation !== generation) return;
-        document.fonts.add(face);
-        if (fonts.length === 3) document.fonts.delete(fonts.shift()!.face);
-        fonts.push({ id: generation, name: file.name, family: `"${family}", monospace, sans-serif`, face });
-        current = { family: fonts[fonts.length - 1].family, generation, status: `用户字体：${file.name}；缺字使用系统回退`, cached: fonts.map(({ id, name }) => ({ id, name })) };
+        await activateFont(file.name, bytes, generation, true);
       } catch {
         if (current.generation !== generation) return;
         current = { ...current, family: 'monospace', generation, status: '字体加载失败，已回退系统字体' };
@@ -54,14 +66,34 @@ export const fontSession = {
     })();
     await pending;
   },
+  async restore() {
+    if (restoring) return restoring;
+    restoring = (async () => {
+      const saved = await previewAssets.readFont();
+      if (!saved || current.generation !== 0) return;
+      const generation = current.generation + 1;
+      current = { ...current, generation, status: '正在恢复本机字体…' }; emit();
+      pending = activateFont(saved.name, saved.bytes, generation, false).catch(() => {
+        if (current.generation === generation) { current = { ...current, family: 'monospace', status: '本机字体恢复失败，已回退系统字体' }; emit(); }
+      });
+      await pending;
+    })().finally(() => { restoring = null; });
+    return restoring;
+  },
   clear() {
     current = { ...current, family: 'monospace', generation: current.generation + 1, status: '系统字体近似预览' };
     pending = Promise.resolve(); emit();
+    void previewAssets.clearFont().catch(() => {
+      if (current.family === 'monospace') { current = { ...current, status: '系统字体近似预览 · 本机字体缓存清除失败' }; emit(); }
+    });
   },
   useCached(id: number) {
     const font = fonts.find(item => item.id === id); if (!font) return;
     current = { ...current, family: font.family, generation: current.generation + 1, status: `用户字体：${font.name}；缺字使用系统回退` };
-    pending = Promise.resolve(); emit();
+    const generation = current.generation; pending = Promise.resolve(); emit();
+    void previewAssets.saveFont({ name: font.name, bytes: font.bytes.slice(0) }).catch(() => {
+      if (current.generation === generation) { current = { ...current, status: `用户字体：${font.name}；本机缓存失败，刷新后需重新选择` }; emit(); }
+    });
   },
   async capture(): Promise<FontChoice> {
     const generation = current.generation;
@@ -94,7 +126,7 @@ function shadowText(ctx: CanvasRenderingContext2D, text: string, x: number, y: n
   ctx.fillText(text, x, y);
 }
 export function drawPreviewText(ctx: CanvasRenderingContext2D, node: GuiNode, w: number, h: number, family: string, panel = false) {
-  if (node.type === 'minecraft:scrollable-panel' || node.type === 'minecraft:fill' || node.type === 'minecraft:image' || node.type === 'minecraft:creative-tab') return;
+  if (node.type === 'minecraft:scrollable-panel' || node.type === 'minecraft:collapsible-panel' || node.type === 'minecraft:fill' || node.type === 'minecraft:image' || node.type === 'minecraft:creative-tab') return;
   if (node.type === 'minecraft:progress-bar') return;
   if (node.type === 'minecraft:fitting-multi-line-text-widget') return;
   if (node.type === 'minecraft:numeric-input' || node.type === 'minecraft:slider') return; // Shared numeric renderer owns these nodes.
@@ -119,7 +151,7 @@ export function drawPreviewText(ctx: CanvasRenderingContext2D, node: GuiNode, w:
     ctx.save(); ctx.font = `9px ${family}`; ctx.textBaseline = 'top'; ctx.textAlign = 'left'; ctx.fillStyle = rgba(node.props.color ?? '#FFE0E0E0');
     layout.lines.forEach((line, i) => shadowText(ctx, line, layout.textX, layout.textY + i * layout.lineHeight, node.props.textShadow ?? false, panel ? '#101010' : '#383838')); ctx.restore(); return;
   }
-  if (node.type === 'minecraft:radio-group' || node.type === 'minecraft:dropdown') return;
+  if (node.type === 'minecraft:radio-group' || node.type === 'minecraft:dropdown' || node.type === 'minecraft:tree-view') return;
   if (node.type === 'minecraft:status-indicator') return;
   const text = node.type === 'minecraft:button' ? displayText(node.props.message) : node.type === 'minecraft:string-widget' ? displayText(node.props.text) : node.type === 'minecraft:cycle-button' ? cycleLabel(node) : node.props.value || (node.props.hint ? displayText(node.props.hint) : '');
   const align = node.type === 'minecraft:button' || node.type === 'minecraft:cycle-button' ? 'center' : node.type === 'minecraft:string-widget' ? node.props.align : 'left';
