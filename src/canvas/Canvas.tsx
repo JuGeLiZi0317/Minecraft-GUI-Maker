@@ -38,30 +38,17 @@ import { beforePanel, drawCreativeTabFallback, SpriteRasterCache, spriteForNode,
 import { drawCheckboxFallback, drawPreviewText, previewCheckboxLayout, type FontChoice } from '../render/previewFont';
 import type { BehaviorPreview } from '../ui/BehaviorPanel';
 import { alignBounds, alignResizeBounds, equalSpacingCandidates, resolveEqualSpacing, type AlignmentGuides, type SpacingCandidate, type SpacingMark } from './smartAlignment';
+import { canvasChrome, type CanvasChromeTheme } from './chromeTheme';
 
 export type View = { zoom: number; panX: number; panY: number; tool: 'select' | 'pan' };
 type ResizeEdge = 'left' | 'right' | 'top' | 'bottom' | 'top-left' | 'bottom-right';
 type Props = { onAddNode: (type: NodeType, position?: { x: number; y: number }, containerDrop?: ContainerDrop) => void; onEditError: (message: string) => void; containerScroll: Record<string, number>; setContainerScroll: (update: Record<string, number> | ((previous: Record<string, number>) => Record<string, number>)) => void; numericPreviewEpoch: number; statusValues: Record<string, string>; screenPositions: Record<string, {x: number; y: number}>; setScreenPositions: (update: (previous: Record<string, {x: number; y: number}>) => Record<string, {x: number; y: number}>) => void; onSelectScreen: (id: string) => void; view: View; setView: (view: View) => void; preview?: GuiScalePreview | null; readOnly?: boolean; behaviorPreview?: BehaviorPreview | null; behaviorMode?: boolean; interaction: boolean; onBehaviorTrigger?: (id: string) => void; onBehaviorSliderChange?: (event: SliderChangeEvent) => void; onBehaviorSelectionChange?: (event: SelectionEvent) => void; editTabs?: Record<string, string>; grid: { visible: boolean; spacing: number }; alignment: { guides: boolean; snap: boolean }; resources: LayeredResources; resourceGeneration: number; font: FontChoice; theme: 'dark' | 'light' };
 type PreviewAsset = { sprite?: DecodedSprite; image?: RenderedImageAsset; error?: string };
 
-const C = {
-  accent: '#f0b45c',
-  accentSoft: '#2a2114',
-  text: '#e9e6df',
-  text2: '#b4b0a7',
-  text3: '#8b877e',
-  line: '#333941',
-  design: '#1c2634',
-  designLine: '#3c424a',
-  grid: 'rgba(64, 165, 230, 0.65)',
-  danger: '#e8837a',
-  dangerSoft: 'rgba(43, 25, 24, 0.92)',
-  ruler: '#0b0e11',
-  rulerLine: '#2a2f36',
-  rulerText: '#8b877e',
-  rulerTick: '#3a4048',
-  mono: 'Cascadia Mono, Consolas, monospace',
-} as const;
+const MONO = 'Cascadia Mono, Consolas, monospace';
+/* Minecraft WYSIWYG surface colors: theme-independent by contract (same matte as PNG export). */
+const DESIGN_SURFACE = '#1c2634';
+const DESIGN_SURFACE_LINE = '#3c424a';
 const NO_SCREEN_TAB_GROUPS: import('../domain/schema').ScreenTabGroup[] = [];
 const rgba = (color: string) => `rgba(${parseInt(color.slice(3, 5), 16)},${parseInt(color.slice(5, 7), 16)},${parseInt(color.slice(7, 9), 16)},${parseInt(color.slice(1, 3), 16) / 255})`;
 const containerAtPoint = (nodes: readonly GuiNode[], x: number, y: number, scrollOffsets: Readonly<Record<string, number>> = {}, expanded: Readonly<Record<string, boolean>> = {}) => [...nodes].reverse().find((node): node is ContainerNode => {
@@ -76,9 +63,9 @@ const containerAtPoint = (nodes: readonly GuiNode[], x: number, y: number, scrol
   return inContent || collapsedHeader;
 });
 
-const NodeDrawing = memo(function NodeDrawing({ node, bounds, onDown, onEdit, assets, cache, resourceActive, focused, selected, font, panel, zoom, numericState, numericOverlay = false, runtimePreview = false, statusId, progressValue, expanded = true }: {
+const NodeDrawing = memo(function NodeDrawing({ node, bounds, onDown, onEdit, assets, cache, resourceActive, focused, selected, font, panel, zoom, numericState, numericOverlay = false, runtimePreview = false, statusId, progressValue, expanded = true, chrome }: {
   node: GuiNode; bounds: Bounds; onDown: (e: KonvaEventObject<PointerEvent>, id: string, mode: 'move' | 'resize', edge?: ResizeEdge) => void;
-  numericState?: NumericState; numericOverlay?: boolean; runtimePreview?: boolean; statusId?: string; progressValue?: number; expanded?: boolean; onEdit: (id: string) => void; assets: Record<string, PreviewAsset>; cache: SpriteRasterCache; resourceActive: boolean; focused: boolean; selected: boolean; font: FontChoice; panel: boolean; zoom: number;
+  numericState?: NumericState; numericOverlay?: boolean; runtimePreview?: boolean; statusId?: string; progressValue?: number; expanded?: boolean; onEdit: (id: string) => void; assets: Record<string, PreviewAsset>; cache: SpriteRasterCache; resourceActive: boolean; focused: boolean; selected: boolean; font: FontChoice; panel: boolean; zoom: number; chrome: CanvasChromeTheme;
 }) {
   const [hovered, setHovered] = useState(false);
   const { w, h } = bounds;
@@ -117,17 +104,17 @@ const NodeDrawing = memo(function NodeDrawing({ node, bounds, onDown, onEdit, as
     {node.type === 'minecraft:checkbox' && !raster && <Shape listening={false} sceneFunc={context => drawCheckboxFallback(context._context, node.props.selected)}/>}
     {raster && <Shape listening={false} sceneFunc={context => { const ctx = context._context; ctx.save(); ctx.imageSmoothingEnabled = false; ctx.drawImage(raster, 0, 0); ctx.restore(); }} />}
     {!isSelectionNode(node) && !isTreeViewNode(node) && !isProgressNode(node) && !isStatusNode(node) && node.type !== 'minecraft:fill' && node.type !== 'minecraft:creative-tab' && node.type !== 'minecraft:fitting-multi-line-text-widget' && <Shape listening={false} sceneFunc={context => drawPreviewText(context._context, node, w, h, font.family, panel)}/>}
-    {node.type === 'minecraft:checkbox' && <Shape listening={false} sceneFunc={context => { const ctx = context._context, layout = previewCheckboxLayout(ctx, node, font.family); if (layout.overflow || layout.truncated) { ctx.save(); ctx.font = '7px sans-serif'; ctx.textBaseline = 'top'; ctx.fillStyle = '#e8b86a'; ctx.fillText(layout.truncated ? '文字预览已截断' : '文字超出参考边界', 0, Math.max(h, 17) + 2); ctx.restore(); } }}/>}
+    {node.type === 'minecraft:checkbox' && <Shape listening={false} sceneFunc={context => { const ctx = context._context, layout = previewCheckboxLayout(ctx, node, font.family); if (layout.overflow || layout.truncated) { ctx.save(); ctx.font = '7px sans-serif'; ctx.textBaseline = 'top'; ctx.fillStyle = chrome.diagWarn; ctx.fillText(layout.truncated ? '文字预览已截断' : '文字超出参考边界', 0, Math.max(h, 17) + 2); ctx.restore(); } }}/>}
     {textureError && <Group listening={false}>
-      <Rect x={Math.max(0, w - 7 / zoom)} y={0} width={7 / zoom} height={7 / zoom} fill={C.danger} opacity={0.9}/>
-      <Text text="!" x={Math.max(0, w - 4.5 / zoom)} y={1 / zoom} fontSize={6 / zoom} fontFamily={C.mono} fill="#2b1918"/>
+      <Rect x={Math.max(0, w - 7 / zoom)} y={0} width={7 / zoom} height={7 / zoom} fill={chrome.diagBadText} opacity={0.9}/>
+      <Text text="!" x={Math.max(0, w - 4.5 / zoom)} y={1 / zoom} fontSize={6 / zoom} fontFamily={MONO} fill={chrome.diagBadBg}/>
     </Group>}
-    {hovered && !selected && <Rect width={w} height={h} stroke={C.accent} opacity={0.55} strokeWidth={1 / zoom} listening={false}/>}
-    {selected && <Rect width={w} height={h} stroke={C.accent} opacity={0.35} strokeWidth={1 / zoom} listening={false}/>}
+    {hovered && !selected && <Rect width={w} height={h} stroke={chrome.accent} opacity={0.55} strokeWidth={1 / zoom} listening={false}/>}
+    {selected && <Rect width={w} height={h} stroke={chrome.accent} opacity={0.35} strokeWidth={1 / zoom} listening={false}/>}
   </Group>;
 });
 
-function OtherScreen({ screen, assets, cache, resources, font, zoom, select, selectOnLeft, expanded, screenTabGroups = [] }: { screen: GuiScreen; assets: Record<string, PreviewAsset>; cache: SpriteRasterCache; resources: LayeredResources; font: FontChoice; zoom: number; select: () => void; selectOnLeft: boolean; expanded: Record<string, boolean>; screenTabGroups?: import('../domain/schema').ScreenTabGroup[] }) {
+function OtherScreen({ screen, assets, cache, resources, font, zoom, select, selectOnLeft, expanded, screenTabGroups = [], chrome }: { screen: GuiScreen; assets: Record<string, PreviewAsset>; cache: SpriteRasterCache; resources: LayeredResources; font: FontChoice; zoom: number; select: () => void; selectOnLeft: boolean; expanded: Record<string, boolean>; screenTabGroups?: import('../domain/schema').ScreenTabGroup[]; chrome: CanvasChromeTheme }) {
   const [image, setImage] = useState<HTMLImageElement | null>(null);
   const style = screen.background.kind === 'panel' ? screen.background.style : null;
   useEffect(() => { let active = true; setImage(null); if (style && isTextureStyle(style)) void getPanelImage(style).then(value => { if (active) setImage(value); }).catch(() => {}); return () => { active = false; }; }, [style]);
@@ -137,7 +124,7 @@ function OtherScreen({ screen, assets, cache, resources, font, zoom, select, sel
     const node: GuiNode = selected === null || original.type !== 'minecraft:creative-tab' ? original : { ...original, props: { ...original.props, selected } };
     const shown = managed.has(node.id) ? visible(node.id) : node.state.visible;
     const item = shown ? node : { ...node, state: { ...node.state, visible: false } } as GuiNode;
-    return <NodeDrawing key={node.id} node={item} bounds={nodeBounds} expanded={expanded} onDown={() => {}} onEdit={() => {}} assets={assets} cache={cache} resourceActive={!!(resources.baseName || resources.overlayName)} focused={false} selected={false} font={font} panel={screen.background.kind === 'panel'} zoom={zoom}/>;
+    return <NodeDrawing key={node.id} node={item} bounds={nodeBounds} expanded={expanded} onDown={() => {}} onEdit={() => {}} assets={assets} cache={cache} resourceActive={!!(resources.baseName || resources.overlayName)} focused={false} selected={false} font={font} panel={screen.background.kind === 'panel'} zoom={zoom} chrome={chrome}/>;
   };
   const draw = (node: GuiNode, supplied?: Bounds): ReactNode => {
     if (!isContainerNode(node)) return drawPlain(node, supplied ?? nodeAbsoluteBounds(node, screen.nodes, {}, expanded));
@@ -151,13 +138,13 @@ function OtherScreen({ screen, assets, cache, resources, font, zoom, select, sel
         {designSiblingOrder(screen.nodes.filter(child => child.parentContainerId === node.id), expanded).map(child => draw(child, containerChildScreenBounds(node, child, screen.nodes, {}, expanded)))}
       </Group>}
       {isScrollablePanelNode(node) && dimensions.maxScroll > 0 && <Group>
-        <Rect x={viewport.x + viewport.w + 2} y={viewport.y} width={6} height={viewport.h} fill="#111821"/>
-        <Rect x={viewport.x + viewport.w + 2} y={viewport.y} width={6} height={thumbHeight} fill="#8795a5" cornerRadius={3}/>
+        <Rect x={viewport.x + viewport.w + 2} y={viewport.y} width={6} height={viewport.h} fill={chrome.scrollTrack}/>
+        <Rect x={viewport.x + viewport.w + 2} y={viewport.y} width={6} height={thumbHeight} fill={chrome.scrollThumb} cornerRadius={3}/>
       </Group>}
     </Group>;
   };
   return <>
-    <Rect width={screen.designSize.width} height={screen.designSize.height} fill={C.design} stroke={C.designLine} strokeWidth={1 / zoom} onPointerDown={e => { if (e.evt.button === 0 && selectOnLeft) { e.cancelBubble = true; select(); } }}/>
+    <Rect width={screen.designSize.width} height={screen.designSize.height} fill={DESIGN_SURFACE} stroke={DESIGN_SURFACE_LINE} strokeWidth={1 / zoom} onPointerDown={e => { if (e.evt.button === 0 && selectOnLeft) { e.cancelBubble = true; select(); } }}/>
     <Group listening={false}>
       {screen.nodes.filter(node => !node.parentContainerId && beforePanel(node)).map(node => draw(node))}
       {screen.background.kind === 'panel' && !isTextureStyle(screen.background.style) && panelRects(bounds.w, bounds.h).map((r, i) => <Rect key={i} x={bounds.x + r.x} y={bounds.y + r.y} width={r.w} height={r.h} fill={r.color}/>)}
@@ -167,11 +154,9 @@ function OtherScreen({ screen, assets, cache, resources, font, zoom, select, sel
   </>;
 }
 
-function Rulers({ width, height, origin, zoom, design, theme }: { width: number; height: number; origin: { x: number; y: number }; zoom: number; design: { width: number; height: number }; theme: 'dark' | 'light' }) {
+function Rulers({ width, height, origin, zoom, design, chrome }: { width: number; height: number; origin: { x: number; y: number }; zoom: number; design: { width: number; height: number }; chrome: CanvasChromeTheme }) {
   const top = 20, left = 20;
-  const ruler = theme === 'light'
-    ? { bg: '#f3f1ec', line: '#d9d5cc', text: '#6b675e', tick: '#b5b0a6' }
-    : { bg: C.ruler, line: C.rulerLine, text: C.rulerText, tick: C.rulerTick };
+  const ruler = { bg: chrome.rulerBg, line: chrome.rulerLine, text: chrome.rulerText, tick: chrome.rulerTick };
   const candidates = [1, 2, 5, 10, 20, 50, 100, 200, 500, 1000, 2000, 5000, 10000];
   const step = candidates.find(value => value * zoom >= 56) ?? 10000;
   const minor = step >= 10 ? step / 5 : step;
@@ -186,7 +171,7 @@ function Rulers({ width, height, origin, zoom, design, theme }: { width: number;
     <Rect x={0} y={top - 1} width={width} height={1} fill={ruler.line}/>
     <Rect x={left - 1} y={0} width={1} height={height} fill={ruler.line}/>
     <Rect x={0} y={0} width={left} height={top} fill={ruler.bg}/>
-    <Text x={5} y={6} text="px" fontSize={8} fontFamily={C.mono} fill={ruler.text}/>
+    <Text x={5} y={6} text="px" fontSize={8} fontFamily={MONO} fill={ruler.text}/>
     {xTicks.map((value, index) => {
       const x = origin.x + value * zoom;
       if (x < left || x > width - 1) return null;
@@ -196,7 +181,7 @@ function Rulers({ width, height, origin, zoom, design, theme }: { width: number;
     {xLabels.map(value => {
       const x = origin.x + value * zoom;
       if (x < left - 1 || x > width - 1) return null;
-      return <Text key={`xl-${value}`} x={x + 3} y={3} text={String(value)} fontSize={9} fontFamily={C.mono} fill={ruler.text}/>;
+      return <Text key={`xl-${value}`} x={x + 3} y={3} text={String(value)} fontSize={9} fontFamily={MONO} fill={ruler.text}/>;
     })}
     {yTicks.map((value, index) => {
       const y = origin.y + value * zoom;
@@ -207,18 +192,18 @@ function Rulers({ width, height, origin, zoom, design, theme }: { width: number;
     {yLabels.map(value => {
       const y = origin.y + value * zoom;
       if (y < top - 1 || y > height - 1) return null;
-      return <Text key={`yl-${value}`} x={3} y={y - 3} text={String(value)} fontSize={9} fontFamily={C.mono} fill={ruler.text} rotation={-90} offsetX={-4}/>;
+      return <Text key={`yl-${value}`} x={3} y={y - 3} text={String(value)} fontSize={9} fontFamily={MONO} fill={ruler.text} rotation={-90} offsetX={-4}/>;
     })}
     {origin.x >= left && origin.x < width && origin.y >= top && origin.y < height && <>
-      <Rect x={origin.x - 4} y={origin.y} width={9} height={1} fill={C.accent} opacity={0.7}/>
-      <Rect x={origin.x} y={origin.y - 4} width={1} height={9} fill={C.accent} opacity={0.7}/>
+      <Rect x={origin.x - 4} y={origin.y} width={9} height={1} fill={chrome.accent} opacity={0.7}/>
+      <Rect x={origin.x} y={origin.y - 4} width={1} height={9} fill={chrome.accent} opacity={0.7}/>
     </>}
   </Layer>;
 }
 
 export function Canvas({ onAddNode, onEditError, containerScroll, setContainerScroll, numericPreviewEpoch, statusValues, screenPositions, setScreenPositions, onSelectScreen, view, setView, preview = null, readOnly = false, behaviorPreview = null, behaviorMode = false, interaction, onBehaviorTrigger, onBehaviorSliderChange, onBehaviorSelectionChange, editTabs = {}, grid, alignment, resources, resourceGeneration, font, theme }: Props) {
   const runtimePreviewActive = interaction || behaviorPreview !== null;
-  const chrome = theme === 'light' ? { bg: '#f3f1ec', line: '#d9d5cc', text: '#4d4a43' } : { bg: C.ruler, line: C.line, text: C.text2 };
+  const chrome = canvasChrome(theme);
   const host = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState({ width: 800, height: 540 });
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -383,8 +368,8 @@ export function Canvas({ onAddNode, onEditError, containerScroll, setContainerSc
     onPointerDown={e => { if (e.evt.button === 0 && view.tool !== 'pan') e.cancelBubble = true; }}
     onDragEnd={e => { e.cancelBubble = true; const dx = e.target.x(), dy = e.target.y() + 22 / renderZoom; e.target.position({ x: 0, y: -22 / renderZoom }); if (Math.abs(dx) + Math.abs(dy) > 0.5) setScreenPositions(previous => ({ ...previous, [item.id]: { x: positions[item.id].x + dx, y: positions[item.id].y + dy } })); }}
     onClick={e => { if (e.evt.button === 0 && view.tool !== 'pan') { e.cancelBubble = true; if (item.id !== screen.id) onSelectScreen(item.id); } }}>
-    <Rect width={Math.max(100, item.designSize.width)} height={20 / renderZoom} fill={item.id === screen.id ? '#6e5128' : '#354452'} cornerRadius={2 / renderZoom}/>
-    <Text x={5 / renderZoom} y={4 / renderZoom} text={`${displayText(item.title)} · ${item.id}`} fill="#f4eee2" fontSize={11 / renderZoom} listening={false}/>
+    <Rect width={Math.max(100, item.designSize.width)} height={20 / renderZoom} fill={item.id === screen.id ? chrome.tabActive : chrome.tabIdle} cornerRadius={2 / renderZoom}/>
+    <Text x={5 / renderZoom} y={4 / renderZoom} text={`${displayText(item.title)} · ${item.id}`} fill={chrome.tabText} fontSize={11 / renderZoom} listening={false}/>
   </Group>;
   useEffect(() => {
     const observer = new ResizeObserver(entries => {
@@ -664,7 +649,7 @@ export function Canvas({ onAddNode, onEditError, containerScroll, setContainerSc
           const shown = interaction && node.type === 'minecraft:checkbox' && checkedValue !== undefined ? { ...node, props: { ...node.props, selected: checkedValue } }
             : interaction && node.type === 'minecraft:cycle-button' && typeof value === 'string' && node.props.options.some(o => o.id === value) ? { ...node, props: { ...node.props, initialOptionId: value } } : node;
           const gestureBounds = gesture?.id === node.id && !isContainerNode(node) ? node.parentContainerId ? (() => { const parent = screen.nodes.find(item => item.id === node.parentContainerId); return parent && isContainerNode(parent) ? containerChildScreenBounds(parent, { ...node, bounds: gesture.draft }, screen.nodes, preview ? {} : containerScroll, expandedGeometry) : gesture.draft; })() : gesture.draft : bounds;
-          return <NodeDrawing key={node.id} node={shown} numericState={numericRuntime[node.id]} numericOverlay={runtimePreviewActive} runtimePreview={runtimePreviewActive} statusId={isStatusNode(node) ? behaviorPreview?.[node.id]?.statusId ?? statusValues[node.id] : undefined} progressValue={behaviorPreview?.[node.id]?.progressValue} expanded={node.type === 'minecraft:collapsible-panel' ? (expandedGeometry[node.id] ?? node.props.initialExpanded) : true} bounds={gestureBounds} onDown={stableDown} onEdit={interaction ? () => {} : stableEdit} assets={assets} cache={cache} resourceActive={!!(resources.baseName || resources.overlayName)} focused={interaction ? interactionFocus === node.id : editingId === node.id} selected={node.id === selected} font={font} panel={screen.background.kind === 'panel'} zoom={renderZoom}/>; };
+          return <NodeDrawing key={node.id} node={shown} numericState={numericRuntime[node.id]} numericOverlay={runtimePreviewActive} runtimePreview={runtimePreviewActive} statusId={isStatusNode(node) ? behaviorPreview?.[node.id]?.statusId ?? statusValues[node.id] : undefined} progressValue={behaviorPreview?.[node.id]?.progressValue} expanded={node.type === 'minecraft:collapsible-panel' ? (expandedGeometry[node.id] ?? node.props.initialExpanded) : true} bounds={gestureBounds} onDown={stableDown} onEdit={interaction ? () => {} : stableEdit} assets={assets} cache={cache} resourceActive={!!(resources.baseName || resources.overlayName)} focused={interaction ? interactionFocus === node.id : editingId === node.id} selected={node.id === selected} font={font} panel={screen.background.kind === 'panel'} zoom={renderZoom} chrome={chrome}/>; };
   const drawNode = (original: GuiNode, suppliedBounds?: Bounds): ReactNode => {
     original = drawingNodes.find(node => node.id === original.id) ?? original;
     const geometryNodes = drawingNodes;
@@ -687,14 +672,52 @@ export function Canvas({ onAddNode, onEditError, containerScroll, setContainerSc
         {children.map(child => drawNode(child, containerChildScreenBounds(original, child, geometryNodes, preview ? {} : containerScroll, expandedGeometry)))}
       </Group>}
       {isScrollablePanelNode(original) && dims.maxScroll > 0 && <Group listening={runtimePreviewActive || (!preview && !readOnly && !behaviorMode && view.tool === 'select')}>
-        <Rect x={viewport.x + viewport.w + 2} y={viewport.y} width={6} height={viewport.h} fill="#111821"/>
-        <Rect x={viewport.x + viewport.w + 2} y={thumbY} width={6} height={thumbHeight} fill="#8795a5" cornerRadius={3} onPointerDown={e => {
+        <Rect x={viewport.x + viewport.w + 2} y={viewport.y} width={6} height={viewport.h} fill={chrome.scrollTrack}/>
+        <Rect x={viewport.x + viewport.w + 2} y={thumbY} width={6} height={thumbHeight} fill={chrome.scrollThumb} cornerRadius={3} onPointerDown={e => {
           if ((!runtimePreviewActive && (preview || readOnly || behaviorMode || view.tool !== 'select' || !!gesture)) || e.evt.button !== 0) return;
           e.cancelBubble = true; e.evt.preventDefault(); const { clientX, clientY, pointerId } = e.evt;
           pointer.current = { pointerId, x: clientX, y: clientY, mode: 'scrollbar', zoom: renderZoom, panX: view.panX, panY: view.panY, containerId: original.id, container: original, maxScroll: dims.maxScroll, trackTravel: Math.max(1, viewport.h - thumbHeight), initialOffset: offset };
         }}/>
       </Group>}
     </Group>;
+  };
+  // Split the editing aid around the Panel pass. Outside its bounds the grid
+  // remains below back-layer tabs; inside it the grid paints over the background
+  // and below normal widgets. The disjoint clips avoid double-painted lines.
+  const editingGrid = (insidePanel: boolean) => {
+    const hasPanel = screen.background.kind === 'panel';
+    if (!grid.visible || preview || (insidePanel && !hasPanel)) return null;
+    return <Shape listening={false} sceneFunc={context => {
+      const ctx = context._context, { width, height } = screen.designSize, spacing = grid.spacing;
+      let left = Math.max(0, -origin.x / renderZoom), right = Math.min(width, (size.width - origin.x) / renderZoom);
+      let top = Math.max(0, -origin.y / renderZoom), bottom = Math.min(height, (size.height - origin.y) / renderZoom);
+      if (hasPanel) {
+        if (insidePanel) {
+          left = Math.max(left, panel.x); right = Math.min(right, panel.x + panel.w);
+          top = Math.max(top, panel.y); bottom = Math.min(bottom, panel.y + panel.h);
+        } else if (panel.x <= left && panel.y <= top && panel.x + panel.w >= right && panel.y + panel.h >= bottom) return;
+      }
+      if (right <= left || bottom <= top) return;
+      ctx.save(); ctx.beginPath(); ctx.rect(0, 0, width, height); ctx.clip();
+      if (hasPanel) {
+        ctx.beginPath();
+        if (!insidePanel) ctx.rect(0, 0, width, height);
+        ctx.rect(panel.x, panel.y, panel.w, panel.h); ctx.clip(insidePanel ? 'nonzero' : 'evenodd');
+      }
+      if (insidePanel) {
+        // Back-layer tabs must also occlude the guide at transparent Panel
+        // corners. Keep their existing draw order and mask their footprint.
+        for (const node of drawingNodes.filter(node => !node.parentContainerId && beforePanel(node) && runtimeNodeVisible(node))) {
+          const bounds = node.bounds;
+          if (!intersectBounds(bounds, { x: left, y: top, w: right - left, h: bottom - top })) continue;
+          ctx.beginPath(); ctx.rect(0, 0, width, height); ctx.rect(bounds.x, bounds.y, bounds.w, bounds.h); ctx.clip('evenodd');
+        }
+      }
+      ctx.beginPath(); ctx.lineWidth = 1 / renderZoom; ctx.strokeStyle = insidePanel ? chrome.panelGrid : chrome.grid;
+      for (let x = Math.ceil(left / spacing) * spacing; x <= right; x += spacing) { ctx.moveTo(x, top); ctx.lineTo(x, bottom); }
+      for (let y = Math.ceil(top / spacing) * spacing; y <= bottom; y += spacing) { ctx.moveTo(left, y); ctx.lineTo(right, y); }
+      ctx.stroke(); ctx.restore();
+    }}/>;
   };
   const chip = (() => {
     if (!b || preview || interaction || behaviorPreview || (selectedViewport && !intersectBounds(b, selectedViewport))) return null;
@@ -724,13 +747,13 @@ export function Canvas({ onAddNode, onEditError, containerScroll, setContainerSc
       } else editorStore.getState().select(null);
     }}>
       <Layer><Group clipX={frame?.x} clipY={frame?.y} clipWidth={frame?.w} clipHeight={frame?.h}>
-        {frame && <Rect x={frame.x} y={frame.y} width={frame.w} height={frame.h} fill="#080a0c" stroke="#6a7d91" strokeWidth={1}/>}
+        {frame && <Rect x={frame.x} y={frame.y} width={frame.w} height={frame.h} fill={chrome.previewFrame} stroke={chrome.previewFrameLine} strokeWidth={1}/>}
         {!preview && !interaction && !behaviorMode && screens.filter(item => item.id !== screen.id).map(item => <Group key={item.id} x={origin.x + (positions[item.id].x - activePosition.x) * renderZoom} y={origin.y + (positions[item.id].y - activePosition.y) * renderZoom} scaleX={renderZoom} scaleY={renderZoom}>
-          <OtherScreen screen={item} assets={assets} cache={cache} resources={resources} font={font} zoom={renderZoom} select={() => onSelectScreen(item.id)} selectOnLeft={view.tool === 'select'} expanded={designPanelExpansion(item.nodes, designExpandedByScreen[item.id])} screenTabGroups={screenTabGroups}/>
+          <OtherScreen screen={item} assets={assets} cache={cache} resources={resources} font={font} zoom={renderZoom} select={() => onSelectScreen(item.id)} selectOnLeft={view.tool === 'select'} expanded={designPanelExpansion(item.nodes, designExpandedByScreen[item.id])} screenTabGroups={screenTabGroups} chrome={chrome}/>
           {header(item)}
         </Group>)}
         <Group x={origin.x} y={origin.y} scaleX={renderZoom} scaleY={renderZoom} listening={!preview}>
-        <Rect width={screen.designSize.width} height={screen.designSize.height} fill={C.design} stroke={C.designLine} strokeWidth={1 / renderZoom} />
+        <Rect width={screen.designSize.width} height={screen.designSize.height} fill={DESIGN_SURFACE} stroke={DESIGN_SURFACE_LINE} strokeWidth={1 / renderZoom} />
         {!preview && screens.length > 1 && header(screen)}
         {!preview && (() => {
           const { width, height } = screen.designSize, length = 8 / renderZoom, line = 1 / renderZoom;
@@ -740,8 +763,9 @@ export function Canvas({ onAddNode, onEditError, containerScroll, setContainerSc
             [0, height - line, length, line], [0, height - length, line, length],
             [width - length, height - line, length, line], [width - line, height - length, line, length],
           ];
-          return <Group listening={false}>{marks.map(([x, y, w, h], index) => <Rect key={index} x={x} y={y} width={w} height={h} fill={C.accent} opacity={0.4}/>)}</Group>;
+          return <Group listening={false}>{marks.map(([x, y, w, h], index) => <Rect key={index} x={x} y={y} width={w} height={h} fill={chrome.accent} opacity={0.4}/>)}</Group>;
         })()}
+        {editingGrid(false)}
         {renderNodes.filter(node => node.parentContainerId === undefined && beforePanel(node)).map(node => drawNode(node))}
         {screen.background.kind === 'panel' && !isTextureStyle(screen.background.style) && panelRects(panel.w, panel.h).map((r, i) => <Rect key={i} x={r.x + panel.x} y={r.y + panel.y} width={r.w} height={r.h} fill={r.color} listening={false}/>)}
         {screen.background.kind === 'panel' && isTextureStyle(screen.background.style) && panelImage?.style === screen.background.style && <Shape x={panel.x} y={panel.y} listening={false} sceneFunc={context => {
@@ -749,10 +773,11 @@ export function Canvas({ onAddNode, onEditError, containerScroll, setContainerSc
           if (!raster) { drawNativePanel(ctx, panelImage.image, panel.w, panel.h); return; }
           ctx.save(); ctx.imageSmoothingEnabled = false; ctx.drawImage(raster, 0, 0); ctx.restore();
         }}/>}
+        {editingGrid(true)}
         {(!runtimePanelMode && !preview ? designSiblingOrder(renderNodes.filter(node => node.parentContainerId === undefined && !beforePanel(node)), expandedGeometry) : renderNodes.filter(node => node.parentContainerId === undefined && !beforePanel(node))).map(node => drawNode(node))}
         {b && !preview && !interaction && !behaviorPreview && <Group clipX={selectedViewport?.x} clipY={selectedViewport?.y} clipWidth={selectedViewport?.w} clipHeight={selectedViewport?.h}>
-          <Rect x={b.x} y={b.y} width={b.w} height={b.h} stroke="#080a0c" opacity={0.9} strokeWidth={3 / renderZoom} listening={false}/>
-          <Rect x={b.x} y={b.y} width={b.w} height={b.h} stroke={C.accent} strokeWidth={1.5 / renderZoom} listening={false}/>
+          <Rect x={b.x} y={b.y} width={b.w} height={b.h} stroke={chrome.selectionOutline} opacity={0.9} strokeWidth={3 / renderZoom} listening={false}/>
+          <Rect x={b.x} y={b.y} width={b.w} height={b.h} stroke={chrome.accent} strokeWidth={1.5 / renderZoom} listening={false}/>
           {!readOnly && selectedNode?.type !== 'minecraft:creative-tab' && !(selectedNode && isCollapsiblePanelNode(selectedNode) && !(expandedGeometry[selectedNode.id] ?? selectedNode.props.initialExpanded)) && <Group>
             {([
               { edge: 'left', x: b.x - 4 / renderZoom, y: b.y + b.h / 2 - 4 / renderZoom, cursor: 'ew-resize' },
@@ -762,34 +787,23 @@ export function Canvas({ onAddNode, onEditError, containerScroll, setContainerSc
               { edge: 'top-left', x: b.x - 4 / renderZoom, y: b.y - 4 / renderZoom, cursor: 'nwse-resize' },
               { edge: 'bottom-right', x: b.x + b.w - 4 / renderZoom, y: b.y + b.h - 4 / renderZoom, cursor: 'nwse-resize' },
             ] as const).map(handle => <Rect key={handle.edge} x={handle.x} y={handle.y} width={8 / renderZoom} height={8 / renderZoom}
-              fill={C.accent} stroke="#221604" strokeWidth={1 / renderZoom} onPointerDown={e => begin(e, selected!, 'resize', handle.edge)}
+              fill={chrome.accent} stroke={chrome.accentInk} strokeWidth={1 / renderZoom} onPointerDown={e => begin(e, selected!, 'resize', handle.edge)}
               onMouseEnter={e => { const stage = e.target.getStage(); if (stage) stage.container().style.cursor = handle.cursor; }}
               onMouseLeave={e => { const stage = e.target.getStage(); if (stage) stage.container().style.cursor = 'default'; }}/>)}
           </Group>}
         </Group>}
-        {grid.visible && !preview && <Shape listening={false} sceneFunc={context => {
-          const ctx = context._context, { width, height } = screen.designSize, spacing = grid.spacing;
-          const left = Math.max(0, -origin.x / renderZoom), right = Math.min(width, (size.width - origin.x) / renderZoom);
-          const top = Math.max(0, -origin.y / renderZoom), bottom = Math.min(height, (size.height - origin.y) / renderZoom);
-          if (right <= left || bottom <= top) return;
-          ctx.save(); ctx.beginPath(); ctx.rect(0, 0, width, height); ctx.clip();
-          ctx.beginPath(); ctx.lineWidth = 1 / renderZoom; ctx.strokeStyle = C.grid;
-          for (let x = Math.ceil(left / spacing) * spacing; x <= right; x += spacing) { ctx.moveTo(x, top); ctx.lineTo(x, bottom); }
-          for (let y = Math.ceil(top / spacing) * spacing; y <= bottom; y += spacing) { ctx.moveTo(left, y); ctx.lineTo(right, y); }
-          ctx.stroke(); ctx.restore();
-        }}/>}
       </Group>
       {chip && <Group x={chip.x} y={chip.y} listening={false}>
-        <Rect width={chip.width} height={chip.height} fill={chrome.bg} opacity={0.96} stroke={chrome.line} strokeWidth={1} cornerRadius={3}/>
-        <Text x={6} y={5} text={chip.text} fontSize={9} fontFamily={C.mono} fill={chrome.text}/>
+        <Rect width={chip.width} height={chip.height} fill={chrome.chipBg} opacity={0.96} stroke={chrome.chipLine} strokeWidth={1} cornerRadius={3}/>
+        <Text x={6} y={5} text={chip.text} fontSize={9} fontFamily={MONO} fill={chrome.chipText}/>
       </Group>}
       </Group></Layer>
       {!preview && alignment.guides && (alignmentGuides.x !== undefined || alignmentGuides.y !== undefined || !!spacingMark) && <Layer listening={false}>
         <Group clipX={selectedViewport ? guideClip.x : undefined} clipY={selectedViewport ? guideClip.y : undefined} clipWidth={selectedViewport ? guideClip.w : undefined} clipHeight={selectedViewport ? guideClip.h : undefined}>
-        {alignmentGuides.x !== undefined && <Rect x={guideOrigin.x + alignmentGuides.x * renderZoom - 0.5} y={guideClip.y} width={1} height={guideClip.h} fill="#55d6bd" opacity={0.95}/>}
-        {alignmentGuides.y !== undefined && <Rect x={guideClip.x} y={guideOrigin.y + alignmentGuides.y * renderZoom - 0.5} width={guideClip.w} height={1} fill="#55d6bd" opacity={0.95}/>}
+        {alignmentGuides.x !== undefined && <Rect x={guideOrigin.x + alignmentGuides.x * renderZoom - 0.5} y={guideClip.y} width={1} height={guideClip.h} fill={chrome.alignGuide} opacity={0.95}/>}
+        {alignmentGuides.y !== undefined && <Rect x={guideClip.x} y={guideOrigin.y + alignmentGuides.y * renderZoom - 0.5} width={guideClip.w} height={1} fill={chrome.alignGuide} opacity={0.95}/>}
         {spacingMark && <Shape listening={false} sceneFunc={context => {
-          const ctx = context._context; ctx.save(); ctx.beginPath(); ctx.lineWidth = 1; ctx.strokeStyle = '#f0b45c';
+          const ctx = context._context; ctx.save(); ctx.beginPath(); ctx.lineWidth = 1; ctx.strokeStyle = chrome.spacingLine;
           for (const [a, b] of spacingMark.intervals) {
             if (spacingMark.axis === 'x') { const y = guideOrigin.y + spacingMark.cross * renderZoom, x1 = guideOrigin.x + a * renderZoom, x2 = guideOrigin.x + b * renderZoom;
               ctx.moveTo(x1, y); ctx.lineTo(x2, y); ctx.moveTo(x1, y - 3); ctx.lineTo(x1, y + 3); ctx.moveTo(x2, y - 3); ctx.lineTo(x2, y + 3);
@@ -801,10 +815,10 @@ export function Canvas({ onAddNode, onEditError, containerScroll, setContainerSc
         }}/>}
         {spacingMark && <Group listening={false}>{spacingMark.intervals.map(([a, b], index) => <Text key={`${spacingMark.key}-${index}`} x={spacingMark.axis === 'x' ? guideOrigin.x + (a + b) / 2 * renderZoom - 15 : guideOrigin.x + spacingMark.cross * renderZoom - 18}
           y={spacingMark.axis === 'x' ? guideOrigin.y + spacingMark.cross * renderZoom - 13 : guideOrigin.y + (a + b) / 2 * renderZoom - 5}
-          text={`${spacingMark.gap}px`} fontSize={9} fontFamily={C.mono} fill="#ffd389" listening={false}/>)}</Group>}
+          text={`${spacingMark.gap}px`} fontSize={9} fontFamily={MONO} fill={chrome.spacingText} listening={false}/>)}</Group>}
         </Group>
       </Layer>}
-      {!preview && <Rulers width={size.width} height={size.height} origin={origin} zoom={renderZoom} design={screen.designSize} theme={theme}/>}
+      {!preview && <Rulers width={size.width} height={size.height} origin={origin} zoom={renderZoom} design={screen.designSize} chrome={chrome}/>}
     </Stage>
     {runtimePreviewActive && !preview && <div className="runtime-preview-overlays" key={`runtime:${screen.id}:${numericPreviewEpoch}`}>
       <SelectionPreview screenId={screen.id} design={screen.designSize} nodes={selectionRuntimeNodes as SelectionNode[]} clipInsets={selectionClipInsets} origin={origin} zoom={renderZoom} family={font.family} runtimeValues={behaviorMode && behaviorPreview && usesControlState(screen) ? Object.fromEntries(Object.entries(behaviorPreview).flatMap(([id, state]) => state.optionId !== undefined ? [[id,state.optionId]] : [])) : undefined} onSelectionChange={behaviorMode ? onBehaviorSelectionChange : undefined}/>

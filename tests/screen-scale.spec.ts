@@ -11,7 +11,7 @@ test.beforeEach(async ({ page }) => { await page.goto('/'); });
 
 test('screen dimensions apply atomically, undo/redo, reject component clipping and persist in JSON', async ({ page }) => {
   await page.getByRole('button', { name: '添加 Button', exact: true }).click();
-  await showScreenControls(page); await page.getByText('设计区与游戏 GUI Scale', { exact: false }).first().click();
+  await showScreenControls(page); await page.locator('.screen-settings > summary').click();
   await page.getByLabel('设计区宽', { exact: true }).fill('640'); await page.getByLabel('设计区高', { exact: true }).fill('360');
   await page.getByRole('button', { name: '应用设计区尺寸', exact: true }).click();
   expect((await doc(page)).screens[0].designSize).toEqual({ width: 640, height: 360, unit: 'gui-px' });
@@ -34,7 +34,7 @@ test('screen dimensions apply atomically, undo/redo, reject component clipping a
 test('GUI Scale preview follows framebuffer, ceil and Unicode rules without editing the document', async ({ page }, info) => {
   await page.getByRole('button', { name: '添加 Button', exact: true }).click(); const before = await doc(page);
   const history = await page.getByTestId('history-count').textContent();
-  await showScreenControls(page); await page.getByText('设计区与游戏 GUI Scale', { exact: false }).first().click();
+  await showScreenControls(page); await page.locator('.screen-settings > summary').click();
   await expect(page.getByTestId('gui-scale-info')).toContainText('实际倍率 4× · 可用 GUI 480 × 270');
   await page.getByRole('button', { name: '预览游戏缩放', exact: true }).click();
   const host = page.getByTestId('canvas-host'); await expect(host).toHaveAttribute('data-preview', 'true');

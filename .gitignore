@@ -14,13 +14,18 @@ docs/validation/panel-sample/
 
 # Historical validation evidence remains local.
 /docs/validation/
+/outputs/
+# Local validation session files; keep reusable test configurations tracked.
+/playwright.config.temp.ts
+/m1-routing-full-exit.txt
+/m1-screen-full-exit.txt
 # Root-level generated JSON reports; retain project configuration and lockfile.
 /*.json
 !/package.json
 !/package-lock.json
 !/tsconfig.json
 
-# Keep project design documents local; only the approved public demo is tracked.
+# Keep project design documents local; docs/results is public screenshot material.
 /docs/**
 !/docs/results/
 !/docs/results/**

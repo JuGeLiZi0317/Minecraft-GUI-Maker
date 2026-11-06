@@ -1,3 +1,4 @@
+import { fillViewSetting } from './topbar-helpers';
 import { test, expect } from '@playwright/test';
 
 test('panel boundaries match a single logical raster under transformed drawing', async ({ page }, info) => {
@@ -70,7 +71,7 @@ test('real editor and GUI Scale preview render the same panel raster at slice bo
   };
   for (const zoom of ['0.5', '1', '2']) for (const pan of ['0', '0.37']) {
     await page.getByLabel('Zoom', { exact: true }).selectOption(zoom);
-    await page.getByLabel('Pan X', { exact: true }).fill(pan); await page.getByLabel('Pan Y', { exact: true }).fill(pan);
+    await fillViewSetting(page, 'Pan X', pan); await fillViewSetting(page, 'Pan Y', pan);
     await check();
   }
   await page.locator('.screen-settings summary').click();

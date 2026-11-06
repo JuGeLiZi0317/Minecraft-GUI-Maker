@@ -2,6 +2,7 @@ import { buildBehaviorIndex, classifyValidationIssue } from '../domain/behaviorD
 import { TYPED_EVENTS, createTypedRuleTemplate, type TypedEventType } from '../domain/genericBehavior';
 import { useEffect, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent } from 'react';
 import { useStore } from 'zustand';
+import { createPortal } from 'react-dom';
 import * as Blockly from 'blockly/core';
 import * as Zh from 'blockly/msg/zh-hans';
 import { currentScreen, editorStore } from '../editor/store';
@@ -15,6 +16,7 @@ import { behaviorToolbox, registerBehaviorBlocks, setBlockContext } from '../beh
 import { canonical, readLayout, semanticFingerprint, validSnapshot, writeLayout } from '../behavior/layoutSnapshot';
 import { localSession } from '../io/localSession';
 import { useExportDraft } from '../exports/useExportDraft';
+import { BLOCKLY_THEMES, bindBlocklyTheme, type BlocklyThemeMode } from './blocklyTheme';
 import '../styles/blockly.css';
 
 const blocklyMessages: Record<string, string> = {};
@@ -25,10 +27,11 @@ type Screen = GuiProject['screens'][number];
 type MapReference = { ruleId: string; actionIndex: number; targetId: string; targetLabel: string };
 type ExplicitBinding = NonNullable<Behavior['eventBindings']>[number];
 
-export default function BlocklyBehaviorEditor({ active, openRuleId, setMode, notify, onDirtyChange }: { active: boolean; openRuleId: string | null; setMode: (active: boolean) => void; notify: (message: string, error?: boolean) => void; onDirtyChange: (dirty: boolean) => void }) {
+export default function BlocklyBehaviorEditor({ active, openRuleId, setMode, notify, onDirtyChange, beforeScreenChange, theme, toolbarHost }: { toolbarHost: HTMLElement | null; theme: BlocklyThemeMode; beforeScreenChange: () => void; active: boolean; openRuleId: string | null; setMode: (active: boolean) => void; notify: (message: string, error?: boolean) => void; onDirtyChange: (dirty: boolean) => void }) {
   const doc = useStore(editorStore, state => state.doc), blocked = useStore(editorStore, state => state.blocked), screen = useStore(editorStore, currentScreen);
   const operation = useStore(editorStore, state => state.operation);
   const host = useRef<HTMLDivElement>(null), workspace = useRef<Blockly.WorkspaceSvg | null>(null);
+  const themeController = useRef<ReturnType<typeof bindBlocklyTheme> | null>(null);
   const baseDoc = useRef<GuiProject>(doc), mapBaseDoc = useRef<GuiProject>(doc), original = useRef<Behavior | undefined>(undefined), draftBaseline = useRef(''), ruleId = useRef('');
   const draftScreenId = useRef(screen.id), seenScreenId = useRef(screen.id), dirtyRef = useRef(false), refreshRef = useRef<() => void>(() => {});
   const workspaceDirtyRef = useRef(false), mapDirtyRef = useRef(false);
@@ -154,7 +157,8 @@ export default function BlocklyBehaviorEditor({ active, openRuleId, setMode, not
     }
   };
   useEffect(() => {
-    const ws = Blockly.inject(host.current!, { toolbox: behaviorToolbox, media: `${import.meta.env.BASE_URL}blockly-media/`, sounds: false, trashcan: true, maxBlocks: 1000, zoom: { controls: true, wheel: true, startScale: 0.6, minScale: 0.35, maxScale: 1.5 }, move: { scrollbars: true, drag: true, wheel: true } });
+    const ws = Blockly.inject(host.current!, { theme: BLOCKLY_THEMES[theme], toolbox: behaviorToolbox, media: `${import.meta.env.BASE_URL}blockly-media/`, sounds: false, trashcan: true, maxBlocks: 1000, zoom: { controls: true, wheel: true, startScale: 0.6, minScale: 0.35, maxScale: 1.5 }, move: { scrollbars: true, drag: true, wheel: true } });
+    themeController.current = bindBlocklyTheme(ws);
     workspace.current = ws; setBlockContext(ws, screen); load(selected || undefined); setReady(true);
     const changed = (event: Blockly.Events.Abstract) => {
       if (event.type === Blockly.Events.SELECTED) {
@@ -167,8 +171,9 @@ export default function BlocklyBehaviorEditor({ active, openRuleId, setMode, not
     const resize = new ResizeObserver(() => { if (active) Blockly.svgResize(ws); }); resize.observe(host.current!);
     const unload = (event: BeforeUnloadEvent) => { if (dirtyRef.current) { event.preventDefault(); event.returnValue = ''; } };
     window.addEventListener('beforeunload', unload);
-    return () => { ++loadGeneration.current; resize.disconnect(); window.removeEventListener('beforeunload', unload); ws.removeChangeListener(changed); ws.dispose(); workspace.current = null; onDirtyChange(false); };
+    return () => { ++loadGeneration.current; resize.disconnect(); window.removeEventListener('beforeunload', unload); ws.removeChangeListener(changed); themeController.current?.dispose(); themeController.current = null; ws.dispose(); workspace.current = null; onDirtyChange(false); };
   }, []); // Keep one Blockly instance alive across mode and Screen switches so its draft and undo stack survive.
+  useEffect(() => { themeController.current?.apply(theme); }, [theme]);
   useEffect(() => { if (active && workspace.current) requestAnimationFrame(() => { if (workspace.current) Blockly.svgResize(workspace.current); }); }, [active, mapPanelOpen, mapPanelWidth]);
   useEffect(() => {
     if (seenScreenId.current === screen.id) return;
@@ -247,7 +252,8 @@ export default function BlocklyBehaviorEditor({ active, openRuleId, setMode, not
     <div className="blockly-sidebar-heading"><strong>属性与共享映射</strong><button type="button" aria-label="关闭映射侧栏" onClick={() => { setMapPanelOpen(false); setMapDrawerOpen(false); }}>×</button></div>
     {selectedBlock && <section className="blockly-selection-info" aria-label="选中积木属性"><strong>{blockNames[selectedBlock.type] ?? selectedBlock.type}</strong><code>{selectedBlock.id}</code>{selectedBlockFields.map(([name, value, stableId]) => <div key={name}><span>{name}</span><code>{value || '（未设置）'}</code>{stableId && stableId !== value && <small>{stableId}</small>}</div>)}{selectedBlock.type === 'gui_shared_status_map' && <button type="button" onClick={() => { const id = selectedBlock.getFieldValue('MAP'); setSelectedMapId(id || null); document.querySelector(`[data-map-id="${CSS.escape(id)}"]`)?.scrollIntoView({ block: 'nearest' }); }}>查看此映射</button>}</section>}
     <div className="blockly-maps" aria-label="共享状态映射" data-testid="blockly-maps">
-      <div><strong>Screen 共享映射（{draftScreen.behaviorMaps?.length ?? 0}）</strong><small>同一 map ID 的动作读取同一份有序 optionId → statusId 定义；名称和显示文字不参与匹配。</small></div>
+      <div><strong>Screen 共享映射（{draftScreen.behaviorMaps?.length ?? 0}）</strong><details className="blockly-map-help"><summary>共享映射说明</summary><small>同一 map ID 的动作读取同一份有序 optionId → statusId 定义；名称和显示文字不参与匹配。</small></details></div>
+      {!(draftScreen.behaviorMaps?.length) && <p className="blockly-map-empty">尚无共享映射。创建一次，可供本 Screen 的多个动作引用。</p>}
       <div className="blockly-map-list">{(draftScreen.behaviorMaps ?? []).map(map => { const refs = mapReferences(map.id); return <div key={map.id} className={`blockly-map-row ${selectedMapId === map.id ? 'selected' : ''}`} data-map-id={map.id}>
         <button type="button" className="blockly-map-select" onClick={() => setSelectedMapId(map.id)}><strong>{map.name}</strong><code>{map.id}</code><small>{map.mappings.length} 项 · {refs.length} 个引用</small></button>
         <div className="blockly-map-actions"><button disabled={dirty || !!blocked || conflict} onClick={() => { mapBaseDoc.current = editorStore.getState().doc; markMapDirty(true); setMapDraft(structuredClone(map)); setSelectedMapId(map.id); }}>编辑</button><button disabled={dirty || !!blocked || conflict || refs.length > 0} title={refs.length ? '先解除所有动作引用' : undefined} onClick={() => { try { editorStore.getState().deleteBehaviorMap(map.id); if (mapDraft?.id === map.id) { setMapDraft(null); markMapDirty(false); } } catch (error) { setMessage((error as Error).message); } }}>删除</button><button disabled={dirty || !!blocked || conflict} onClick={() => beginNewMap(map)}>复制</button></div>
@@ -258,17 +264,15 @@ export default function BlocklyBehaviorEditor({ active, openRuleId, setMode, not
     </div>
   </aside>;
   return <section className={`blockly-editor ${active ? 'active' : 'inactive'} ${mapPanelOpen ? 'maps-open' : 'maps-collapsed'}`} role="region" aria-label="Blockly 行为工作区" data-testid="blockly-editor" aria-hidden={!active} style={{ '--blockly-sidebar-width': `${mapPanelWidth}px` } as CSSProperties}>
-    <header className="blockly-editor-heading"><div><strong>Blockly 行为</strong><label>当前 Screen<select aria-label="Blockly 当前 Screen" disabled={!!blocked} value={screen.id} onChange={event => { try { editorStore.getState().switchScreen(event.target.value); } catch (error) { notify((error as Error).message, true); } }}>{doc.screens.map(item => <option key={item.id} value={item.id}>{displayText(item.title)} · {item.id}</option>)}</select></label><small>{draftScreen.id === screen.id ? displayText(screen.title) : `草稿来源：${displayText(draftScreen.title)}`} · 当前规则 {selected || '新规则'}</small></div><div><button type="button" className="blockly-map-panel-toggle" aria-expanded={mapPanelOpen} onClick={() => setMapPanelOpen(!mapPanelOpen)}>{mapPanelOpen ? '收起映射面板' : '共享映射'}</button><button type="button" className="blockly-map-drawer-toggle" onClick={() => setMapDrawerOpen(true)}>共享映射</button></div></header>
-    <p className="blockly-editor-intro">事件发生 → 读取本次事件的类型化值 → 比较与分支 → 更新目标支持的运行时属性。通用入口支持选项身份与数值；快捷积木沿用同一 F2 合同。切换工作模式保留草稿。</p>
-    <div className="blockly-editor-main"><div className="blockly-center">
-      <div className="blockly-editor-controls"><label>规则<select aria-label="Blockly 规则" value={selected} disabled={dirty || !ready || conflict} onChange={event => { setSelected(event.target.value); load(event.target.value); }}><option value="">新规则</option>{draftScreen.behaviors.map(rule => <option key={rule.id} value={rule.id} disabled={!canEditWithBlocks(rule)}>{rule.id}{canEditWithBlocks(rule) ? '' : ' · B1 未支持，保留 F2 编辑'}</option>)}</select></label><label>新规则事件<select aria-label="通用规则事件" value={genericEvent} onChange={event => setGenericEvent(event.target.value as TypedEventType)}>{Object.entries(TYPED_EVENTS).map(([id, spec]) => <option key={id} value={id}>{spec.label}（{spec.valueType}）</option>)}</select></label><button disabled={dirty || !ready || !!blocked || conflict} onClick={() => load(undefined, false, genericEvent)}>新建通用规则</button><button disabled={dirty || !ready || !!blocked || conflict} onClick={() => load(undefined, true)}>新建简单条件规则</button><button disabled={dirty || !ready || !!blocked || conflict} onClick={() => load()}>新建共享规则</button><button disabled={!ready} onClick={() => load(screen.behaviors.find(rule => rule.id === selected && canEditWithBlocks(rule))?.id)}>放弃草稿并重新载入</button><button disabled={!dirty || mapDraft !== null || !!blocked || conflict || !candidate} onClick={save}>保存积木规则</button><button disabled={!ready} onClick={() => workspace.current?.undo(false)}>撤销积木</button><button disabled={!ready} onClick={() => workspace.current?.undo(true)}>重做积木</button><button type="button" onClick={() => setMode(false)}>返回 GUI 设计</button></div>
-      {conflict && <div className="blockly-conflict" role="alert">当前积木仍保留在 {draftScreen.id} 草稿中。请显式放弃并重新载入当前 Screen；此草稿不会写入 {screen.id}。</div>}
-      <p role="status" data-testid="blockly-diagnostic">{dirty ? '未保存草稿 · ' : '与项目一致 · '}{message}</p>
+
+
+    {toolbarHost && createPortal(<>
+    <div className="blockly-context-heading" role="group" aria-label="Blockly 工作区操作"><div><strong>Blockly 行为</strong><label>当前 Screen<select aria-label="Blockly 当前 Screen" disabled={!!blocked} value={screen.id} onChange={event => { try { beforeScreenChange(); editorStore.getState().switchScreen(event.target.value); } catch (error) { notify((error as Error).message, true); } }}>{doc.screens.map(item => <option key={item.id} value={item.id}>{displayText(item.title)} · {item.id}</option>)}</select></label><label>规则<select aria-label="Blockly 规则" value={selected} disabled={dirty || !ready || conflict} onChange={event => { setSelected(event.target.value); load(event.target.value); }}><option value="">新规则</option>{draftScreen.behaviors.map(rule => <option key={rule.id} value={rule.id} disabled={!canEditWithBlocks(rule)}>{rule.id}{canEditWithBlocks(rule) ? '' : ' · B1 未支持，保留 F2 编辑'}</option>)}</select></label><small>{draftScreen.id === screen.id ? displayText(screen.title) : `草稿来源：${displayText(draftScreen.title)}`}</small><span className="blockly-rule-event">{graphRule?.event.type ?? '待配置事件'}</span><span className={`blockly-draft-badge ${dirty ? 'dirty' : ''}`}>{dirty ? '未保存草稿' : '与项目一致'}</span></div><div><button type="button" className="blockly-map-panel-toggle" aria-expanded={mapPanelOpen} onClick={() => setMapPanelOpen(!mapPanelOpen)}>{mapPanelOpen ? '收起映射面板' : '共享映射'}</button><button type="button" className="blockly-map-drawer-toggle" onClick={() => setMapDrawerOpen(true)}>共享映射</button></div></div>
       <fieldset className="blockly-trigger-config" disabled={!ready || conflict || !!blocked}>
         <legend>事件触发配置</legend>
         <label><input type="radio" name="blockly-trigger-mode" checked={!multiTrigger} onChange={() => updateTriggers(false, extraBindings)}/>指定事件触发</label>
         <label><input type="radio" name="blockly-trigger-mode" checked={multiTrigger} onChange={() => updateTriggers(true, extraBindings)}/>多事件触发</label>
-        <p>读取某个控件不代表该控件变化会触发规则。多事件模式中勾选需要主动订阅的来源；当前支持 Radio Group、Dropdown 和 Slider 的变化事件。</p>
+        <details className="blockly-trigger-help"><summary>触发与读取说明</summary><p>读取某个控件不代表该控件变化会触发规则。多事件模式中勾选需要主动订阅的来源；当前支持 Radio Group、Dropdown 和 Slider 的变化事件。</p></details>
         {multiTrigger && draftScreen.nodes.filter(node => isSelectionNode(node) || node.type === 'minecraft:slider').map(node => {
           const binding: ExplicitBinding = node.type === 'minecraft:slider' ? { type:'slider-change', sourceId:node.id, payloadType:'Number' } : { type:'selection-change', sourceId:node.id, payloadType:'OptionId' };
           const fromGraph = graphRule?.event.type === binding.type && graphSources.includes(node.id);
@@ -276,13 +280,19 @@ export default function BlocklyBehaviorEditor({ active, openRuleId, setMode, not
           return <label key={`${binding.type}:${node.id}`}><input type="checkbox" aria-label={`触发 ${node.id}`} checked={checked} disabled={!!fromGraph} onChange={event => updateTriggers(true, event.target.checked ? [...extraBindings, binding] : extraBindings.filter(item => item.type !== binding.type || item.sourceId !== binding.sourceId))}/>{behaviorNodeLabel(node, draftScreen)} · {binding.type} · {binding.payloadType}{fromGraph ? '（积木入口）' : ''}</label>;
         })}
         <p>触发来源：{draftRule ? eventBindingsOf(draftRule).map(binding => `${binding.sourceId} / ${binding.type} / ${binding.payloadType}`).join('、') : '请先完成事件入口'}</p>
-        <p>读取依赖：{[...new Set(reads)].join('、') || '无'}；动作目标：{[...new Set(targets)].join('、') || '无'}</p>
+        <details className="blockly-dependencies"><summary>读取依赖与动作目标</summary><p>读取依赖：{[...new Set(reads)].join('、') || '无'}；动作目标：{[...new Set(targets)].join('、') || '无'}</p></details>
       </fieldset>
+    </>, toolbarHost)}
+    <div className="blockly-editor-main"><div className="blockly-center">
+      <div className="blockly-editor-controls" aria-label="规则编辑操作"><button disabled={!dirty || mapDraft !== null || !!blocked || conflict || !candidate} onClick={save}>保存积木规则</button><button disabled={!ready} onClick={() => workspace.current?.undo(false)}>撤销积木</button><button disabled={!ready} onClick={() => workspace.current?.undo(true)}>重做积木</button><button disabled={!ready} onClick={() => load(screen.behaviors.find(rule => rule.id === selected && canEditWithBlocks(rule))?.id)}>放弃草稿并重新载入</button><button type="button" onClick={() => setMode(false)}>返回 GUI 设计</button><details className="blockly-create-tools"><summary>新建规则</summary><div className="blockly-template-options"><label>新规则事件<select aria-label="通用规则事件" value={genericEvent} onChange={event => setGenericEvent(event.target.value as TypedEventType)}>{Object.entries(TYPED_EVENTS).map(([id, spec]) => <option key={id} value={id}>{spec.label}（{spec.valueType}）</option>)}</select></label><button disabled={dirty || !ready || !!blocked || conflict} onClick={() => load(undefined, false, genericEvent)}>新建通用规则</button><button disabled={dirty || !ready || !!blocked || conflict} onClick={() => load(undefined, true)}>新建简单条件规则</button><button disabled={dirty || !ready || !!blocked || conflict} onClick={() => load()}>新建共享规则</button></div></details></div>
+      {conflict && <div className="blockly-conflict" role="alert">当前积木仍保留在 {draftScreen.id} 草稿中。请显式放弃并重新载入当前 Screen；此草稿不会写入 {screen.id}。</div>}
+      <p role="status" data-testid="blockly-diagnostic" className={`blockly-diagnostic ${!candidate && ready && (dirty || !!original.current) ? 'attention' : ''}`}>{dirty ? '未保存草稿 · ' : '与项目一致 · '}{message}</p>
+
       <div className="blockly-host" ref={host} data-testid="blockly-workspace"/>
       <details className="blockly-semantic-details"><summary>行为语义预览（未提交）</summary><pre data-testid="blockly-semantic-preview">{candidate ? JSON.stringify(candidate, null, 2) : '请修复积木连接和引用'}</pre></details>
-      <small className="blockly-editor-contract">通用条件支持 OptionId / Number 同类型比较；分支按顺序执行目标能力允许的动作。旧 event-option 与快捷积木继续可用；布尔条件最多嵌套 4 层、32 个节点；if 动作不能嵌套。直接赋值使用合法状态 ID；映射模式的未映射选项保持目标状态。每项映射必须存在于每个来源；非法引用禁止保存。共享映射按 Screen 隔离，修改会影响所有引用，删除前必须解除引用；复制会创建独立 map ID。已保存规则的布局缓存在本机；未提交草稿不持久化。规则保存沿用项目事务。</small>
+      <details className="blockly-help"><summary>帮助与能力合同</summary><div>    <p className="blockly-editor-intro">事件发生 → 读取本次事件的类型化值 → 比较与分支 → 更新目标支持的运行时属性。通用入口支持选项身份与数值；快捷积木沿用同一 F2 合同。切换工作模式保留草稿。</p>      <small className="blockly-editor-contract">通用条件支持 OptionId / Number 同类型比较；分支按顺序执行目标能力允许的动作。旧 event-option 与快捷积木继续可用；布尔条件最多嵌套 4 层、32 个节点；if 动作不能嵌套。直接赋值使用合法状态 ID；映射模式的未映射选项保持目标状态。每项映射必须存在于每个来源；非法引用禁止保存。共享映射按 Screen 隔离，修改会影响所有引用，删除前必须解除引用；复制会创建独立 map ID。已保存规则的布局缓存在本机；未提交草稿不持久化。规则保存沿用项目事务。</small></div></details>
     </div>{mapPanelOpen && <><div className="blockly-sidebar-resizer" role="separator" aria-label="调整共享映射面板宽度" onPointerDown={beginResize}/>{mapPanel}</>}</div>
-    {!mapPanelOpen && <button type="button" className="blockly-sidebar-reopen" onClick={() => { setMapPanelOpen(true); if (window.matchMedia('(max-width: 900px)').matches) setMapDrawerOpen(true); }}>打开共享映射</button>}
+
     {mapDrawerOpen && <div className="blockly-drawer-backdrop" onClick={() => setMapDrawerOpen(false)}>{mapPanel}</div>}
     <small className="blockly-surface-status">{conflict ? `规则草稿仍属于 ${draftScreen.id}` : `${draftScreen.behaviors.length} 条 Screen 规则 · ${(draftScreen.behaviorMaps ?? []).length} 个共享映射`}</small>
   </section>;

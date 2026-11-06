@@ -1,3 +1,4 @@
+import { fillViewSetting } from './topbar-helpers';
 import { expect, test, type Page } from '@playwright/test';
 
 type Bounds = { x: number; y: number; w: number; h: number };
@@ -30,7 +31,7 @@ test('Resize snaps two Buttons to the same width, preserves the top-left, and is
   await page.goto('/'); const host = page.getByTestId('canvas-host');
   await page.getByRole('button', { name: '添加 Button', exact: true }).click(); await setNumber(page, 'W', 100, 0);
   await page.getByRole('button', { name: '添加 Button', exact: true }).click(); await setNumber(page, 'X', 16, 1); await setNumber(page, 'Y', 60, 1);
-  await page.getByLabel('Zoom', { exact: true }).selectOption({ label: '100%' }); await page.getByLabel('Pan X', { exact: true }).fill('35');
+  await page.getByLabel('Zoom', { exact: true }).selectOption({ label: '100%' }); await fillViewSetting(page, 'Pan X', '35');
   await page.locator('input[aria-label="Y"]').first().fill('-17');
   const before = (await nodes(page))[1].bounds, countBefore = undoCount((await page.getByTestId('history-count').textContent())!);
   await dragResize(page, before, 97, before.h);

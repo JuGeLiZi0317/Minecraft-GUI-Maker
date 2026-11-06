@@ -1,0 +1,11 @@
+/* Prototype A · Canvas First — layout only. Colors come from production tokens. */
+.proto-a-body { flex: 1 1 auto; display: flex; gap: var(--bento-gap); min-height: 0; }
+.proto-a-left { display: flex; gap: var(--bento-gap); min-height: 0; }
+.proto-a-panel { display: flex; flex-direction: column; min-height: 0; }
+.proto-a-canvas-card { flex: 1 1 auto; display: flex; flex-direction: column; min-width: 0; position: relative; }
+.proto-a-canvas-head { display: flex; align-items: center; gap: 8px; min-height: 32px; padding: 4px 10px; border-bottom: 1px solid var(--line-subtle); color: var(--text-3); font-size: var(--fs-10); }
+.proto-a-inspector { display: flex; flex-direction: column; min-height: 0; }
+.proto-a-inspector.collapsed { width: 34px !important; flex: 0 0 34px; }
+.proto-a-inspector.collapsed .proto-body { display: none; }
+.proto-a-inspector.collapsed .proto-card-head { writing-mode: vertical-rl; justify-content: flex-start; border-bottom: 0; min-height: 0; height: 100%; }
+.proto-a-railnote { margin-top: auto; color: var(--text-disabled); font-size: 9px; writing-mode: vertical-rl; }

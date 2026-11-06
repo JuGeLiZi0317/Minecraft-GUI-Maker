@@ -55,7 +55,7 @@
   .export-group .quiet { display: none; }
   .export-group .primary { min-width: 0; }
   .workspace { grid-template-columns: 0 minmax(0, 1fr) 0; }
-  .workspace > .library, .workspace > .inspector { position: absolute; top: 0; bottom: 0; z-index: 32; display: flex; width: min(280px, 82vw); visibility: hidden; box-shadow: var(--shadow-overlay); }
+  .workspace > .library, .workspace > .inspector { position: absolute; top: 0; bottom: 0; z-index: 32; display: flex; width: min(280px, 82vw); visibility: hidden; border-radius: var(--radius-4); box-shadow: var(--shadow-overlay); }
   .workspace > .library { left: 0; }
   .workspace > .inspector { right: 0; display: block; }
   .workspace.peek-left > .library, .workspace.peek-right > .inspector { visibility: visible; }
@@ -68,4 +68,90 @@
   .context-bar { min-height: 34px; }
   .studio-footer { flex-basis: 26px; }
   .canvas-host { min-height: 200px; }
+}
+
+/* H1 keeps navigation available at narrow widths; module stack scrolls vertically. */
+@media (max-width: 560px) {
+  .workspace:not(.blockly-mode) { grid-template-columns: var(--library-width, 44px) minmax(0, 1fr) 0; }
+  .hybrid-sidebar { position: relative; z-index: 33; }
+}
+
+/* Narrow windows keep both sidebars reachable as overlays without rewriting preferences. */
+@media (max-width: 560px) {
+  .workspace:not(.blockly-mode) { grid-template-columns: 44px minmax(0, 1fr) 0; }
+  .workspace:not(.inspector-collapsed):not(.auto-right) > .inspector { visibility: visible; }
+  .hybrid-sidebar.is-pinned .hybrid-panels { position: absolute; left: 44px; top: 0; bottom: 0; z-index: 1; box-shadow: var(--shadow-overlay); }
+  .hybrid-sidebar .hybrid-panels { max-width: calc(100vw - 44px); }
+  .hybrid-width-resizer { display: none; }
+}
+/* Menu popovers must escape the navigation row on compact layouts. */
+@media (max-width: 760px) {
+  .editor-menu { overflow: visible; flex-wrap: wrap; }
+  .editor-menu > details:nth-last-child(-n + 2) > div { left: auto; right: 0; }
+  .editor-menu .editor-submenu > div { left: auto; right: 100%; }
+}
+@media (max-width: 760px) {
+  .editor-menu > details > div { max-width: calc(100vw - 16px); max-height: calc(100vh - 150px); overflow-y: auto; }
+  .editor-menu .editor-submenu > div { position: static; min-width: 0; box-shadow: none; }
+}
+
+/* H4-A top chrome: preserve every command without squeezing a single row. */
+@media (max-width: 1280px) {
+  .app-header { gap: 8px; }
+  .app-header .brand h1 { font-size: 11px; }
+  .app-header .project-field { max-width: 200px; }
+  .app-header .document-bar { padding-left: 6px; gap: 4px; }
+  .app-header .save-toggle { max-width: 90px; }
+}
+@media (max-width: 1100px) {
+  .app-header { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 2px 10px; }
+  .app-header .brand { grid-column: 1; grid-row: 1; }
+  .app-header .document-bar { grid-column: 2; grid-row: 1; }
+  .app-header .header-actions { grid-column: 3; grid-row: 1; margin-left: 0; }
+  .app-header .editor-menu { grid-column: 1 / -1; grid-row: 2; }
+  .app-header .brand h1 { display: block; }
+  .app-header .project-field { max-width: none; }
+  .context-bar { gap: 5px 8px; }
+}
+@media (max-width: 760px) {
+  .app-header .brand h1 { display: none; }
+  .app-header .document-bar { border-left: 0; padding-left: 0; }
+  .app-header .editor-menu { padding: 0; }
+  .context-bar { align-items: center; flex-wrap: wrap; }
+  .context-bar .context-left { flex: 1 1 auto; }
+  .context-bar .context-right { flex: 1 1 100%; justify-content: flex-start; margin-left: 0; flex-wrap: wrap; }
+  .workspace-settings-popover { top: 145px; max-height: calc(100dvh - 157px); }
+}
+@media (max-width: 560px) {
+  .app-header { grid-template-columns: minmax(0, 1fr) auto; padding: 5px 8px; }
+  .app-header .brand { display: none; }
+  .app-header .document-bar { grid-column: 1 / -1; grid-row: 1; }
+  .app-header .header-actions { grid-column: 2; grid-row: 2; }
+  .app-header .editor-menu { grid-column: 1; grid-row: 2; }
+  .app-header .document-bar .save-toggle { max-width: 90px; }
+  .app-header .history-actions button { width: 24px; }
+  .app-header .editor-menu summary { padding: 5px 4px; }
+  .context-bar .context-left { flex: 1 1 100%; }
+  .context-bar .context-right { gap: 4px; }
+  .context-bar .context-action, .context-bar .screen-settings > summary, .workspace-settings > summary { padding-left: 6px; padding-right: 6px; font-size: 10px; }
+  .workspace-settings-popover { top: 196px; max-height: calc(100dvh - 208px); }
+  .editor-menu > details > div { position: fixed; top: 78px; left: 8px !important; right: 8px !important; min-width: 0; max-height: calc(100dvh - 94px); }
+}
+@media (min-width: 1101px) {
+  .app-header .editor-menu > details:nth-last-child(-n + 2) > div { left: auto; right: 0; }
+  .app-header .editor-menu .editor-submenu > div { left: auto; right: 100%; }
+}
+@media (min-width: 761px) and (max-width: 1100px) {
+  .app-header .editor-menu .editor-submenu > div { left: 100%; right: auto; }
+}
+@media (min-width: 561px) and (max-width: 760px) {
+  .app-header .editor-menu > details:nth-last-child(-n + 2) > div { left: 0; right: auto; }
+}
+@media (max-width: 560px) {
+  .hybrid-sidebar.is-pinned .hybrid-panels { left: calc(44px + var(--bento-gap)); }
+  .hybrid-sidebar .hybrid-panels { max-width: calc(100vw - 56px); }
+}
+/* H4-C verified blocker: local-save popover was 49px offscreen at 400px. */
+@media (max-width: 760px) {
+  .save-popover { position: fixed; top: 92px; left: 12px; right: 12px; width: min(400px, calc(100vw - 24px)); max-height: calc(100dvh - 104px); }
 }

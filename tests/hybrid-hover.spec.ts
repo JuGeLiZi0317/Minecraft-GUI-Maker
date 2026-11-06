@@ -1,0 +1,97 @@
+import { expect, test } from '@playwright/test';
+import { mkdirSync } from 'node:fs';
+const captureDir = process.env.HYBRID_CAPTURE_DIR ? `${process.env.HYBRID_CAPTURE_DIR}/H2` : 'outputs/H2';
+mkdirSync(captureDir, { recursive: true });
+test('auto peek keeps geometry, suppresses pressed mouse, and protects Behavior draft', async ({ page }, info) => {
+  await page.goto('/');
+  const host = page.getByTestId('canvas-host');
+  const before = await host.boundingBox();
+  await page.getByRole('button', { name: '启用侧栏自动隐藏' }).click();
+  const after = await host.boundingBox();
+  expect(after!.width).toBeGreaterThan(before!.width);
+  const anchor = page.getByTestId('hover-peek-trigger');
+  const r = (await anchor.boundingBox())!;
+  await page.mouse.move(r.x + 100, r.y + r.height / 2);
+  await page.mouse.move(r.x + r.width / 2, r.y + r.height / 2);
+  await expect(page.getByLabel('模块侧栏')).toBeVisible();
+  expect(await host.boundingBox()).toEqual(after);
+  await page.getByRole('button', { name: '行为 模块' }).click();
+  await expect(page.getByTestId('behavior-panel')).toBeVisible();
+  await page.getByTestId('behavior-panel').getByRole('button', { name: '新增规则' }).click();
+  await expect(page.getByTestId('behavior-panel').getByRole('button', { name: '保存规则' })).toBeVisible();
+  await page.getByTestId('behavior-panel').getByRole('button', { name: '关闭行为', exact: true }).click();
+  await page.getByRole('button', { name: '行为 模块' }).click();
+  await expect(page.getByTestId('behavior-panel').getByRole('button', { name: '保存规则' })).toBeVisible();
+  await page.getByRole('button', { name: 'Blockly 实验' }).click();
+  await page.getByRole('button', { name: 'GUI 设计模式' }).click();
+  await page.getByRole('button', { name: '展开组件栏' }).click();
+  await expect(page.getByTestId('behavior-panel').getByRole('button', { name: '保存规则' })).toBeVisible();
+  await page.getByTestId('behavior-panel').getByRole('button', { name: '关闭行为', exact: true }).click();
+  await expect(page.getByTestId('behavior-panel')).toBeHidden();
+  await page.mouse.move(r.x + 500, r.y + r.height / 2);
+  await page.waitForTimeout(650);
+  await page.mouse.down({ button: 'left' });
+  await page.mouse.move(r.x + r.width / 2, r.y + r.height / 2);
+  await page.waitForTimeout(400);
+  await expect(page.getByLabel('模块侧栏')).toBeHidden();
+  await page.mouse.up(); await page.waitForTimeout(400);
+  await expect(page.getByLabel('模块侧栏')).toBeHidden();
+  await page.mouse.move(r.x + 500, r.y + r.height / 2);
+  await page.mouse.move(r.x + r.width / 2, r.y + r.height / 2);
+  await expect(page.getByLabel('模块侧栏')).toBeVisible();
+  await page.waitForTimeout(350);
+  await page.screenshot({path:`${captureDir}/dark-${info.project.name}.png`});
+  await page.getByRole('navigation',{name:'编辑器菜单'}).getByText('视图',{exact:true}).click();
+  await page.getByRole('button',{name:'主题：浅色',exact:true}).click();
+  await page.screenshot({path:`${captureDir}/light-${info.project.name}.png`});
+});
+
+
+test('dragging a component out of Peek keeps the source mounted and does not immediately reopen', async ({page}) => {
+  await page.goto('/');
+  await page.getByRole('button', {name:'启用侧栏自动隐藏'}).click();
+  const anchor = page.getByTestId('hover-peek-trigger');
+  const r = (await anchor.boundingBox())!;
+  await page.mouse.move(r.x + 500, r.y + 16);
+  await page.mouse.move(r.x + 16, r.y + 16);
+  await expect(page.getByLabel('模块侧栏')).toBeVisible();
+  const source = page.getByRole('button', {name:'添加 Button', exact:true});
+  const target = page.getByTestId('canvas-host');
+  const initial = JSON.parse((await page.getByTestId('project-json').textContent())!);
+  await source.dragTo(target, { targetPosition: {x: 420, y: 280} });
+  const after = JSON.parse((await page.getByTestId('project-json').textContent())!);
+  expect(after.screens[0].nodes.length).toBe(initial.screens[0].nodes.length + 1);
+  await page.waitForTimeout(650);
+  await expect(page.getByLabel('模块侧栏')).toBeHidden();
+  await page.mouse.move(r.x + 16, r.y + 16);
+  await expect(page.getByLabel('模块侧栏')).toBeVisible();
+});
+
+test('reduced motion and right-button traversal do not activate Peek', async ({page}) => {
+  await page.emulateMedia({reducedMotion:'reduce'}); await page.goto('/');
+  await page.getByRole('button',{name:'启用侧栏自动隐藏'}).click();
+  const anchor=page.getByTestId('hover-peek-trigger'), r=(await anchor.boundingBox())!;
+  await page.mouse.move(r.x+500,r.y+16); await page.mouse.down({button:'right'});
+  await page.mouse.move(r.x+16,r.y+16); await page.waitForTimeout(350);
+  await expect(page.getByLabel('模块侧栏')).toBeHidden(); await page.mouse.up({button:'right'});
+  await page.waitForTimeout(300); await expect(page.getByLabel('模块侧栏')).toBeHidden();
+  await page.mouse.move(r.x+500,r.y+16); await page.mouse.move(r.x+16,r.y+16);
+  await expect(page.getByLabel('模块侧栏')).toBeVisible();
+  expect(parseFloat(await page.getByLabel('模块侧栏').evaluate(el=>getComputedStyle(el).transitionDuration))).toBeLessThan(0.001);
+  await page.getByRole('button',{name:'固定侧栏'}).click();
+  await expect(page.getByLabel('模块侧栏')).toBeVisible();
+  await expect(page.getByTestId('hybrid-sidebar')).toHaveClass(/is-pinned/);
+});
+
+test('an active editor protects Peek until editing ends', async ({page}) => {
+  await page.goto('/'); await page.getByRole('button',{name:'Screens 模块'}).click();
+  await page.getByRole('button',{name:'启用侧栏自动隐藏'}).click();
+  const anchor=page.getByTestId('hover-peek-trigger'), r=(await anchor.boundingBox())!;
+  await page.mouse.move(r.x+500,r.y+16); await page.mouse.move(r.x+16,r.y+16);
+  await expect(page.getByLabel('模块侧栏')).toBeVisible();
+  const field=page.getByLabel('项目入口 Screen'); await field.scrollIntoViewIfNeeded(); await page.waitForTimeout(300); await field.focus(); await expect(field).toBeFocused();
+  await page.mouse.move(r.x+500,r.y+16); await page.waitForTimeout(650);
+  await expect(page.getByLabel('模块侧栏')).toBeVisible();
+  await field.blur(); await page.waitForTimeout(650);
+  await expect(page.getByLabel('模块侧栏')).toBeHidden();
+});

@@ -34,7 +34,7 @@ button {
 }
 button:hover:not(:disabled) { background: var(--bg-hover); border-color: var(--line-strong); color: var(--text-1); }
 button:active:not(:disabled) { background: var(--bg-active); }
-button:disabled { opacity: .38; cursor: default; }
+button:disabled { cursor: default; color: var(--text-disabled); border-color: var(--line-subtle); background: transparent; }
 button.primary {
   border-color: var(--accent);
   background: var(--accent);
@@ -43,6 +43,13 @@ button.primary {
 }
 button.primary:hover:not(:disabled) { background: var(--accent-hover); border-color: var(--accent-hover); color: var(--accent-ink); }
 button.primary:active:not(:disabled) { background: var(--accent-press); border-color: var(--accent-press); }
+button.primary:disabled { background: var(--bg-hover); border-color: var(--line-subtle); color: var(--text-disabled); }
+/* Unified toggle/selected feedback for toolbar and palette controls (structure tree keeps its own recipe). */
+button[aria-pressed="true"]:not(:disabled):not(.layer) {
+  border-color: var(--state-selected-line);
+  background: var(--state-selected-bg);
+  color: var(--accent);
+}
 
 input, select, textarea {
   min-width: 0;
@@ -58,9 +65,12 @@ input, select, textarea {
 }
 input:hover:not(:disabled), select:hover:not(:disabled) { border-color: var(--line-strong); }
 input:focus, select:focus, textarea:focus { outline: none; border-color: var(--accent); }
-input[aria-invalid="true"], select[aria-invalid="true"] { border-color: var(--danger); }
-input[type="checkbox"], input[type="radio"] { height: auto; width: auto; padding: 0; accent-color: var(--accent); }
-input[type="number"] { font-variant-numeric: tabular-nums; }
+input[aria-invalid="true"], select[aria-invalid="true"] {
+  border-color: var(--danger);
+  background: color-mix(in srgb, var(--danger) 6%, var(--bg-input));
+}
+input[type="checkbox"], input[type="radio"] { height: 14px; width: 14px; padding: 0; accent-color: var(--accent); }
+input[type="number"] { font-variant-numeric: tabular-nums; font-family: var(--font-mono); }
 
 button:focus-visible,
 input:focus-visible,
@@ -69,7 +79,7 @@ textarea:focus-visible,
 summary:focus-visible,
 a:focus-visible,
 [tabindex]:focus-visible {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--state-focus-ring);
   outline-offset: 2px;
 }
 

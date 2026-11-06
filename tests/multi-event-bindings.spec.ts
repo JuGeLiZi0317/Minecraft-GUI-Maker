@@ -28,12 +28,12 @@ test('单事件和多事件以当前控件快照计算，只有声明的事件�
  await slider2.press('ArrowLeft'); await expect(preview2).toContainText('status_warning');
 });
 test('Blockly 多事件显式配置保留草稿，保存后恢复并与权威 JSON 一致', async ({page}) => {
- await load(page,false); await page.getByRole('button',{name:'Blockly 实验',exact:true}).click(); const editor=page.getByTestId('blockly-editor'); await editor.getByLabel('Blockly 规则').selectOption('rule_multi');
- await expect(editor).toContainText('读取某个控件不代表该控件变化会触发规则'); await editor.getByLabel('多事件触发').check(); await editor.getByLabel('触发 slider_source').check();
- await expect(editor.getByTestId('blockly-diagnostic')).toContainText('未保存草稿'); await expect(editor).toContainText('slider_source / slider-change / Number');
+ await load(page,false); await page.getByRole('button',{name:'Blockly 实验',exact:true}).click(); const editor=page.getByTestId('blockly-editor'); await page.getByTestId('blockly-context-tools').getByLabel('Blockly 规则').selectOption('rule_multi');
+ await page.getByTestId('blockly-context-tools').locator('.blockly-trigger-help > summary').click(); await expect(page.getByTestId('blockly-context-tools')).toContainText('读取某个控件不代表该控件变化会触发规则'); await page.getByTestId('blockly-context-tools').getByLabel('多事件触发').check(); await page.getByTestId('blockly-context-tools').getByLabel('触发 slider_source').check();
+ await expect(editor.getByTestId('blockly-diagnostic')).toContainText('未保存草稿'); await expect(page.getByTestId('blockly-context-tools')).toContainText('slider_source / slider-change / Number');
  const before=JSON.parse((await page.getByTestId('project-json').textContent())!); expect(before.screens[0].behaviors[0].eventBindings).toBeUndefined();
  await page.getByRole('button',{name:'一键导出 ZIP',exact:true}).click(); await expect(page.locator('.statusbar [role="alert"]')).toContainText('Blockly');
  await editor.getByRole('button',{name:'保存积木规则'}).click(); await expect(page.getByTestId('save-status')).toContainText('本地已保存');
  const after=JSON.parse((await page.getByTestId('project-json').textContent())!); expect(after.schemaVersion).toBe('0.38.0'); expect(after.screens[0].behaviors[0].eventBindings).toEqual([{type:'selection-change',sourceId:'node_22',payloadType:'OptionId'},{type:'slider-change',sourceId:'slider_source',payloadType:'Number'}]);
- await page.reload({ waitUntil:'domcontentloaded', timeout:8000 }); await page.getByRole('button',{name:'Blockly 实验',exact:true}).click(); await expect(editor.getByLabel('Blockly 规则')).toHaveValue('rule_multi'); await expect(editor.getByLabel('触发 slider_source')).toBeChecked(); expect(JSON.parse((await page.getByTestId('project-json').textContent())!)).toEqual(after);
+ await page.reload({ waitUntil:'domcontentloaded', timeout:8000 }); await page.getByRole('button',{name:'Blockly 实验',exact:true}).click(); await expect(page.getByTestId('blockly-context-tools').getByLabel('Blockly 规则')).toHaveValue('rule_multi'); await expect(page.getByTestId('blockly-context-tools').getByLabel('触发 slider_source')).toBeChecked(); expect(JSON.parse((await page.getByTestId('project-json').textContent())!)).toEqual(after);
 });

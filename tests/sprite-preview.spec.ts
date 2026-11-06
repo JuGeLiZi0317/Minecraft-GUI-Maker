@@ -1,3 +1,4 @@
+import { fillViewSetting } from './topbar-helpers';
 import { expect, test } from '@playwright/test';
 import { zipFixture } from './resource-fixtures';
 import { GUI_SPRITES } from '../src/resources/layered';
@@ -50,11 +51,11 @@ test('decoded sprite states update the real editor without changing its document
   const move = async (x:number,y:number) => { const box = (await host.boundingBox())!, ox = Number(await host.getAttribute('data-origin-x')), oy = Number(await host.getAttribute('data-origin-y')), z = Number(await host.getAttribute('data-zoom')); await page.mouse.move(box.x + ox + x * z, box.y + oy + y * z); };
   await page.mouse.move(0, 0); await expect.poll(() => sample(22,22)).toEqual([240,0,0,255]); await expect.poll(() => sample(22,62)).toEqual([238,238,0,255]);
   for (const zoom of ['0.5', '1', '2']) {
-    await page.getByLabel('Zoom', { exact: true }).selectOption(zoom); await page.getByLabel('Pan X', { exact: true }).fill('0.37'); await page.getByLabel('Pan Y', { exact: true }).fill('0.37');
+    await page.getByLabel('Zoom', { exact: true }).selectOption(zoom); await fillViewSetting(page, 'Pan X', '0.37'); await fillViewSetting(page, 'Pan Y', '0.37');
     await expect.poll(() => sample(24,24)).toEqual([240,0,0,255]);
     for (const x of [21, 22, 23, 25, 166, 167, 168]) await expect.poll(() => sample(x,22)).toEqual([240,0,0,255]);
   }
-  await page.getByLabel('Pan X', { exact: true }).fill('0'); await page.getByLabel('Pan Y', { exact: true }).fill('0');
+  await fillViewSetting(page, 'Pan X', '0'); await fillViewSetting(page, 'Pan Y', '0');
   await page.locator('.screen-settings summary').click(); await page.getByRole('button', { name:'预览游戏缩放' }).click();
   await expect(host).toHaveAttribute('data-preview', 'true'); await expect.poll(() => sample(24,24)).toEqual([240,0,0,255]);
   await page.getByRole('button', { name:'返回设计模式' }).click(); await page.locator('.screen-settings summary').click();

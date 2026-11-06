@@ -1,3 +1,4 @@
+import { fillViewSetting } from './topbar-helpers';
 import { expect, test, type Page } from '@playwright/test';
 import { zipFixture } from './resource-fixtures';
 import { GUI_SPRITES } from '../src/resources/layered';
@@ -46,7 +47,7 @@ test('actual PNG uses the initial-state resource snapshot, reflects overrides an
   await page.getByRole('button',{name:'关闭导出结果'}).click();
   await showScreenControls(page);
   for (const zoom of ['0.5','1','2']) {
-    await page.getByLabel('Zoom',{exact:true}).selectOption(zoom); await page.getByLabel('Pan X',{exact:true}).fill('0.37'); await page.getByLabel('Pan Y',{exact:true}).fill('0.37');
+    await page.getByLabel('Zoom',{exact:true}).selectOption(zoom); await fillViewSetting(page, 'Pan X', '0.37'); await fillViewSetting(page, 'Pan Y', '0.37');
     const scaled=await exportPixels(page); expect(scaled.button).toEqual([240,0,0,255]); expect(scaled.size).toEqual([320,180]); await page.getByRole('button',{name:'关闭导出结果'}).click();
   }
   await page.getByText('视图', { exact: true }).click(); await page.getByLabel('编辑器菜单').getByText('资源包检查', { exact: true }).hover(); await page.getByRole('button', { name: '选择已有资源包' }).click();

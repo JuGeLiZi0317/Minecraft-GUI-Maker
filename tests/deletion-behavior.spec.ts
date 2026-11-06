@@ -39,7 +39,7 @@ test('cancel preserves dirty Blockly draft; confirm deletes shared and condition
   // A deletion marker must not disable protection for later, newly edited drafts.
   await editor.locator('.blocklySvg .blocklyBlockCanvas').getByRole('button', { name: /dropdown: 主选择.*node_22/ }).click(); await page.getByRole('option', { name: /备用选择.*node_23/ }).click();
   await expect(editor.getByTestId('blockly-diagnostic')).toContainText('未保存草稿');
-  await editor.getByLabel('Blockly 当前 Screen').selectOption('screen_other'); await expect(editor.getByRole('alert')).toContainText('草稿');
+  await page.getByTestId('blockly-context-tools').getByLabel('Blockly 当前 Screen').selectOption('screen_other'); await expect(editor.getByRole('alert')).toContainText('草稿');
   await editor.getByRole('button', { name: '放弃草稿并重新载入' }).click(); await expect(editor.getByRole('alert')).toHaveCount(0);
   await page.getByRole('button', { name: 'GUI 设计模式' }).click();
   await page.getByRole('button', { name: '撤销', exact: true }).click(); expect(await read(page)).toEqual(before);

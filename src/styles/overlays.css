@@ -172,8 +172,9 @@
   width: min(460px, 100%);
   overflow: auto;
   border-left: 1px solid var(--line);
+  border-radius: 0 calc(var(--radius-4) - 1px) calc(var(--radius-4) - 1px) 0;
   background: var(--bg-raised);
-  box-shadow: -16px 0 40px rgba(0, 0, 0, .35);
+  box-shadow: var(--shadow-drawer);
   font-size: var(--fs-11);
 }
 .export-panel-heading {
@@ -186,8 +187,7 @@
   gap: 8px;
   padding: 10px 12px;
   border-bottom: 1px solid var(--line-subtle);
-  background: color-mix(in srgb, var(--bg-raised) 94%, transparent);
-  backdrop-filter: blur(6px);
+  background: var(--bg-raised);
 }
 .export-panel-heading strong { color: var(--text-1); font-size: var(--fs-12); font-weight: 600; }
 .export-panel-heading button { min-height: 24px; padding: 0 6px; }
@@ -433,3 +433,74 @@
   .behavior-panel { width: calc(100% - 16px); }
   .screen-settings > fieldset, .resource-test-popover:not(.resource-test-popover-menu) { position: fixed; top: 92px; right: 8px; left: 8px; width: auto; }
 }
+
+/* H4-C: readable panel body, restrained help and copyable technical details. */
+.export-panel, .behavior-panel, .save-popover, .resource-test-popover, .dialog, .screen-settings > fieldset, .workspace-settings-popover, .context-font-menu { font-size: var(--fs-12); line-height: 1.5; }
+.save-popover, .resource-test-popover, .dialog { padding: 12px; }
+/* The old descendant fieldset reset also matched the outer popover. */
+.screen-settings > fieldset { padding: 12px; border: 1px solid var(--line); }
+.screen-settings-heading, .resource-test-heading { padding-bottom: 9px; margin-bottom: 9px; border-bottom: 1px solid var(--line-subtle); flex-wrap: wrap; }
+.screen-settings-heading strong, .resource-test-heading strong, .save-popover-title, .dialog h2, .export-panel-heading strong { color: var(--text-1); font-size: var(--fs-13); }
+.screen-settings p, .resource-test-popover p, .save-popover p, .dialog p { color: var(--text-2); font-size: var(--fs-11); line-height: 1.55; }
+.screen-settings-row { gap: 9px; }
+.screen-settings-row label, .resource-test-popover label { font-size: var(--fs-12); color: var(--text-2); min-width: 0; }
+.screen-settings-row :is(select,button), .resource-test-popover :is(input,select,button), .save-popover :is(select,button), .resource-test-actions .resource-file { font-size: var(--fs-12); min-height: 30px; max-width: 100%; }
+.screen-settings-row select { max-width: 100%; }
+.screen-settings output, .dialog .dialog-meta, .dialog summary, .dialog pre { color: var(--text-2); font-size: var(--fs-11); }
+.screen-settings .scale-warning, .resource-test-popover .field-error { color: var(--danger); }
+.resource-test-actions { gap: 6px; margin: 10px 0; }
+.resource-test-popover .resource-file { display: inline-flex; padding: 4px 8px; margin: 0; }
+.resource-query { flex-wrap: wrap; row-gap: 5px; }
+.resource-query input, .resource-query select { min-width: 0; max-width: 100%; }
+.resource-test-popover [role="alert"], .save-alert { padding: 8px; background: var(--danger-soft); border: 1px solid var(--danger-line); border-radius: var(--radius-2); color: var(--danger); }
+.resource-test-popover [role="status"] { padding: 7px 0; border-block: 1px solid var(--line-subtle); }
+.save-alert strong { font-size: var(--fs-12); }
+.dialog-actions { gap: 7px; padding-top: 10px; border-top: 1px solid var(--line-subtle); }
+.dialog-actions button { font-size: var(--fs-12); min-height: 30px; }
+.dialog .dialog-meta, .dialog p { overflow-wrap: anywhere; }
+.export-panel-heading { gap: 8px; padding: 12px 14px; }
+.export-body { padding: 12px 14px 16px; }
+.export-panel p { color: var(--text-2); font-size: var(--fs-11); line-height: 1.55; overflow-wrap: anywhere; }
+.export-snapshot { gap: 6px; margin-bottom: 10px; }
+.export-chip { font-size: var(--fs-11); }
+.export-actions { margin: 0 0 8px; gap: 7px; }
+.export-actions button { min-height: 32px; font-size: var(--fs-12); }
+.export-section h3, .export-diagnostics h3, .prompt-summary h3, .export-technical > summary { color: var(--text-1); font-family: var(--font-ui); font-size: var(--fs-12); font-weight: 600; text-transform: none; letter-spacing: 0; margin-bottom: 8px; }
+.export-links { gap: 5px; }
+.export-links a { min-height: 34px; padding: 6px 8px; font-size: var(--fs-12); border-color: var(--line-subtle); }
+.export-file-label { white-space: normal; overflow-wrap: anywhere; line-height: 1.5; }
+.export-file-kind, .export-file-size, .prompt-block code, .prompt-block .prompt-categories span { font-size: var(--fs-11); color: var(--text-2); }
+.export-diagnostics, .export-technical { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line-subtle); }
+.export-technical .export-reference { font-size: var(--fs-11); font-family: var(--font-mono); user-select: text; white-space: normal; overflow-wrap: anywhere; }
+.export-panel .export-warning, .export-error { font-size: var(--fs-12); line-height: 1.5; padding: 9px 10px; }
+.prompt-block { padding: 9px 10px; }
+.prompt-block strong { font-size: var(--fs-12); color: var(--text-1); }
+.prompt-block p, .prompt-block ul, .prompt-block summary { font-size: var(--fs-11); color: var(--text-2); line-height: 1.55; overflow-wrap: anywhere; }
+.behavior-panel { font-size: var(--fs-12); overflow-wrap: anywhere; }
+.behavior-panel > .export-panel-heading { padding: 0 0 9px; margin-bottom: 9px; flex-wrap: wrap; }
+.behavior-panel > .export-panel-heading > strong { flex: 1 1 110px; font-size: var(--fs-13); color: var(--text-1); }
+.behavior-panel p { font-size: var(--fs-11); color: var(--text-2); line-height: 1.55; }
+.behavior-panel strong { font-size: var(--fs-12); color: var(--text-1); }
+.behavior-panel button { min-height: 28px; max-width: 100%; padding: 4px 7px; font-size: var(--fs-12); white-space: normal; overflow-wrap: anywhere; }
+.behavior-panel label { font-size: var(--fs-12); color: var(--text-2); gap: 5px; }
+.behavior-panel label input, .behavior-panel label select { height: 30px; font-size: var(--fs-12); min-width: 0; max-width: 100%; width: 100%; }
+.behavior-capability-details { margin: 8px 0 10px; }
+.behavior-capability-details > summary { font-size: var(--fs-12); color: var(--text-2); padding: 5px 0; }
+.behavior-capability-details > div { padding: 4px 0; }
+.behavior-rule { font-size: var(--fs-11); line-height: 1.55; padding: 9px 0; }
+.behavior-rule > span { display: block; margin-bottom: 5px; }
+.behavior-editor { padding: 9px; gap: 7px; }
+.behavior-action { padding: 7px; }
+.behavior-draft-status { order: 4; flex: 1 1 100%; padding: 5px 7px; border-left: 2px solid var(--accent); background: var(--accent-soft); color: var(--text-1); font-size: var(--fs-11); }
+.behavior-validation { margin: 8px 0; padding: 8px; border: 1px solid var(--danger-line); border-radius: var(--radius-2); background: var(--danger-soft); }
+.behavior-validation p { color: var(--danger); }
+.behavior-session { margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--line-subtle); }
+.behavior-session-state { padding: 8px; margin: 8px 0; max-height: 130px; overflow: auto; font: var(--fs-11)/1.55 var(--font-mono); background: var(--bg-input); border-radius: var(--radius-2); white-space: pre-wrap; }
+.behavior-log { max-height: clamp(120px, 25vh, 240px); overflow: auto; overscroll-behavior: contain; padding: 10px; margin: 10px 0; border: 1px solid var(--line); border-radius: var(--radius-2); background: var(--bg-input); font: var(--fs-11)/1.55 var(--font-mono); }
+.behavior-log > div { padding: 9px 0; border-top: 1px solid var(--line-subtle); }
+.behavior-log > strong { display: block; font-family: var(--font-ui); }
+.behavior-log > div > strong { font: 600 var(--fs-11)/1.55 var(--font-mono); }
+.behavior-log p { font-size: var(--fs-11); }
+.behavior-panel [data-severity="warning"] .behavior-diagnostic-kind, .behavior-panel [data-severity="error"] .behavior-diagnostic-kind { color: var(--danger); }
+.hybrid-module-body .behavior-panel { padding-inline: 4px; }
+.save-popover .save-alert-actions button { font-size: var(--fs-12); min-height: 30px; }

@@ -1,0 +1,65 @@
+/* Prototype B · Modular Bento —— 仅 B 的布局（grid 模板 / 卡堆叠 / 折叠态）。
+   颜色一律使用 var(--*) Token；类名前缀 proto-b-；不写全局元素选择器。 */
+
+.proto-b-app { position: relative; }
+
+/* header 卡片 */
+.proto-b-header { flex: 0 0 auto; }
+.proto-b-header .proto-topbar { flex-wrap: wrap; }
+.proto-b-sub { margin-left: 6px; color: var(--text-3); font-family: var(--font-mono); font-size: var(--fs-10); font-weight: 400; white-space: nowrap; }
+
+/* 主区三列 grid：左列 + 拖宽条 + 中列画布 + 拖宽条 + 右列 */
+.proto-b-main {
+  flex: 1 1 auto; min-height: 0;
+  display: grid;
+  grid-template-columns: var(--proto-b-left, 268px) 6px minmax(0, 1fr) 6px var(--proto-b-right, 312px);
+  gap: var(--bento-gap);
+}
+
+/* 列内卡片堆叠：默认均分，折叠卡只占卡头高度 */
+.proto-b-stack { display: flex; flex-direction: column; gap: var(--bento-gap); min-height: 0; min-width: 0; }
+.proto-b-card { display: flex; flex-direction: column; flex: 1 1 0; min-height: 0; min-width: 0; }
+.proto-b-card.proto-b-collapsed { flex: 0 0 auto; }
+.proto-b-card > .proto-body { flex: 1 1 auto; }
+
+/* grid 内的拖宽条（.proto-resizer 提供宽度与光标） */
+.proto-b-resizer { align-self: stretch; min-height: 48px; border-radius: var(--radius-1); }
+
+/* 画布卡体：让 MockCanvas 撑满 */
+.proto-b-canvas-body { display: flex; flex-direction: column; }
+.proto-b-canvas-body .proto-canvas { flex: 1 1 auto; }
+
+/* 卡头折叠 chevron */
+.proto-b-chev { min-width: 24px; padding: 2px 5px; font-size: var(--fs-10); }
+
+/* 结构树与目录 */
+.proto-b-tabs { margin-bottom: 8px; }
+.proto-b-tree { border-top: 1px solid var(--line-subtle); padding-top: 6px; }
+.proto-b-glyph { width: 16px; flex: 0 0 16px; text-align: center; color: var(--accent); font-family: var(--font-mono); font-size: var(--fs-11); }
+
+/* Behavior 卡：选中节点关联规则高亮 */
+.proto-b-rule-linked {
+  padding-left: 6px; padding-right: 6px;
+  border-radius: var(--radius-1);
+  background: var(--state-selected-bg);
+  box-shadow: inset 0 0 0 1px var(--state-selected-line);
+}
+.proto-b-rule-linked button { margin-top: 4px; }
+.proto-b-chip-linked { margin-left: 6px; border-color: var(--state-selected-line); color: var(--accent); }
+.proto-b-chip-mode { border-color: var(--state-selected-line); color: var(--accent); background: var(--state-selected-bg); }
+.proto-b-readonly { border-left: 2px solid var(--accent-line); padding-left: 6px; }
+
+/* 资源 popover 锚点与内容 */
+.proto-b-pop-anchor { position: relative; }
+.proto-b-pop-head { padding: 0 0 6px; border-bottom: 1px solid var(--line-subtle); }
+.proto-b-chips { display: flex; flex-wrap: wrap; gap: 4px; }
+
+/* 导出抽屉 */
+.proto-b-drawer { z-index: 90; }
+.proto-b-main { position: relative; }
+
+/* 状态栏消息 */
+.proto-b-status-msg {
+  max-width: 46vw; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  color: var(--accent);
+}

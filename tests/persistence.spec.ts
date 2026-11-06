@@ -1,3 +1,4 @@
+import { fillViewSetting } from './topbar-helpers';
 import { expect, test, type Page, type BrowserContext } from '@playwright/test';
 import { emptyProject, createNode } from '../src/domain/model';
 import type { GuiProject } from '../src/domain/schema';
@@ -39,8 +40,8 @@ test('real IndexedDB saves edits/undo and restores on reload without view or his
   await showScreenControls(page); await page.getByRole('button', { name: '撤销', exact: true }).click(); await saved(page);
   const expected = await current(page), before = await database(page);
   await showScreenControls(page);
-  await page.getByLabel('Zoom', { exact: true }).selectOption('0.5'); await page.getByLabel('Pan X', { exact: true }).fill('71');
-  await page.getByText('设计区与游戏 GUI Scale', { exact: false }).first().click();
+  await page.getByLabel('Zoom', { exact: true }).selectOption('0.5'); await fillViewSetting(page, 'Pan X', '71');
+  await page.locator('.screen-settings > summary').click();
   await page.getByLabel('游戏 GUI Scale', { exact: true }).selectOption('3'); await page.getByRole('button', { name: '预览游戏缩放', exact: true }).click();
   await page.waitForTimeout(500); expect((await database(page)).workspace.revision).toBe(before.workspace.revision);
   await page.reload(); await saved(page); expect(await current(page)).toEqual(expected);

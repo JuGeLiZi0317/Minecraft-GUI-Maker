@@ -1,6 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
 import { createHash } from 'node:crypto';
-import { writeFile } from 'node:fs/promises';
+import { mkdir, writeFile } from 'node:fs/promises';
+const diagnosticsDir = process.env.BEHAVIOR_DIAGNOSTICS_CAPTURE_DIR ?? 'outputs/B1.6';
 import { genericBehaviorProject } from './fixtures/genericBehaviorProject';
 import { createNode, literal } from '../src/domain/model';
 import { GUI_SPRITES, SLIDER_SPRITES } from '../src/resources/layered';
@@ -28,15 +29,15 @@ test('B1.6 tree binding labels, related rule navigation and unsaved Blockly prot
   await related.getByRole('button', { name: '定位 F2 规则 rule_legacy（Blockly 暂不支持）', exact: true }).click(); await expect(panel.locator('[data-behavior-rule-id=rule_legacy]')).toBeFocused();
   await page.getByRole('button', { name: '选择 node_22', exact: true }).click();
   await expect(related).toContainText('rule_generic_option · 事件来源'); await expect(related).toContainText('actions[0].thenActions[1]'); await expect(related).toContainText('status_map_shared'); await expect(related).toContainText('node_26');
-  await page.screenshot({ path: `outputs/B1.6/tree-${info.project.name}.png` });
+  await page.screenshot({ path: `${diagnosticsDir}/tree-${info.project.name}.png` });
   await related.getByRole('button', { name: '在 Blockly 定位 rule_generic_option', exact: true }).click();
-  const editor = page.getByTestId('blockly-editor'); await expect(editor.getByLabel('Blockly 规则')).toHaveValue('rule_generic_option');
+  const editor = page.getByTestId('blockly-editor'); await expect(page.getByTestId('blockly-context-tools').getByLabel('Blockly 规则')).toHaveValue('rule_generic_option');
   const constant = editor.locator('.blocklySvg .blocklyBlockCanvas [data-block-type="gui_compare"] [data-block-type="gui_constant"]');
   await constant.locator(':scope > .blocklyDropdownField').nth(1).click(); await page.getByRole('option', { name: '其他', exact: true }).click(); await expect(editor.getByTestId('blockly-diagnostic')).toContainText('未保存草稿');
   await page.getByRole('button', { name: 'GUI 设计模式' }).click(); await page.getByRole('button', { name: '选择 slider_source', exact: true }).click();
   await expect(panel.getByTestId('behavior-related')).toContainText('rule_generic_number'); await panel.getByTestId('behavior-related').getByRole('button', { name: '在 Blockly 定位 rule_generic_number' }).click();
   await expect(page.locator('.statusbar [role="alert"]')).toContainText('未保存草稿'); expect(await read(page)).toEqual(doc);
-  await page.getByRole('button', { name: 'Blockly 实验', exact: true }).click(); await expect(editor.getByLabel('Blockly 规则')).toHaveValue('rule_generic_option'); await expect(editor.getByTestId('blockly-semantic-preview')).toContainText('option_2');
+  await page.getByRole('button', { name: 'Blockly 实验', exact: true }).click(); await expect(page.getByTestId('blockly-context-tools').getByLabel('Blockly 规则')).toHaveValue('rule_generic_option'); await expect(editor.getByTestId('blockly-semantic-preview')).toContainText('option_2');
   await editor.getByRole('button', { name: '放弃草稿并重新载入', exact: true }).click(); expect(await read(page)).toEqual(doc);
 });
 
@@ -62,7 +63,7 @@ test('B1.6 actual ZIP keeps nonempty layered resources, diagnostics, manifest ha
   const resources = page.getByRole('region', { name: '资源包检查' }); await resources.getByLabel('选择客户端 JAR').setInputFiles({ name: 'synthetic-client.jar', mimeType: 'application/java-archive', buffer: jar }); await expect(resources).toContainText('客户端资源已检查');
   await resources.getByLabel('选择资源包 ZIP').setInputFiles({ name: 'synthetic-overlay.zip', mimeType: 'application/zip', buffer: overlay }); await expect(resources).toContainText('资源包已检查'); await resources.getByRole('button', { name: '关闭资源包检查' }).click();
   const before = await read(page), download = page.waitForEvent('download'); await page.getByRole('button', { name: '一键导出 ZIP', exact: true }).click(); await download;
-  const bytes = Buffer.from(await page.evaluate(() => (window as any).b16Zip)); await writeFile('outputs/B1.6/resource-export.zip', bytes); const files = unpack(bytes);
+  const bytes = Buffer.from(await page.evaluate(() => (window as any).b16Zip)); await mkdir(diagnosticsDir, { recursive: true }); await writeFile(`${diagnosticsDir}/resource-export.zip`, bytes); const files = unpack(bytes);
   const manifest = JSON.parse(files.get([...files.keys()].find(name => name.endsWith('.manifest.json'))!)!.toString()); const spec = JSON.parse(files.get([...files.keys()].find(name => name.endsWith('.implementation.json'))!)!.toString());
   expect(JSON.parse(files.get(manifest.authority.file)!.toString())).toEqual(before); const diagnostic = JSON.parse(files.get(manifest.behaviorDiagnostics.name)!.toString());
   expect(diagnostic.reference.documentSha256).toBe(manifest.authority.sha256); expect(diagnostic.screens.map((screen: any) => screen.screenId)).toEqual(['screen_main', 'screen_other']); expect(spec.behaviorDiagnostics).toMatchObject({ file: manifest.behaviorDiagnostics.name, bytes: manifest.behaviorDiagnostics.bytes, sha256: manifest.behaviorDiagnostics.sha256 });

@@ -1,0 +1,7 @@
+import { test, expect } from '@playwright/test';
+import { genericBehaviorProject } from './fixtures/genericBehaviorProject';
+test('BLK-2 layout measurements', async ({ page }, info) => { await page.goto('/'); await page.getByLabel('导入项目文件').setInputFiles({ name: 'layout.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(genericBehaviorProject())) }); await expect(page.locator('.statusbar [role=status]')).toContainText('导入成功'); await page.getByRole('button', { name: 'Blockly 实验', exact: true }).click(); await page.getByLabel('Blockly 规则').selectOption('rule_generic_number'); const measurements = []; for (const [width, height] of [[1440, 1000], [1440, 650], [760, 800], [400, 800]]) {
+    await page.setViewportSize({ width, height });
+    await expect(page.getByTestId('blockly-workspace')).toBeVisible();
+    measurements.push(await page.evaluate(() => ({ viewport: [innerWidth, innerHeight], pageWidth: document.documentElement.scrollWidth, rects: Object.fromEntries(['.blockly-context-heading', '.blockly-editor-controls', '.blockly-trigger-config', '.blockly-host', '.blockly-sidebar'].map(s => { const r = document.querySelector(s)!.getBoundingClientRect(); return [s, { x: r.x, y: r.y, width: r.width, height: r.height }]; })) })));
+} await info.attach('measurements', { body: JSON.stringify(measurements, null, 2), contentType: 'application/json' }); await page.setViewportSize({ width: 1440, height: 1000 }); await page.screenshot({ path: info.outputPath('page.png'), animations: 'disabled' }); });

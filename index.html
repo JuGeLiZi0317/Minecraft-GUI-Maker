@@ -1,5 +1,15 @@
 <!doctype html>
 <html lang="zh-CN">
-  <head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><meta name="description" content="Minecraft GUI Maker · 单 Screen GUI 规格编辑器"/><link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230d0f12'/%3E%3Cpath d='M9 9h14v14H9z' fill='none' stroke='%23f0b45c' stroke-width='2'/%3E%3Cpath d='M9 16h14M16 9v14' stroke='%23f0b45c' stroke-width='1' opacity='.45'/%3E%3C/svg%3E"/><title>Minecraft GUI Maker</title></head>
+  <head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><meta name="description" content="Minecraft GUI Maker · 单 Screen GUI 规格编辑器"/><link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%231c2129'/%3E%3Cpath d='M9 9h14v14H9z' fill='none' stroke='%2383a8d6' stroke-width='2'/%3E%3Cpath d='M9 16h14M16 9v14' stroke='%2383a8d6' stroke-width='1' opacity='.45'/%3E%3C/svg%3E"/><title>Minecraft GUI Maker</title>
+    <script>
+      // Resolve the stored theme mode before first paint to avoid a wrong-theme flash (BENTO-1).
+      try {
+        var mode = localStorage.getItem('minecraft-gui-maker.theme.v1');
+        if (mode !== 'light' && mode !== 'dark' && mode !== 'system') mode = 'dark';
+        var dark = mode === 'dark' || (mode === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+        document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+      } catch (e) { document.documentElement.dataset.theme = 'dark'; }
+    </script>
+  </head>
   <body><div id="root"></div><script type="module" src="/src/main.tsx"></script></body>
 </html>

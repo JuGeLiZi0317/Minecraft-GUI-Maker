@@ -13,8 +13,9 @@
   min-height: 0;
   padding: 0 12px 16px;
   overflow: auto;
-  border-left: 1px solid var(--line-subtle);
-  background: var(--bg-panel);
+  border: 1px solid var(--line-subtle);
+  border-radius: var(--radius-4);
+  background: var(--bg-raised);
 }
 .inspector > .panel-heading {
   position: sticky;
@@ -23,8 +24,7 @@
   margin: 0 -12px;
   padding: 10px 12px 8px;
   border-bottom: 1px solid var(--line-subtle);
-  background: color-mix(in srgb, var(--bg-panel) 94%, transparent);
-  backdrop-filter: blur(6px);
+  background: var(--bg-raised);
 }
 .inspector > .sidebar-pin { margin-top: 8px; }
 
@@ -32,7 +32,7 @@
   margin: 0 -12px;
   padding: 10px 12px 12px;
   border-bottom: 1px solid var(--line-subtle);
-  background: var(--bg-app);
+  background: var(--bg-panel);
 }
 .screen-size-controls h3,
 .inspector-section > summary,
@@ -144,6 +144,7 @@
 }
 .inspector .field input,
 .inspector .field select { width: 100%; height: 28px; font-size: var(--fs-11); }
+.inspector .field input[type="number"] { font-family: var(--font-mono); }
 .inspector .field small.field-error { margin-top: 1px; }
 .geometry { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .geometry .field { margin-bottom: 0; }
@@ -294,3 +295,27 @@
 .behavior-related { border-top: 1px solid var(--line-subtle); padding: 6px 0; }
 .behavior-diagnostic-kind { font-weight: 600; }
 [data-severity="warning"] .behavior-diagnostic-kind, [data-severity="error"] .behavior-diagnostic-kind { color: #e7a961; }
+
+/* H4-C: explicit editor hierarchy; game/preview typography is independent. */
+.inspector { font-size: var(--fs-12); }
+.inspector > .panel-heading { color: var(--text-1); font: 600 var(--fs-13) var(--font-ui); letter-spacing: 0; }
+.inspector .screen-size-controls h3, .inspector .inspector-section > summary, .inspector .section-title { color: var(--text-1); font: 600 var(--fs-12) var(--font-ui); letter-spacing: 0; text-transform: none; }
+.inspector .screen-size-controls h3 span, .inspector .inspector-section > summary span, .inspector .field-unit { font-size: var(--fs-11); color: var(--text-2); }
+.inspector .inspector-section > summary > span:first-child { color: var(--text-1); font-family: var(--font-ui); font-size: var(--fs-12); }
+.inspector .field > span { font-size: var(--fs-12); color: var(--text-2); }
+.inspector .field input, .inspector .field select { font-size: var(--fs-12); height: 30px; }
+.inspector .geometry { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.inspector .field-note, .inspector .source-info p, .inspector .color-preview small { color: var(--text-2); font-size: var(--fs-11); line-height: 1.55; overflow-wrap: anywhere; }
+.inspector .check { align-items: flex-start; font-size: var(--fs-12); line-height: 1.5; }
+.inspector .check input { margin-top: 2px; }
+.inspector .selected-heading h2 { font-size: var(--fs-13); }
+.inspector .selected-heading code { white-space: normal; overflow-wrap: anywhere; font-size: var(--fs-11); color: var(--text-2); }
+.inspector .source-info code, .inspector .source-tag, .inspector .document-summary small, .inspector .status-field-row code { font-size: var(--fs-11); color: var(--text-2); }
+.inspector .apply-button, .inspector .screen-size-controls > button, .inspector .delete-button, .inspector .status-field-row button, .inspector .tree-row-actions button { min-height: 30px; font-size: var(--fs-12); }
+.inspector .delete-button { margin-top: 14px; border-top-color: var(--danger); }
+.inspector .tree-item-editor, .inspector .tree-initial-expanded { font-size: var(--fs-12); min-width: 0; }
+.inspector .tree-item-editor summary { line-height: 1.5; }
+.inspector .status-field-row > div { flex-wrap: wrap; }
+.inspector .status-field-row > div button { flex-basis: 70px; }
+.inspector .tab-views button { font-size: var(--fs-11); min-height: 28px; white-space: normal; overflow-wrap: anywhere; }
+.inspector :is(input, select, textarea, button) { max-width: 100%; }

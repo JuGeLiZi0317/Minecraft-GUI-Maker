@@ -1,3 +1,4 @@
+import { fillViewSetting } from './topbar-helpers';
 import { expect, test, type Page } from '@playwright/test';
 
 const project = async (page: Page) => JSON.parse((await page.getByTestId('project-json').textContent())!);
@@ -29,7 +30,7 @@ test('outside clicks close all three panels, preserve pending sizes and allow re
   await heading.click(); await page.getByRole('button', { name: '导出规格', exact: true }).click();
   await expect(page.locator('.export-links a')).toHaveCount(6); expect((await project(page)).screens[0].designSize.width).toBe(360);
   const ref = await page.getByTestId('export-reference').textContent();
-  await page.getByTestId('export-reference').click(); await expect(page.getByTestId('export-panel')).toBeVisible();
+  await page.getByText('批次与校验信息', { exact: true }).click(); await page.getByTestId('export-reference').click(); await expect(page.getByTestId('export-panel')).toBeVisible();
   await heading.click(); await expect(page.getByTestId('export-panel')).toHaveCount(0);
   await page.getByRole('button', { name: '查看导出结果' }).click(); await expect(page.getByTestId('export-reference')).toHaveText(ref!);
   await heading.click();
@@ -47,10 +48,10 @@ test('grid spacing and zoom are view-only, actual grid pixels show, PNG ignores 
   await page.getByLabel('显示网格').check(); await expect(host).toHaveAttribute('data-grid-visible', 'true');
   await expect.poll(() => canvasPixel(page, 10, 5)).not.toEqual(offPixel);
   const spacing = page.getByLabel('网格间距');
-  await spacing.fill('1'); await expect(host).toHaveAttribute('data-grid-spacing', '1');
-  await spacing.fill('200'); await expect(host).toHaveAttribute('data-grid-spacing', '200');
-  await spacing.fill('201'); await expect(spacing).toHaveAttribute('aria-invalid', 'true'); await spacing.blur(); await expect(spacing).toHaveValue('200');
-  await spacing.fill('0'); await expect(spacing).toHaveAttribute('aria-invalid', 'true'); await spacing.blur(); await expect(spacing).toHaveValue('200');
+  await fillViewSetting(page, '网格间距', '1'); await expect(host).toHaveAttribute('data-grid-spacing', '1');
+  await fillViewSetting(page, '网格间距', '200'); await expect(host).toHaveAttribute('data-grid-spacing', '200');
+  await fillViewSetting(page, '网格间距', '201', true); await expect(spacing).toHaveAttribute('aria-invalid', 'true'); await spacing.blur(); await expect(spacing).toHaveValue('200');
+  await fillViewSetting(page, '网格间距', '0', true); await expect(spacing).toHaveAttribute('aria-invalid', 'true'); await spacing.blur(); await expect(spacing).toHaveValue('200');
   await page.getByLabel('Zoom', { exact: true }).selectOption('16'); await expect(host).toHaveAttribute('data-zoom', '16');
   const box = (await host.boundingBox())!; await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
   await page.mouse.wheel(0, -1000); await expect(host).toHaveAttribute('data-zoom', '16');

@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>BENTO-5 工作区原型枢纽</title>
+    <style>
+      body { margin: 0; font: 14px/1.6 "Segoe UI Variable", "Segoe UI", "Microsoft YaHei UI", system-ui, sans-serif; background: #1c2129; color: #dee6f2; }
+      main { max-width: 860px; margin: 0 auto; padding: 48px 24px; }
+      h1 { font-size: 22px; } h1 small { color: #9eacbe; font-size: 12px; font-weight: 400; }
+      p { color: #9eacbe; }
+      a.card { display: block; margin: 14px 0; padding: 16px 18px; border: 1px solid #3d4855; border-radius: 12px; background: #282f39; color: #dee6f2; text-decoration: none; }
+      a.card:hover { border-color: #83a8d6; }
+      a.card strong { display: block; font-size: 15px; }
+      a.card span { color: #9eacbe; font-size: 12px; }
+      code { color: #83a8d6; font-size: 12px; }
+    </style>
+  </head>
+  <body><main>
+    <h1>BENTO-5 工作区信息架构原型 <small>· 隔离探索，非正式应用 · 模拟数据</small></h1>
+    <p>三个原型代表三种不同的信息架构策略，共用 <code>prototypes/shared.tsx</code> 的模拟数据与生产视觉 Token。正式应用入口仍为根目录 <code>index.html</code>。</p>
+    <a class="card" href="./a.html"><strong>Prototype A · Canvas First</strong><span>画布中心：图标轨 + 按需滑出面板 + 上下文属性栏，最大化画布面积</span></a>
+    <a class="card" href="./b.html"><strong>Prototype B · Modular Bento</strong><span>模块化 Bento：全部功能卡片常驻、可独立折叠，结构/目录/属性/行为关系显式</span></a>
+    <a class="card" href="./c.html"><strong>Prototype C · Adaptive Workspace</strong><span>任务自适应：Design / Behavior / Resources / Export 任务模式切换 + 持久上下文条</span></a>
+    <p>验收场景（10 项）与对比见 <code>research/bento5-report.md</code>。</p>
+  </main></body>
+</html>

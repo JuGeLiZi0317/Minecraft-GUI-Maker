@@ -80,7 +80,7 @@ test('font change cancels an in-flight shadow export', async ({ page }) => {
   await page.getByLabel('选择预览字体').setInputFiles('C:/Windows/Fonts/arial.ttf');
   await expect(page.getByTestId('font-status')).toContainText('正在加载');
   await page.getByRole('button', { name: '导出规格', exact: true }).click();
-  await page.getByRole('button', { name: '字体选择' }).click();
+  await page.getByLabel('工作区设置', { exact: true }).click(); await page.getByRole('button', { name: '字体选择' }).click();
   await page.getByRole('button', { name: '使用系统字体' }).click();
   await expect(page.locator('.statusbar [role="alert"]')).toContainText('字体选择已改变');
   await expect(page.locator('.export-links a')).toHaveCount(0);

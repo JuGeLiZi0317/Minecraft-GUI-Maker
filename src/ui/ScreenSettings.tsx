@@ -22,7 +22,7 @@ export function ScreenSettings({ preview, setPreview, notify, open, setOpen }: {
     setResolution(res); setLevel(requested); setUnicode(force);
     if (preview) setPreview(guiScalePreview(w, h, requested, force));
   };
-  return <details ref={root} className="screen-settings" open={open} onToggle={e => setOpen(e.currentTarget.open)}><summary onClick={e => { e.preventDefault(); setOpen(!open); }}>设计区与游戏 GUI Scale <span>{size.width} × {size.height} GUI px{preview ? ' · 只读预览中' : ''}</span></summary>
+  return <details ref={root} className="screen-settings" open={open} onToggle={e => setOpen(e.currentTarget.open)}><summary title="设计区与游戏 GUI Scale：底板、帧缓冲及只读缩放预览" aria-label="设计区与游戏 GUI Scale" onClick={e => { e.preventDefault(); setOpen(!open); }}>GUI Scale <span>{size.width} × {size.height} GUI px{preview ? ' · 只读预览中' : ''}</span></summary>
     <fieldset disabled={busy}><div className="screen-settings-heading"><strong>设计区与游戏 GUI Scale</strong><button type="button" className="popover-close" aria-label="关闭设计区与游戏 GUI Scale 设置" onClick={() => setOpen(false)}>✕</button></div><p>设计区宽高可在右侧属性栏的「画布尺寸」中调整。</p>
     <div className="screen-settings-row"><label>设计区底板<select aria-label="设计区底板" disabled={!!preview} value={background.kind === 'none' ? 'none' : background.style} onChange={e => {
       try { editorStore.getState().setPanel(e.target.value !== 'none', e.target.value as PanelStyle); notify('设计区底板已更新 · 可撤销'); } catch (error) { notify((error as Error).message, true); }

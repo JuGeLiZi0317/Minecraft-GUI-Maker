@@ -11,7 +11,7 @@ test('B1.4 authors a four-block start/running else/warning rule through real dro
   const doc = usabilityProject(); await importDoc(page, doc);
   await page.getByRole('button', { name: 'Blockly 实验', exact: true }).click();
   const editor = page.getByTestId('blockly-editor'), main = editor.locator('.blocklySvg .blocklyBlockCanvas');
-  await editor.getByRole('button', { name: '新建简单条件规则', exact: true }).click();
+  await editor.locator('.blockly-create-tools > summary').click(); await editor.getByRole('button', { name: '新建简单条件规则', exact: true }).click();
   await expect(main.locator('[data-block-type]')).toHaveCount(4);
   const condition = main.locator('[data-block-type="gui_if_selection"]'), assignments = main.locator('[data-block-type="gui_set_status_direct"]');
   const positions = await assignments.evaluateAll(blocks => blocks.map(block => ({ id: block.getAttribute('data-block-id')!, y: block.getBoundingClientRect().y })).sort((a, b) => a.y - b.y));

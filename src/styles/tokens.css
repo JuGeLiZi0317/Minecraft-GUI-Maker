@@ -1,103 +1,179 @@
-/* Design tokens: neutral graphite + amber. Dark is the product default. */
+/* Design tokens: soft blue-grey surfaces, Flat 2.0 controls, layered elevation.
+   Dark is the product default; light overrides below. BENTO-1 palette.
+   Canvas chrome colors are mirrored by src/canvas/chromeTheme.ts.
+   Minecraft design pixels retain their independent rendering contract. */
 :root {
   --font-ui: "Segoe UI Variable", "Segoe UI", "Microsoft YaHei UI", "Microsoft YaHei", system-ui, sans-serif;
   --font-mono: "Cascadia Mono", "SFMono-Regular", Consolas, "Liberation Mono", monospace;
 
+  /* Editor hierarchy: titles 13, groups/labels/body 12, help/technical 11.
+     Legacy 10px chrome and Minecraft pixel typography keep their contracts. */
   --fs-10: 10px;
   --fs-11: 11px;
   --fs-12: 12px;
   --fs-13: 13px;
   --fs-15: 15px;
 
-  --radius-1: 3px;
-  --radius-2: 4px;
+  --radius-1: 4px;
+  --radius-2: 5px;
   --radius-3: 6px;
   --radius-4: 8px;
+  --radius-card: 12px;          /* Bento card corner (layout batches) */
 
   --dur: 120ms;
   --ease: cubic-bezier(.2, .7, .2, 1);
 
-  --bg-app: #0d0f12;
-  --bg-panel: #14171b;
-  --bg-raised: #1a1e23;
-  --bg-input: #0a0c0f;
-  --bg-hover: #20252b;
-  --bg-active: #262b32;
+  /* Bento layout rhythm: 6px keeps the canvas area loss under ~4% at 1440x1000
+     (measured geo-before/geo-after); inner controls keep 4-8px radii. */
+  --bento-gap: 6px;
+  --bento-pad: 14px;
 
-  --line-subtle: #24282f;
-  --line: #333941;
-  --line-strong: #454c56;
+  /* Surface ladder: app < panel < raised < overlay; bento cards sit at panel level. */
+  --bg-app: #1c2129;
+  --bg-panel: #282f39;
+  --bg-raised: #343d49;
+  --bg-overlay: #303a46;
+  --bg-bento: var(--bg-panel);
+  --bg-input: #1a2028;
+  --bg-hover: #3a4451;
+  --bg-active: #424d5c;
 
-  --text-1: #e9e6df;
-  --text-2: #b4b0a7;
-  --text-3: #8b877e;
-  --text-disabled: #5e5a53;
+  --line-subtle: #2e3742;
+  --line: #3d4855;
+  --line-strong: #4e5b6b;
 
-  --accent: #f0b45c;
-  --accent-hover: #f6c477;
-  --accent-press: #d99a3f;
-  --accent-ink: #221604;
-  --accent-soft: #2a2114;
-  --accent-line: #5c4524;
+  --text-1: #dee6f2;
+  --text-2: #9eacbe;
+  --text-3: #7e8da0;
+  --text-disabled: #5c6878;
 
-  --danger: #e8837a;
-  --danger-soft: #2b1918;
-  --danger-line: #6b3a36;
+  --accent: #83a8d6;
+  --accent-hover: #96b9e2;
+  --accent-press: #6f94c4;
+  --accent-ink: #16202c;
+  --accent-soft: #364a64;
+  --accent-line: #4c688c;
 
-  --canvas-mat: #080a0c;
-  --canvas-design: #1c2634;
+  --danger: #e29087;
+  --danger-soft: #36282c;
+  --danger-line: #6b4348;
+
+  /* Interaction semantics (aliases; components may adopt these gradually). */
+  --state-hover-bg: var(--bg-hover);
+  --state-selected-bg: var(--accent-soft);
+  --state-selected-line: var(--accent-line);
+  --state-focus-ring: var(--accent);
+
+  /* Canvas chrome (see note above; --canvas-mat is live). Konva consumes the typed
+     palette in src/canvas/chromeTheme.ts; tests/unit/canvas/chromeTheme.test.ts keeps
+     these semantic tokens and that palette in sync. */
+  --canvas-mat: #12161c;
+  --canvas-design: #1c2634;     /* Minecraft design-surface matte; must match Konva/PNG export */
   --canvas-line: #3c424a;
-  --canvas-grid: rgba(240, 180, 92, .17);
-  --canvas-ruler: #0b0e11;
-  --canvas-ruler-line: #2a2f36;
-  --canvas-ruler-text: #8b877e;
-  --canvas-ruler-tick: #3a4048;
+  --canvas-grid: rgba(174,190,212,.4);
+  --canvas-grid-panel: rgba(42,58,76,.7);
+  --canvas-ruler: #171c24;
+  --canvas-ruler-line: #2c3540;
+  --canvas-ruler-text: #9eacbe;
+  --canvas-ruler-tick: #3d4855;
+  --canvas-accent: var(--accent);
+  --canvas-accent-ink: var(--accent-ink);
+  --canvas-selection-outline: #0a0d12;
+  --canvas-align-guide: #6fc3d6;
+  --canvas-spacing-line: #cf9fb0;
+  --canvas-spacing-text: #e6cdd5;
+  --canvas-tab-active: #364a64;
+  --canvas-tab-idle: #2b3440;
+  --canvas-tab-text: #dee6f2;
+  --canvas-scroll-track: #12161c;
+  --canvas-scroll-thumb: #4e5b6b;
+  --canvas-preview-frame: #12161c;
+  --canvas-preview-frame-line: #4e5b6b;
+  --canvas-diag-warn: #d7b491;
+  --canvas-diag-bad-bg: #3a262a;
+  --canvas-diag-bad-text: #e29087;
+  --canvas-chip-bg: rgba(40,47,57,.92);
+  --canvas-chip-line: #3d4855;
+  --canvas-chip-text: #9eacbe;
 
-  --shadow-overlay: 0 16px 40px rgba(0, 0, 0, .55), 0 0 0 1px rgba(255, 255, 255, .02);
-  --shadow-popover: 0 12px 32px rgba(0, 0, 0, .5);
+  /* Dimensional layering: three elevation levels + aliases kept for existing CSS. */
+  --shadow-1: 0 1px 2px rgba(8, 12, 18, .32), 0 1px 3px rgba(8, 12, 18, .24);
+  --shadow-2: 0 4px 12px rgba(6, 10, 15, .38), 0 2px 4px rgba(6, 10, 15, .26);
+  --shadow-3: 0 16px 40px rgba(4, 7, 11, .5), 0 4px 12px rgba(4, 7, 11, .34), 0 0 0 1px rgba(255, 255, 255, .02);
+  --shadow-drawer: -16px 0 40px rgba(4, 7, 11, .42);
+  --shadow-overlay: var(--shadow-3);
+  --shadow-popover: var(--shadow-2);
 
   color-scheme: dark;
 }
 
 :root[data-theme="light"] {
-  --bg-app: #f1efe9;
-  --bg-panel: #fbfaf7;
+  --bg-app: #edf0f4;
+  --bg-panel: #fafbfc;
   --bg-raised: #ffffff;
+  --bg-overlay: #ffffff;
+  --bg-bento: var(--bg-panel);
   --bg-input: #ffffff;
-  --bg-hover: #eae7e1;
-  --bg-active: #e2ded6;
+  --bg-hover: #e7ecf2;
+  --bg-active: #dce3ec;
 
-  --line-subtle: #e1ded8;
-  --line: #cecac2;
-  --line-strong: #b5b0a6;
+  --line-subtle: #e2e7ee;
+  --line: #cbd4df;
+  --line-strong: #afbaca;
 
-  --text-1: #1e1c18;
-  --text-2: #4d4a43;
-  --text-3: #6b675e;
-  --text-disabled: #9a958b;
+  --text-1: #34465a;
+  --text-2: #64748b;
+  --text-3: #7b8a9e;
+  --text-disabled: #9ba7b6;
 
-  --accent: #8a560c;
-  --accent-hover: #734708;
-  --accent-press: #5e3905;
+  /* Slightly deepened from the #647f9c reference so white button ink and
+     accent-colored small text keep >= 4.5:1 contrast on light panels. */
+  --accent: #5f7c9b;
+  --accent-hover: #526c89;
+  --accent-press: #475f7a;
   --accent-ink: #ffffff;
-  --accent-soft: #f6ebd9;
-  --accent-line: #d8b98a;
+  --accent-soft: #dce7f4;
+  --accent-line: #b7c9de;
 
-  --danger: #a83a31;
-  --danger-soft: #fbe9e7;
-  --danger-line: #dcb3ae;
+  --danger: #a93c33;
+  --danger-soft: #fbeae8;
+  --danger-line: #dfb9b4;
 
-  --canvas-mat: #e4e1da;
-  --canvas-design: #1c2634;
+  --canvas-mat: #dfe4eb;
+  --canvas-design: #1c2634;     /* unchanged: Minecraft design surface is theme-independent */
   --canvas-line: #3c424a;
-  --canvas-grid: rgba(240, 180, 92, .2);
-  --canvas-ruler: #f3f1ec;
-  --canvas-ruler-line: #d9d5cc;
-  --canvas-ruler-text: #6b675e;
-  --canvas-ruler-tick: #b5b0a6;
+  --canvas-grid: rgba(208,222,240,.45);
+  --canvas-grid-panel: rgba(42,58,76,.7);
+  --canvas-ruler: #f3f5f8;
+  --canvas-ruler-line: #d5dce5;
+  --canvas-ruler-text: #64748b;
+  --canvas-ruler-tick: #afbaca;
+  --canvas-accent: var(--accent);
+  --canvas-accent-ink: var(--accent-ink);
+  --canvas-selection-outline: #0a0d12;
+  --canvas-align-guide: #8fd4e2;
+  --canvas-spacing-line: #e3b7c4;
+  --canvas-spacing-text: #f0d8df;
+  --canvas-tab-active: #dce7f4;
+  --canvas-tab-idle: #dfe4eb;
+  --canvas-tab-text: #34465a;
+  --canvas-scroll-track: #dfe4eb;
+  --canvas-scroll-thumb: #afbaca;
+  --canvas-preview-frame: #dfe4eb;
+  --canvas-preview-frame-line: #afbaca;
+  --canvas-diag-warn: #e2c3a4;
+  --canvas-diag-bad-bg: #3a262a;
+  --canvas-diag-bad-text: #e29087;
+  --canvas-chip-bg: rgba(250,251,252,.92);
+  --canvas-chip-line: #cbd4df;
+  --canvas-chip-text: #64748b;
 
-  --shadow-overlay: 0 16px 40px rgba(20, 16, 10, .2), 0 0 0 1px rgba(20, 16, 10, .05);
-  --shadow-popover: 0 12px 32px rgba(20, 16, 10, .16);
+  --shadow-1: 0 1px 2px rgba(30, 42, 58, .08), 0 1px 3px rgba(30, 42, 58, .06);
+  --shadow-2: 0 4px 12px rgba(30, 42, 58, .12), 0 2px 4px rgba(30, 42, 58, .08);
+  --shadow-3: 0 16px 40px rgba(30, 42, 58, .18), 0 4px 12px rgba(30, 42, 58, .1), 0 0 0 1px rgba(30, 42, 58, .04);
+  --shadow-drawer: -16px 0 40px rgba(30, 42, 58, .14);
+  --shadow-overlay: var(--shadow-3);
+  --shadow-popover: var(--shadow-2);
 
   color-scheme: light;
 }

@@ -11,7 +11,7 @@ for (const kind of ['OptionId', 'Number'] as const) test(`B1.5 ${kind} uses gene
   const doc = genericBehaviorProject();
   if (kind === 'OptionId') { const rule = doc.screens[0].behaviors[1]; if ('actions' in rule && rule.actions[0].type === 'if') { const leaf = rule.actions[0].thenActions[0]; if (leaf.type === 'set-status' && 'statusId' in leaf) leaf.statusId = 'status_stopped'; } }
   await load(page, doc); await page.getByRole('button', { name: 'Blockly 实验', exact: true }).click();
-  const editor = page.getByTestId('blockly-editor'); await editor.getByLabel('Blockly 规则').selectOption(kind === 'Number' ? 'rule_generic_number' : 'rule_generic_option');
+  const editor = page.getByTestId('blockly-editor'); await page.getByTestId('blockly-context-tools').getByLabel('Blockly 规则').selectOption(kind === 'Number' ? 'rule_generic_number' : 'rule_generic_option');
   const main = editor.locator('.blocklySvg .blocklyBlockCanvas');
   for (const type of ['gui_on_event', 'gui_compare', 'gui_if', 'gui_action', 'gui_event_value', 'gui_constant']) await expect(main.locator(`[data-block-type="${type}"]`).first()).toBeVisible();
   await expect(editor.getByTestId('blockly-diagnostic')).toContainText('连接与引用有效'); expect(await read(page)).toEqual(doc);
@@ -58,7 +58,7 @@ for (const kind of ['OptionId', 'Number'] as const) test(`B1.5 ${kind} uses gene
 test('B1.5 generic template preserves incomplete typed drafts and upgrades only when explicitly saved', async ({ page }) => {
   const errors: string[] = []; page.on('pageerror', error => errors.push(error.message));
   const doc = genericBehaviorProject(false); await load(page, doc); await page.getByRole('button', { name: 'Blockly 实验', exact: true }).click();
-  const editor = page.getByTestId('blockly-editor'); await editor.getByLabel('通用规则事件').selectOption('slider-change'); await editor.getByRole('button', { name: '新建通用规则', exact: true }).click();
+  const editor = page.getByTestId('blockly-editor'); await editor.locator('.blockly-create-tools > summary').click(); await editor.getByLabel('通用规则事件').selectOption('slider-change'); await editor.getByRole('button', { name: '新建通用规则', exact: true }).click();
   const main = editor.locator('.blocklySvg .blocklyBlockCanvas'), threshold = main.locator('[data-block-type="gui_compare"] [data-block-type="gui_constant"]');
   expect(await read(page)).toEqual(doc); await threshold.locator(':scope > .blocklyField').last().click(); await page.keyboard.press('Escape');
   await threshold.click({ position: { x: 8, y: 8 } }); await page.keyboard.press('Control+c'); await page.keyboard.press('Control+v');

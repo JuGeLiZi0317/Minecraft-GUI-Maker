@@ -1,3 +1,4 @@
+import { fillViewSetting } from './topbar-helpers';
 import { expect, test, type Page } from '@playwright/test';
 
 const readProject = async (page: Page) => JSON.parse((await page.getByTestId('project-json').textContent())!);
@@ -32,8 +33,8 @@ async function centerAt110Percent(page: Page, width: number, height: number) {
     y: (element.clientHeight - size.height * 1.1) / 2 - Number(element.getAttribute('data-origin-y')),
   }), { width, height });
   const panX = page.getByLabel('Pan X', { exact: true }), panY = page.getByLabel('Pan Y', { exact: true });
-  await panX.fill(String(Number(await panX.inputValue()) + delta.x));
-  await panY.fill(String(Number(await panY.inputValue()) + delta.y));
+  await fillViewSetting(page, 'Pan X', String(Number(await panX.inputValue()) + delta.x));
+  await fillViewSetting(page, 'Pan Y', String(Number(await panY.inputValue()) + delta.y));
 }
 
 const cases = [

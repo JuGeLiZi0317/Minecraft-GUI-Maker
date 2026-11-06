@@ -1,3 +1,4 @@
+import { fillViewSetting } from './topbar-helpers';
 import { expect, test, type Page } from '@playwright/test';
 import { readFile, writeFile } from 'node:fs/promises';
 import os from 'node:os';
@@ -60,7 +61,7 @@ test('four types add/move/resize/export/import/recover in one history transactio
 for (const zoom of [0.5, 1, 2]) {
   test(`logical coordinates at zoom ${zoom} with pan, fractional drag and cancellation`, async ({ page }) => {
     await page.getByLabel('Zoom', { exact: true }).selectOption(String(zoom));
-    await page.getByLabel('Pan X', { exact: true }).fill('31'); await page.getByLabel('Pan Y', { exact: true }).fill('-17');
+    await fillViewSetting(page, 'Pan X', '31'); await fillViewSetting(page, 'Pan Y', '-17');
     await page.getByRole('button', { name: '添加 Button', exact: true }).click();
     const before = await documentOf(page), b = before.screens[0].nodes[0].bounds;
     await drag(page, await point(page, b.x + 10, b.y + 10), await point(page, b.x + 30.4, b.y + 20.2));

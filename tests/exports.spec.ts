@@ -1,3 +1,4 @@
+import { fillViewSetting } from './topbar-helpers';
 import { expect, test, type Page } from '@playwright/test';
 import { createHash } from 'node:crypto';
 import { readFile, mkdir, writeFile } from 'node:fs/promises';
@@ -13,7 +14,7 @@ async function load(page: Page, doc: GuiProject) {
 }
 async function generate(page: Page) {
   await page.getByRole('button', { name: '导出规格', exact: true }).click();
-  await expect(page.locator('.export-links a')).toHaveCount(6);
+  await expect(page.locator('.export-links a')).toHaveCount(7);
 }
 async function filesOf(page: Page) {
   return page.locator('.export-links a').evaluateAll(async links => Promise.all(links.map(async link => {
@@ -60,14 +61,14 @@ test('complete bundle has matching references/hashes and clean logical PNG, inde
   doc.screens[0].nodes = [createNode('minecraft:button', 'button'), createNode('minecraft:edit-box', 'input', { x: 20, y: 70 }), createNode('minecraft:string-widget', 'label', { x: 20, y: 140 }), fill, hidden];
   await load(page, doc); await page.getByRole('button', { name: '选择 rectangle', exact: true }).click();
   const history = await historyOf(page); await generate(page);
-  const files = await filesOf(page), manifest = json(files[5]), spec = json(files[2]);
+  const files = await filesOf(page), manifest = json(files[6]), spec = json(files[2]);
   expect(json(files[0])).toEqual(doc); expect(spec.reference).toEqual(manifest.reference);
   expect(pngMetadata(files[1].bytes).reference).toEqual(manifest.reference);
   const enlargedMeta = pngMetadata(files[4].bytes);
   expect(enlargedMeta.reference).toEqual(manifest.reference); expect(enlargedMeta.pixelRatio).toBe(4);
   expect(manifest.enlargedReferenceImage).toMatchObject({ width: 1280, height: 720, pixelRatio: 4, background: 'preview-matte-#1c2634' });
   expect(Buffer.from(files[3].bytes).toString()).toContain(manifest.reference.documentSha256);
-  for (let i = 0; i < 5; i++) {
+  for (let i = 0; i < 6; i++) {
     expect(manifest.files[i].sha256).toBe(createHash('sha256').update(Buffer.from(files[i].bytes)).digest('hex'));
     expect(manifest.files[i].bytes).toBe(files[i].bytes.length);
   }
@@ -80,7 +81,7 @@ test('complete bundle has matching references/hashes and clean logical PNG, inde
   await page.getByRole('button', { name: '选择 rectangle', exact: true }).click();
   await showScreenControls(page);
   for (const zoom of ['0.5', '1', '2']) {
-    await page.getByLabel('Zoom', { exact: true }).selectOption(zoom); await page.getByLabel('Pan X', { exact: true }).fill('31'); await page.getByLabel('Pan Y', { exact: true }).fill('-17');
+    await page.getByLabel('Zoom', { exact: true }).selectOption(zoom); await fillViewSetting(page, 'Pan X', '31'); await fillViewSetting(page, 'Pan Y', '-17');
     await generate(page); expect(await pixels(page)).toEqual(original); expect(await pixels(page, 4, 4)).toEqual(enlarged);
   }
   await page.locator('.screen-settings summary').click(); await page.getByRole('button', { name: '预览游戏缩放', exact: true }).click();
@@ -104,7 +105,7 @@ test('pending inline text commits before capture; async edits cannot change any 
   });
   await page.getByRole('button', { name: '导出规格', exact: true }).click();
   await page.getByLabel('按钮文字', { exact: true }).fill('Later'); await page.getByLabel('按钮文字', { exact: true }).press('Enter');
-  await expect(page.locator('.export-links a')).toHaveCount(6);
+  await expect(page.locator('.export-links a')).toHaveCount(7);
   const files = await filesOf(page), captured = json(files[0]), spec = json(files[2]);
   expect(captured.screens[0].nodes[0].props.message.value).toBe('Captured');
   expect(spec.designIntent.nodes[0].properties.message.value).toBe('Captured');

@@ -24,6 +24,8 @@ import { LayeredResources } from './resources/layered';
 import { fontSession } from './render/previewFont';
 import { exportFilename } from './exports/filenames';
 import { loadWorkspace, saveWorkspace, type SidebarMode } from './ui/workspacePreferences';
+import { HybridSidebar } from './ui/HybridSidebar';
+import { WorkspaceSettingsPopover } from './ui/WorkspaceSettingsPopover';
 import { localSession } from './io/localSession';
 import { BehaviorPanel, type BehaviorPreview } from './ui/BehaviorPanel';
 import type { SliderChangeEvent } from './domain/numeric';
@@ -33,16 +35,20 @@ import { ImportErrorDialog, type ImportFailure } from './ui/ImportErrorDialog';
 import { confirmDeleteScreen, confirmDeleteSelected } from './ui/confirmDeletion';
 
 const THEME_KEY = 'minecraft-gui-maker.theme.v1';
+const THEME_QUERY = '(prefers-color-scheme: dark)';
+export type ThemeMode = 'light' | 'dark' | 'system';
 const BlocklyBehaviorEditor = lazy(() => import('./ui/BlocklyBehaviorEditor'));
-const loadTheme = (): 'dark' | 'light' => {
-  try { return localStorage.getItem(THEME_KEY) === 'light' ? 'light' : 'dark'; } catch { return 'dark'; }
+const loadThemeMode = (): ThemeMode => {
+  try { const value = localStorage.getItem(THEME_KEY); return value === 'light' || value === 'system' ? value : 'dark'; } catch { return 'dark'; }
 };
 
 export function App() {
   const [blocklyMode, setBlocklyMode] = useState(false), [blocklyMounted, setBlocklyMounted] = useState(false), [blocklyRuleId, setBlocklyRuleId] = useState<string | null>(null);
-  const blocklyDraftDirty = useRef(false);
+  const [blocklyToolbarHost, setBlocklyToolbarHost] = useState<HTMLDivElement | null>(null);
+  const blocklyDraftDirty = useRef(false), behaviorDraftDirty = useRef(false);
   const enterBlocklyMode = (ruleId?: string) => { if (ruleId && blocklyDraftDirty.current) { notify('Blockly 有未保存草稿；请先保存或放弃草稿，再定位其他规则。', true); return; } setBlocklyRuleId(ruleId ?? null); setBlocklyMounted(true); setBlocklyMode(true); };
-  const requireBlocklyDraftSettled = () => { if (blocklyDraftDirty.current) throw new Error('Blockly 有未保存草稿，请先保存积木规则或放弃草稿'); };
+  const requireBehaviorDraftSettled = () => { if (behaviorDraftDirty.current) throw new Error('行为面板有未保存草稿，请先保存或取消编辑'); };
+  const requireBlocklyDraftSettled = () => { if (blocklyDraftDirty.current) throw new Error('Blockly 有未保存草稿，请先保存积木规则或放弃草稿'); requireBehaviorDraftSettled(); };
   const state = useStore(editorStore);
   const screen = currentScreen(state);
   const behaviorBindings = useMemo(() => buildBehaviorIndex(state.doc).find(item => item.screenId === screen.id)?.nodes ?? [], [state.doc, screen.id]);
@@ -65,17 +71,28 @@ export function App() {
   const [numericPreviewEpoch, setNumericPreviewEpoch] = useState(0);
   const fontRef = useRef<HTMLInputElement>(null);
   const fontMenuRef = useRef<HTMLDivElement>(null);
+  const editorMenuRef = useRef<HTMLElement>(null);
+  useDismissOutside(editorMenuRef, true, () => editorMenuRef.current?.querySelectorAll('details[open]').forEach(item => item.removeAttribute('open')));
   const [fontMenuOpen, setFontMenuOpen] = useState(false);
   useDismissOutside(fontMenuRef, fontMenuOpen, () => setFontMenuOpen(false));
   useEffect(() => { setInteraction(false); setBehaviorPreview(null); setBehaviorMode(false); behaviorStartScreen.current = null; }, [state.doc]);
   const [exportOpen, setExportOpen] = useState(false);
-  const [behaviorOpen, setBehaviorOpen] = useState(false), [behaviorPreview, setBehaviorPreview] = useState<BehaviorPreview | null>(null);
+  const [behaviorPreview, setBehaviorPreview] = useState<BehaviorPreview | null>(null);
   const [editTabs, setEditTabs] = useState<Record<string, string>>({});
   const [screenPositions, setScreenPositions] = useState<Record<string, { x: number; y: number }>>({});
   const [containerScroll, setContainerScroll] = useState<Record<string, number>>({});
   const [behaviorMode, setBehaviorMode] = useState(false), behaviorTrigger = useRef<((id: string) => void) | null>(null), sliderBehaviorTrigger = useRef<((event: SliderChangeEvent) => void) | null>(null), selectionBehaviorTrigger = useRef<((event: SelectionEvent) => void) | null>(null);
   const behaviorStartScreen = useRef<string | null>(null), behaviorNavigation = useRef<'navigate' | 'reset' | null>(null);
-  const [theme, setTheme] = useState<'dark' | 'light'>(loadTheme);
+  const [themeMode, setThemeMode] = useState<ThemeMode>(loadThemeMode);
+  const [systemDark, setSystemDark] = useState(() => window.matchMedia(THEME_QUERY).matches);
+  useEffect(() => {
+    const media = window.matchMedia(THEME_QUERY);
+    const onChange = (event: MediaQueryListEvent) => setSystemDark(event.matches);
+    media.addEventListener('change', onChange);
+    setSystemDark(media.matches);
+    return () => media.removeEventListener('change', onChange);
+  }, []);
+  const theme: 'dark' | 'light' = themeMode === 'system' ? (systemDark ? 'dark' : 'light') : themeMode;
   const [importError, setImportError] = useState<ImportFailure | null>(null);
   useEffect(() => { if (behaviorMode || behaviorPreview || preview) setEditTabs({}); }, [behaviorMode, behaviorPreview, preview]);
   useEffect(() => {
@@ -91,10 +108,13 @@ export function App() {
   useEffect(() => { if (state.operation === 'import' || state.operation === 'restore') { setEditTabs({}); setScreenPositions({}); } }, [state.doc, state.operation]);
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
-    try { localStorage.setItem(THEME_KEY, theme); } catch { /* theme is a preference, never blocks editing */ }
-  }, [theme]);
+    try { localStorage.setItem(THEME_KEY, themeMode); } catch { /* theme is a preference, never blocks editing */ }
+  }, [theme, themeMode]);
   const [prefs, setPrefs] = useState(loadWorkspace), [peek, setPeek] = useState({ left: false, right: false });
-  const [viewportWidth, setViewportWidth] = useState(window.innerWidth), pointerDown = useRef(false), hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [behaviorReveal, setBehaviorReveal] = useState(0);
+  const behaviorOpen = prefs.openedModules.includes('behavior');
+  const setBehaviorOpen = (open: boolean) => { if (open) setBehaviorReveal(n => n + 1); setPrefs(p => ({ ...p, openedModules: open ? p.openedModules.includes('behavior') ? p.openedModules : [...p.openedModules, 'behavior'] : p.openedModules.filter(id => id !== 'behavior'), left: open && p.left.mode === 'collapsed' ? { ...p.left, mode: 'pinned' } : p.left })); };
+  const [viewportWidth, setViewportWidth] = useState(window.innerWidth), [mobileInspectorOpen, setMobileInspectorOpen] = useState(false), pointerDown = useRef(false), hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => { saveWorkspace(prefs); }, [prefs]);
   useEffect(() => {
     const resize = () => setViewportWidth(window.innerWidth), down = () => { pointerDown.current = true; }, up = () => { pointerDown.current = false; };
@@ -111,6 +131,7 @@ export function App() {
     setPeek(p => ({ ...p, [side]: false }));
   };
   const showPeek = (side: 'left' | 'right') => {
+    if (side === 'right' && viewportWidth <= 560) return;
     if (hideTimer.current) clearTimeout(hideTimer.current);
     if (!pointerDown.current && !state.gesture && prefs[side].mode !== 'pinned') setPeek(p => ({ ...p, [side]: true }));
   };
@@ -121,9 +142,10 @@ export function App() {
       if (!container?.contains(document.activeElement) && !pointerDown.current) setPeek(p => ({ ...p, [side]: false }));
     }, 350);
   };
-  const libraryOpen = prefs.left.mode === 'pinned', inspectorOpen = prefs.right.mode === 'pinned';
+  const compactWorkspace = viewportWidth <= 560;
+  const libraryOpen = prefs.left.mode === 'pinned', inspectorOpen = compactWorkspace ? mobileInspectorOpen : prefs.right.mode === 'pinned';
   const setLibraryOpen = (open: boolean) => mode('left', open ? 'pinned' : 'collapsed');
-  const setInspectorOpen = (open: boolean) => mode('right', open ? 'pinned' : 'collapsed');
+  const setInspectorOpen = (open: boolean) => { if (compactWorkspace) setMobileInspectorOpen(open); else mode('right', open ? 'pinned' : 'collapsed'); };
   const limitWidth = (width: number) => Math.min(width, Math.max(160, Math.floor((viewportWidth - 300) / 2)));
   const libraryWidth = limitWidth(prefs.left.width), inspectorWidth = limitWidth(prefs.right.width);
   const setLibraryWidth = (width: number) => setPrefs(p => ({ ...p, left: { ...p.left, width } }));
@@ -138,8 +160,8 @@ export function App() {
     const move = (e: PointerEvent) => {
       const raw = initial + (side === 'left' ? 1 : -1) * (e.clientX - start); collapse = raw < 120;
       const available = workspaceRef.current?.clientWidth ?? 850;
-      const other = side === 'left' ? (inspectorOpen ? inspectorWidth : 0) : (libraryOpen ? libraryWidth : 0);
-      const limit = Math.max(side === 'left' ? 160 : 240, available - other - 400);
+      const other = side === 'left' ? (inspectorOpen ? inspectorWidth : 0) + 50 : 44 + (libraryOpen && prefs.openedModules.length ? libraryWidth + 6 : 0);
+      const limit = Math.max(side === 'left' ? 160 : 240, available - other - 350);
       const value = Math.round(Math.max(side === 'left' ? 160 : 240, Math.min(limit, initial + (side === 'left' ? 1 : -1) * (e.clientX - start))));
       if (!collapse) { if (side === 'left') setLibraryWidth(value); else setInspectorWidth(value); }
     };
@@ -235,6 +257,7 @@ export function App() {
   };
   const toggleInteractionPreview = () => {
     if (blocklyMode) { notify('请先切回 GUI 设计模式，再开启交互预览', true); return; }
+    if (!interaction && behaviorDraftDirty.current) { notify('行为面板有未保存草稿，请先保存或取消编辑', true); return; }
     setNumericPreviewEpoch(epoch => epoch + 1);
     if (interaction) {
       setInteraction(false); setBehaviorPreview(null); setBehaviorMode(false);
@@ -254,7 +277,7 @@ export function App() {
   return <div className="app-shell" style={{ '--inspector-width': `${inspectorOpen ? inspectorWidth : 0}px` } as CSSProperties}>
     <header className="app-header">
       <div className="brand"><span className="brand-mark" aria-hidden="true">▧</span><h1>Minecraft <strong>GUI Maker</strong></h1></div>
-      <nav className="editor-menu" aria-label="编辑器菜单" onBlur={e => { if (!e.currentTarget.contains(e.relatedTarget as Node | null)) e.currentTarget.querySelectorAll('details[open]').forEach(item => item.removeAttribute('open')); }} onClick={e => {
+      <nav ref={editorMenuRef} className="editor-menu" aria-label="编辑器菜单" onKeyDown={e => { if (e.key === 'Escape') { e.stopPropagation(); const active = (e.target as HTMLElement).closest('details'); e.currentTarget.querySelectorAll('details[open]').forEach(item => item.removeAttribute('open')); active?.querySelector('summary')?.focus(); } }} onBlur={e => { if (!e.currentTarget.contains(e.relatedTarget as Node | null)) e.currentTarget.querySelectorAll('details[open]').forEach(item => item.removeAttribute('open')); }} onClick={e => {
         const target = e.target as HTMLElement;
         if (target.closest('button')) e.currentTarget.querySelectorAll('details[open]').forEach(item => item.removeAttribute('open'));
         else if (target.closest('summary')) { const active = target.closest('details'); active?.parentElement?.querySelectorAll(':scope > details[open]').forEach(item => { if (item !== active) item.removeAttribute('open'); }); }
@@ -271,24 +294,28 @@ export function App() {
           <button disabled={!!state.blocked || !!preview || blocklyMode || !state.future.length || !!state.gesture} onClick={state.redo}>重做操作</button>
         </div></details>
         <details><summary>视图</summary><div>
-          <details className="editor-submenu" onMouseEnter={e => { e.currentTarget.open = true; }} onMouseLeave={e => { e.currentTarget.open = false; }}><summary role="menuitem">资源包检查</summary><div>
+          <details className="editor-submenu" onMouseEnter={e => { if (window.matchMedia('(min-width: 761px) and (hover: hover)').matches) e.currentTarget.open = true; }} onMouseLeave={e => { if (window.matchMedia('(min-width: 761px) and (hover: hover)').matches) e.currentTarget.open = false; }}><summary role="menuitem">资源包检查</summary><div>
             <button onClick={() => { resources.useDefault(); setResourceGeneration(n => n + 1); void previewAssets.clearResources().then(() => notify('已使用默认样式；刷新后仍使用默认样式')).catch(error => notify(`已切换默认样式，但未能清除本机资源缓存：${(error as Error).message}`, true)); }}>使用默认样式</button>
             <button onClick={() => setResourceOpenRequest(n => n + 1)}>选择已有资源包</button>
           </div></details>
-          <details className="editor-submenu" onMouseEnter={e => { e.currentTarget.open = true; }} onMouseLeave={e => { e.currentTarget.open = false; }}><summary>字体</summary><div>
+          <details className="editor-submenu" onMouseEnter={e => { if (window.matchMedia('(min-width: 761px) and (hover: hover)').matches) e.currentTarget.open = true; }} onMouseLeave={e => { if (window.matchMedia('(min-width: 761px) and (hover: hover)').matches) e.currentTarget.open = false; }}><summary>字体</summary><div>
             <button onClick={() => fontSession.clear()}>使用系统字体</button>
             <button onClick={() => fontRef.current?.click()}>选择字体文件</button>
             {font.cached.map(item => <button key={item.id} onClick={() => fontSession.useCached(item.id)}>{item.name}</button>)}
           </div></details>
-          <button onClick={() => mode('left', prefs.left.mode === 'auto' ? 'pinned' : 'auto')}>左侧自动隐藏：{prefs.left.mode === 'auto' ? '开' : '关'}</button>
+          <button onClick={() => mode('left', libraryOpen ? 'collapsed' : 'pinned')}>{libraryOpen ? '收起模块侧栏' : '展开模块侧栏'}</button>
           <button onClick={() => mode('right', prefs.right.mode === 'auto' ? 'pinned' : 'auto')}>右侧自动隐藏：{prefs.right.mode === 'auto' ? '开' : '关'}</button>
           <button onClick={() => setSettingsOpen(true)}>打开 GUI Scale 设置</button>
           <button disabled={!!preview} onClick={() => setGrid({ ...grid, visible: !grid.visible })}>切换网格</button>
           <button aria-pressed={prefs.smartGuides} onClick={() => setPrefs(p => ({ ...p, smartGuides: !p.smartGuides }))}>智能参考线：{prefs.smartGuides ? '开' : '关'}</button>
           <button aria-pressed={prefs.smartSnap} onClick={() => setPrefs(p => ({ ...p, smartSnap: !p.smartSnap }))}>智能吸附：{prefs.smartSnap ? '开' : '关'}</button>
-          <button onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}>{theme === 'dark' ? '切换为亮色主题' : '切换为暗色主题'}</button>
+          <button aria-pressed={themeMode === 'light'} onClick={() => setThemeMode('light')}>主题：浅色</button>
+          <button aria-pressed={themeMode === 'dark'} onClick={() => setThemeMode('dark')}>主题：深色</button>
+          <button aria-pressed={themeMode === 'system'} onClick={() => setThemeMode('system')}>主题：跟随系统</button>
         </div></details>
         <details><summary>模式</summary><div>
+          <button aria-pressed={!blocklyMode} onClick={() => setBlocklyMode(false)}>切换到 GUI 设计</button>
+          <button aria-pressed={blocklyMode} disabled={!!state.blocked || !!state.gesture || interaction || !!preview} onClick={() => enterBlocklyMode()}>切换到 Blockly 行为</button>
           <button onClick={toggleBehavior}>切换行为面板</button>
         </div></details>
         <details><summary>工具</summary><div>
@@ -298,7 +325,7 @@ export function App() {
         </div></details>
         <details><summary>帮助</summary><div><p>滚轮缩放、右键平移。Ctrl+Z 撤销，Ctrl+Shift+Z 重做。设计 JSON 是权威数据。</p></div></details>
       </nav>
-      <div className="document-bar">
+      <div className="document-bar" title={`已提交版本 revision ${revision}`}>
         <div className="project-field"><ProjectName notify={notify} disabled={!!state.blocked || !!state.gesture || !!preview || !!behaviorPreview}/></div>
         <span className="revision-chip" title="当前已提交文档 revision">REV {revision}</span>
         <LocalSavePanel notify={notify} onBackup={downloadCommitted} beforeOpen={requireBlocklyDraftSettled}/>
@@ -312,8 +339,9 @@ export function App() {
           <button className="quiet" aria-label="导出 JSON ↗" title="下载权威设计 JSON" disabled={!!state.gesture} onClick={download}>JSON</button>
           <button className="quiet" aria-label="一键导出 ZIP" title="生成同一快照并下载 ZIP" disabled={!!state.gesture || exports.busy} onClick={() => { setExportOpen(true); void exports.generate(() => setSettingsOpen(false), true); }}>ZIP</button>
           <button className="primary" aria-label="导出规格" disabled={!!state.gesture || exports.busy} onClick={() => { setExportOpen(true); void exports.generate(() => setSettingsOpen(false)); }}>导出规格</button>
-          <button className={`result-link ${!exportOpen && exports.batch ? '' : 'is-hidden'}`} tabIndex={!exportOpen && exports.batch ? 0 : -1} onClick={() => { setSettingsOpen(false); setExportOpen(true); }}>查看导出结果</button>
+          {exports.batch && <button className={`result-link ${exportOpen ? 'is-hidden' : ''}`} tabIndex={exportOpen ? -1 : 0} onClick={() => { setSettingsOpen(false); setExportOpen(true); }}>查看导出结果</button>}
         </div>
+        <button type="button" className="theme-shortcut" aria-label="切换主题" aria-pressed={theme === 'dark'} title={`当前：${theme === 'dark' ? '深色' : '浅色'}${themeMode === 'system' ? '（跟随系统）' : ''} · 切换为${theme === 'dark' ? '浅色' : '深色'}`} onClick={() => setThemeMode(theme === 'dark' ? 'light' : 'dark')}><span aria-hidden="true">{theme === 'dark' ? '☾' : '☀'}</span></button>
       </div>
       <input ref={fileRef} type="file" aria-label="导入项目文件" accept=".json,application/json" hidden disabled={!!state.blocked || !!state.gesture || !!preview} onChange={async e => {
         const file = e.target.files?.[0]; e.target.value = ''; if (!file) return;
@@ -340,26 +368,42 @@ export function App() {
         <button type="button" aria-label="GUI 设计模式" aria-pressed={!blocklyMode} onClick={() => setBlocklyMode(false)}>GUI 设计</button>
         <button type="button" aria-label="Blockly 实验" aria-pressed={blocklyMode} disabled={!!state.blocked || !!state.gesture || interaction || !!preview} onClick={() => enterBlocklyMode()}>Blockly 行为</button>
       </div>
+      <div ref={setBlocklyToolbarHost} className="blockly-context-tools" data-testid="blockly-context-tools" hidden={!blocklyMode}/>
       {!blocklyMode && <>
+        <div className="context-group context-screen" role="group" aria-label="Screen 画布工具">
+          <label className="context-screen-select"><span>画布</span><select aria-label="当前画布" value={state.currentScreenId} disabled={!!state.gesture || !!preview || !!behaviorPreview} onChange={e => { try { commitExportDrafts(); state.switchScreen(e.target.value); } catch (error) { notify((error as Error).message, true); } }}>{state.doc.screens.map(item => <option key={item.id} value={item.id}>{displayText(item.title)} · {item.id}</option>)}</select></label>
+          {renamingScreen ? <form className="screen-rename-form" onSubmit={e => { e.preventDefault(); try { commitExportDrafts(); state.renameScreen(screen.id, screenName); setRenamingScreen(false); notify('画布已重命名'); } catch (error) { notify((error as Error).message, true); } }}><input autoFocus aria-label="画布名称" maxLength={128} value={screenName} onChange={e => setScreenName(e.target.value)}/><button className="screen-tool-button" type="submit" title="保存画布名称" aria-label="保存画布名称">✓</button><button className="screen-tool-button" type="button" title="取消重命名" aria-label="取消重命名" onClick={() => { setRenamingScreen(false); setScreenName(displayText(screen.title)); }}>×</button></form> : null}
+        <div className="context-screen-actions">
+            {interaction && screen.nodes.some(node => isStatusNode(node) && node.state.visible) && <StatusPreview key={screen.id} screenId={screen.id} nodes={screen.nodes.filter((node): node is Extract<typeof node, { type: 'minecraft:status-indicator' }> => isStatusNode(node) && node.state.visible)} values={previewStatusValues} onChange={(nodeId, statusId) => setPreviewStatusValues(values => ({ ...values, [nodeId]: statusId }))}/>}
+            {!renamingScreen && <button type="button" className="screen-tool-button" aria-label="重命名画布" title="重命名当前画布" disabled={!!state.blocked || !!state.gesture || !!preview || !!behaviorPreview} onClick={() => setRenamingScreen(true)}><svg aria-hidden="true" viewBox="0 0 20 20"><path d="M3 14.5V17h2.5L16.2 6.3l-2.5-2.5L3 14.5Z"/><path d="m12.8 4.7 2.5 2.5"/></svg></button>}
+            <button type="button" className="screen-tool-button" aria-label="新增画布" title="新增 Screen 画布" disabled={!!state.blocked || !!state.gesture || !!preview || !!behaviorPreview || behaviorMode} onClick={() => { try { commitExportDrafts(); state.addScreen(); setView(v => ({ ...v, zoom: Math.min(v.zoom, 0.5), panX: 0, panY: 0 })); notify('已新增 Screen 画布'); } catch (error) { notify((error as Error).message, true); } }}><svg aria-hidden="true" viewBox="0 0 20 20"><path d="M10 3v14M3 10h14"/></svg></button>
+            <button type="button" className="screen-tool-button screen-delete-button" aria-label="删除当前画布" title="确认删除当前 Screen 并清理相关绑定" disabled={!!state.blocked || !!state.gesture || !!preview || !!behaviorPreview || behaviorMode || state.doc.screens.length <= 1} onClick={() => { try { if (!confirmDeleteScreen(screen.id)) return; setScreenPositions(previous => { const next = { ...previous }; delete next[screen.id]; return next; }); notify('Screen 画布及关联行为已删除，可撤销'); } catch (error) { notify((error as Error).message, true); } }}><svg aria-hidden="true" viewBox="0 0 20 20"><path d="M3.5 5.5h13M8 5.5V3.5h4v2M5.5 5.5l.7 11h7.6l.7-11M8 8v5.5M12 8v5.5"/></svg></button>
+          </div>
+        </div>
       <div className="context-group context-left">
         <button className="tool-button" aria-label="选择工具" aria-pressed={view.tool === 'select'} onClick={() => setView({ ...view, tool: 'select' })}>选择</button>
         <button className="tool-button" aria-label="平移工具" aria-pressed={view.tool === 'pan'} onClick={() => setView({ ...view, tool: 'pan' })}>平移</button>
         <span className="context-divider" aria-hidden="true"/>
         <label className="grid-check"><input type="checkbox" aria-label="显示网格" disabled={!!preview} checked={grid.visible} onChange={e => setGrid({ ...grid, visible: e.target.checked })}/>网格</label>
-        <label className="inline-field">间距 <input type="number" aria-label="网格间距" min="1" max="200" step="1" disabled={!!preview} aria-invalid={!gridValid} title="网格间距：1～200 GUI 逻辑像素" value={gridDraft} onChange={e => {
-          const value = e.target.value; setGridDraft(value); const n = Number(value);
-          if (/^\d+$/.test(value) && n >= 1 && n <= 200) setGrid({ ...grid, spacing: n });
-        }} onBlur={() => { if (!gridValid) setGridDraft(String(grid.spacing)); }}/></label>
         <span className="context-divider" aria-hidden="true"/>
         <label className="inline-field">Zoom <select aria-label="Zoom" title="画布内滚轮缩放，右键拖动平移" disabled={!!state.gesture || !!preview} value={view.zoom} onChange={e => setView({ ...view, zoom: Number(e.target.value) })}>
           {![0.25, 0.5, 1, 2, 4, 8, 16].includes(view.zoom) && <option value={view.zoom}>{Math.round(view.zoom * 100)}%</option>}
           {[0.25, 0.5, 1, 2, 4, 8, 16].map(z => <option key={z} value={z}>{z * 100}%</option>)}
         </select></label>
-        <label className="inline-field">Pan X <input type="number" aria-label="Pan X" disabled={!!state.gesture || !!preview} value={view.panX} onChange={e => setView({ ...view, panX: Number(e.target.value) })}/></label>
-        <label className="inline-field">Y <input type="number" aria-label="Pan Y" disabled={!!state.gesture || !!preview} value={view.panY} onChange={e => setView({ ...view, panY: Number(e.target.value) })}/></label>
         <button className="icon-button" aria-label="重置视图" title="重置画布视图" disabled={!!state.gesture || !!preview} onClick={() => setView({ zoom: 2, panX: 0, panY: 0, tool: 'select' })}>⌖</button>
       </div>
+      </>}
       <div className="context-group context-right">
+        <WorkspaceSettingsPopover blockly={blocklyMode}>
+          {!blocklyMode && <div className="precise-view-fields">
+        <label className="inline-field">间距 <input type="number" aria-label="网格间距" min="1" max="200" step="1" disabled={!!preview} aria-invalid={!gridValid} title="网格间距：1～200 GUI 逻辑像素" value={gridDraft} onChange={e => {
+          const value = e.target.value; setGridDraft(value); const n = Number(value);
+          if (/^\d+$/.test(value) && n >= 1 && n <= 200) setGrid({ ...grid, spacing: n });
+        }} onBlur={() => { if (!gridValid) setGridDraft(String(grid.spacing)); }}/></label>
+        <label className="inline-field">Pan X <input type="number" aria-label="Pan X" disabled={!!state.gesture || !!preview} value={view.panX} onChange={e => setView({ ...view, panX: Number(e.target.value) })}/></label>
+        <label className="inline-field">Y <input type="number" aria-label="Pan Y" disabled={!!state.gesture || !!preview} value={view.panY} onChange={e => setView({ ...view, panY: Number(e.target.value) })}/></label>
+          </div>}
+          <div className="preview-font-fields">
         <small className="font-status" aria-live="polite" data-testid="font-status">{font.status}</small>
         <div className="context-font" ref={fontMenuRef}>
           <button className="context-action" aria-label="字体选择" aria-expanded={fontMenuOpen} aria-controls="context-font-menu" onClick={() => setFontMenuOpen(!fontMenuOpen)}>字体 ▾</button>
@@ -369,77 +413,56 @@ export function App() {
             {font.cached.map(item => <button key={item.id} onClick={() => { fontSession.useCached(item.id); setFontMenuOpen(false); }}>{item.name}</button>)}
           </div>
         </div>
-        <ResourceTestPanel manager={resources} openRequest={resourceOpenRequest} onChange={() => setResourceGeneration(n => n + 1)}/>
-        <button className="context-action" aria-label="交互预览" aria-pressed={interaction} disabled={!!preview || !!state.gesture} onClick={toggleInteractionPreview}>交互预览：{interaction ? '开' : '关'}</button>
+          </div>
+        </WorkspaceSettingsPopover>
+        <ResourceTestPanel manager={resources} hideTrigger={blocklyMode} openRequest={resourceOpenRequest} onChange={() => setResourceGeneration(n => n + 1)}/>
+        {!blocklyMode && <button className="context-action" aria-label="交互预览" aria-pressed={interaction} disabled={!!preview || !!state.gesture} onClick={toggleInteractionPreview}>交互预览{interaction ? ' · 运行中' : ''}</button>}
         <ScreenSettings preview={preview} setPreview={setPreview} notify={notify} open={settingsOpen} setOpen={setSettingsOpen}/>
         <button className="behavior-toggle" aria-label="行为" aria-expanded={behaviorOpen} aria-pressed={behaviorOpen} onClick={toggleBehavior}>行为</button>
+
       </div>
-      </>}
     </div>
 
-    <div ref={workspaceRef} style={{ '--library-width': libraryOpen ? `${libraryWidth}px` : '0px', '--inspector-width': inspectorOpen ? `${inspectorWidth}px` : '0px', '--left-float-width': `${libraryWidth}px`, '--right-float-width': `${inspectorWidth}px`, '--tree-ratio': `${prefs.treeRatio * 100}%` } as CSSProperties} className={`workspace ${blocklyMode ? 'blockly-mode' : ''} ${libraryOpen ? '' : 'library-collapsed'} ${inspectorOpen ? '' : 'inspector-collapsed'} ${prefs.left.mode !== 'pinned' ? 'auto-left' : ''} ${prefs.right.mode !== 'pinned' ? 'auto-right' : ''} ${peek.left ? 'peek-left' : ''} ${peek.right ? 'peek-right' : ''}`}>
-      {!blocklyMode && <>
-      <aside className="library" onMouseEnter={() => showPeek('left')} onMouseLeave={() => hidePeek('left')}>
-        {prefs.left.mode !== 'pinned' && peek.left && <button className="sidebar-pin" onClick={() => mode('left', 'pinned')}>固定组件栏</button>}
-        <div className={screen.nodes.length ? 'library-tree' : 'library-tree empty'}>
-          <div className="layers-heading"><span>项目结构 · {screen.id}</span><button type="button" disabled={!state.selected || !!behaviorPreview} onClick={() => setBehaviorOpen(true)}>查看关联行为</button><span>{screen.nodes.length}</span></div>
-          <label className="entry-screen-field">项目入口<select aria-label="项目入口 Screen" disabled={!!state.blocked || !!state.gesture || !!preview || !!behaviorPreview} value={state.doc.entryScreenId ?? ''} onChange={e => { if (!e.target.value) return; try { commitExportDrafts(); state.setEntryScreen(e.target.value); notify('项目入口已更新'); } catch (error) { notify((error as Error).message, true); } }}><option value="" disabled>选择项目入口…</option>{state.doc.screens.map(item => <option key={item.id} value={item.id}>{displayText(item.title)} · {item.id}</option>)}</select></label>
+    <div ref={workspaceRef} style={{ '--library-width': `${44 + (libraryOpen && prefs.openedModules.length ? libraryWidth + 6 : 0)}px`, '--inspector-width': inspectorOpen ? `${inspectorWidth}px` : '0px', '--left-float-width': `${libraryWidth}px`, '--right-float-width': `${inspectorWidth}px`, '--tree-ratio': `${prefs.treeRatio * 100}%` } as CSSProperties} className={`workspace ${blocklyMode ? 'blockly-mode' : ''} ${libraryOpen ? '' : 'library-collapsed'} ${inspectorOpen ? '' : 'inspector-collapsed'} ${!compactWorkspace && prefs.right.mode !== 'pinned' ? 'auto-right' : ''} ${peek.left ? 'peek-left' : ''} ${peek.right ? 'peek-right' : ''}`}>
+      <HybridSidebar prefs={prefs} setPrefs={setPrefs} open={libraryOpen} setOpen={setLibraryOpen} width={libraryWidth} blocked={!!state.gesture} hidden={blocklyMode} reveal={behaviorReveal} onResize={event => resizeSidebar('left', event)}>{{
+        screens: <>          <label className="entry-screen-field">项目入口<select aria-label="项目入口 Screen" disabled={!!state.blocked || !!state.gesture || !!preview || !!behaviorPreview} value={state.doc.entryScreenId ?? ''} onChange={e => { if (!e.target.value) return; try { commitExportDrafts(); state.setEntryScreen(e.target.value); notify('项目入口已更新'); } catch (error) { notify((error as Error).message, true); } }}><option value="" disabled>选择项目入口…</option>{state.doc.screens.map(item => <option key={item.id} value={item.id}>{displayText(item.title)} · {item.id}</option>)}</select></label><div className="hybrid-screen-list">{state.doc.screens.map(item => <button type="button" key={item.id} aria-label={`切换 Screen ${item.id}`} aria-pressed={item.id === state.currentScreenId} disabled={!!state.gesture || !!preview || !!behaviorPreview} onClick={() => { try { commitExportDrafts(); state.switchScreen(item.id); } catch (error) { notify((error as Error).message, true); } }}><span>{displayText(item.title)}</span><small>{item.id} · {item.nodes.length}</small></button>)}<button type="button" aria-label="新增 Screen" disabled={!!state.blocked || !!state.gesture || !!preview || !!behaviorPreview || behaviorMode} onClick={() => { try { commitExportDrafts(); state.addScreen(); setView(v => ({ ...v, zoom: Math.min(v.zoom, 0.5), panX: 0, panY: 0 })); notify('已新增 Screen 画布'); } catch (error) { notify((error as Error).message, true); } }}>＋ 新增 Screen</button></div></>,
+        structure: <>          <div className="layers-heading"><span>项目结构 · {screen.id}</span><button type="button" disabled={!state.selected || !!behaviorPreview} onClick={() => setBehaviorOpen(true)}>查看关联行为</button><span>{screen.nodes.length}</span></div>
+
           <div className="layers" ref={layersRef} onKeyDown={e => {
             if (e.key === 'ArrowDown') { e.preventDefault(); moveLayer('down'); }
             else if (e.key === 'ArrowUp') { e.preventDefault(); moveLayer('up'); }
             else if (e.key === 'Home') { e.preventDefault(); moveLayer('first'); }
             else if (e.key === 'End') { e.preventDefault(); moveLayer('last'); }
           }}>{!screen.nodes.length ? <p className="muted">尚无组件</p> : [...screen.nodes].filter(node => node.parentContainerId === undefined).reverse().flatMap(node => renderLayer(node))}</div>
-        </div>
-        <div className={`library-split ${screen.nodes.length ? '' : 'empty'}`} role="separator" aria-label="调整项目结构区域高度" onPointerDown={e => {
-          if (e.button !== 0) return;
-          const target = e.currentTarget, rect = target.parentElement!.getBoundingClientRect(); target.setPointerCapture(e.pointerId);
-          const move = (event: PointerEvent) => setPrefs(p => ({ ...p, treeRatio: Math.min(0.8, Math.max(0.2, (event.clientY - rect.top) / rect.height)) }));
-          const end = () => { target.removeEventListener('pointermove', move); target.removeEventListener('pointerup', end); target.removeEventListener('pointercancel', end); };
-          target.addEventListener('pointermove', move); target.addEventListener('pointerup', end); target.addEventListener('pointercancel', end);
-        }}/>
-        <div className="library-palette">
-          <div className="panel-heading"><span>COMPONENTS</span><span>{NODE_TYPES.length}</span></div>
-          <h2>构建你的界面</h2>
-          <div className="component-list">{NODE_TYPES.map(type => <button key={type} className="component-card" disabled={!!state.blocked || !!state.gesture || !!preview || !!behaviorPreview || screen.nodes.length >= 1000}
+</>,
+        components: <>          <div className="component-list">{NODE_TYPES.map(type => <button key={type} className="component-card" disabled={!!state.blocked || !!state.gesture || !!preview || !!behaviorPreview || screen.nodes.length >= 1000}
             aria-label={`添加 ${CATALOG[type].label}`} draggable={!state.gesture && !behaviorPreview} onDragStart={e => { pointerDown.current = true; e.dataTransfer.setData('application/x-minecraft-gui-component', type); }} onClick={() => addComponent(type)}>
             <span className="component-glyph" aria-hidden="true">{CATALOG[type].glyph}</span><span><strong>{CATALOG[type].label}</strong><small>{CATALOG[type].subtitle}</small></span>
-          </button>)}</div>
-        </div>
-      </aside>
+          </button>)}</div></>,
+        behavior: <BehaviorPanel key={state.currentScreenId} preview={behaviorPreview} setPreview={setBehaviorPreview} mode={behaviorMode} setMode={setBehaviorMode} canClick={!preview} triggerRef={behaviorTrigger} sliderTriggerRef={sliderBehaviorTrigger} selectionTriggerRef={selectionBehaviorTrigger}
+          onOpenScreen={id => { setNumericPreviewEpoch(epoch => epoch + 1); if (editorStore.getState().currentScreenId !== id) { behaviorNavigation.current = 'navigate'; editorStore.getState().switchScreen(id); } setBehaviorPreview(initialControlState(currentScreen(editorStore.getState()))); setBehaviorMode(true); }} onOpenBlocklyRule={id => enterBlocklyMode(id)} onDraftChange={dirty => { behaviorDraftDirty.current = dirty; }}
+          onResetPreview={() => { setNumericPreviewEpoch(epoch => epoch + 1); setInteraction(false); setBehaviorPreview(null); setBehaviorMode(false); const s = editorStore.getState(), id = s.doc.entryScreenId; behaviorStartScreen.current = null; if (id && s.doc.screens.some(item => item.id === id) && s.currentScreenId !== id) { behaviorNavigation.current = 'reset'; s.switchScreen(id); } }}
+          close={() => setBehaviorOpen(false)} notify={notify}/>,
+      }}</HybridSidebar>
+      {!blocklyMode && <>
       <Inspector containerScroll={containerScroll} key={state.currentScreenId} editTabs={editTabs} setEditTabs={setEditTabs} notify={notify} readOnly={!!preview || !!state.blocked || !!behaviorPreview} onMouseEnter={() => showPeek('right')} onMouseLeave={() => hidePeek('right')} onPin={prefs.right.mode !== 'pinned' && peek.right ? () => mode('right', 'pinned') : undefined} emptyControls={null}/>
       <main className="studio">
-        <div className="screen-toolbar" aria-label="Screen 画布工具">
-          <label className="screen-toolbar-select"><span>画布</span><select aria-label="当前画布" value={state.currentScreenId} disabled={!!state.gesture || !!preview || !!behaviorPreview} onChange={e => { try { commitExportDrafts(); state.switchScreen(e.target.value); } catch (error) { notify((error as Error).message, true); } }}>{state.doc.screens.map(item => <option key={item.id} value={item.id}>{displayText(item.title)} · {item.id}</option>)}</select></label>
-          {renamingScreen ? <form className="screen-rename-form" onSubmit={e => { e.preventDefault(); try { commitExportDrafts(); state.renameScreen(screen.id, screenName); setRenamingScreen(false); notify('画布已重命名'); } catch (error) { notify((error as Error).message, true); } }}><input autoFocus aria-label="画布名称" maxLength={128} value={screenName} onChange={e => setScreenName(e.target.value)}/><button className="screen-tool-button" type="submit" title="保存画布名称" aria-label="保存画布名称">✓</button><button className="screen-tool-button" type="button" title="取消重命名" aria-label="取消重命名" onClick={() => { setRenamingScreen(false); setScreenName(displayText(screen.title)); }}>×</button></form> : <strong className="screen-toolbar-title">{displayText(screen.title)}</strong>}
-        <div className="screen-toolbar-actions">
-            {interaction && screen.nodes.some(node => isStatusNode(node) && node.state.visible) && <StatusPreview key={screen.id} screenId={screen.id} nodes={screen.nodes.filter((node): node is Extract<typeof node, { type: 'minecraft:status-indicator' }> => isStatusNode(node) && node.state.visible)} values={previewStatusValues} onChange={(nodeId, statusId) => setPreviewStatusValues(values => ({ ...values, [nodeId]: statusId }))}/>}
-            {!renamingScreen && <button type="button" className="screen-tool-button" aria-label="重命名画布" title="重命名当前画布" disabled={!!state.blocked || !!state.gesture || !!preview || !!behaviorPreview} onClick={() => setRenamingScreen(true)}><svg aria-hidden="true" viewBox="0 0 20 20"><path d="M3 14.5V17h2.5L16.2 6.3l-2.5-2.5L3 14.5Z"/><path d="m12.8 4.7 2.5 2.5"/></svg></button>}
-            <button type="button" className="screen-tool-button" aria-label="新增画布" title="新增 Screen 画布" disabled={!!state.blocked || !!state.gesture || !!preview || !!behaviorPreview || behaviorMode} onClick={() => { try { commitExportDrafts(); state.addScreen(); setView(v => ({ ...v, zoom: Math.min(v.zoom, 0.5), panX: 0, panY: 0 })); notify('已新增 Screen 画布'); } catch (error) { notify((error as Error).message, true); } }}><svg aria-hidden="true" viewBox="0 0 20 20"><path d="M10 3v14M3 10h14"/></svg></button>
-            <button type="button" className="screen-tool-button screen-delete-button" aria-label="删除当前画布" title="确认删除当前 Screen 并清理相关绑定" disabled={!!state.blocked || !!state.gesture || !!preview || !!behaviorPreview || behaviorMode || state.doc.screens.length <= 1} onClick={() => { try { if (!confirmDeleteScreen(screen.id)) return; setScreenPositions(previous => { const next = { ...previous }; delete next[screen.id]; return next; }); notify('Screen 画布及关联行为已删除，可撤销'); } catch (error) { notify((error as Error).message, true); } }}><svg aria-hidden="true" viewBox="0 0 20 20"><path d="M3.5 5.5h13M8 5.5V3.5h4v2M5.5 5.5l.7 11h7.6l.7-11M8 8v5.5M12 8v5.5"/></svg></button>
-          </div>
-        </div>
             <Canvas containerScroll={containerScroll} setContainerScroll={setContainerScroll} onEditError={message => notify(message, true)} onAddNode={addComponent} numericPreviewEpoch={numericPreviewEpoch} statusValues={previewStatusValues} screenPositions={screenPositions} setScreenPositions={setScreenPositions} onSelectScreen={id => { try { commitExportDrafts(); editorStore.getState().switchScreen(id); } catch (error) { notify((error as Error).message, true); } }} interaction={interaction} view={view} setView={setView} preview={preview} readOnly={!!state.blocked || !!behaviorPreview} behaviorPreview={behaviorPreview} behaviorMode={behaviorMode} editTabs={editTabs} onBehaviorTrigger={id => behaviorTrigger.current?.(id)} onBehaviorSliderChange={event => sliderBehaviorTrigger.current?.(event)} onBehaviorSelectionChange={event => selectionBehaviorTrigger.current?.(event)} grid={grid} alignment={{ guides: prefs.smartGuides, snap: prefs.smartSnap }} resources={resources} resourceGeneration={resourceGeneration} font={font} theme={theme}/>
-        {libraryOpen && <div className="sidebar-resizer sidebar-resizer-left" role="separator" aria-label="调整组件栏宽度" onPointerDown={e => resizeSidebar('left', e)}/>}
         {inspectorOpen && <div className="sidebar-resizer sidebar-resizer-right" role="separator" aria-label="调整属性栏宽度" onPointerDown={e => resizeSidebar('right', e)}/>}
-        <button onMouseEnter={() => showPeek('left')} onMouseLeave={() => hidePeek('left')} className="sidebar-toggle sidebar-toggle-left" aria-label={libraryOpen ? '收起组件栏' : '展开组件栏'} title={libraryOpen ? '收起组件栏' : '展开组件栏'} aria-expanded={libraryOpen} onClick={() => setLibraryOpen(!libraryOpen)}>{libraryOpen ? '‹' : '›'}</button>
         <button onMouseEnter={() => showPeek('right')} onMouseLeave={() => hidePeek('right')} className="sidebar-toggle sidebar-toggle-right" aria-label={inspectorOpen ? '收起属性栏' : '展开属性栏'} title={inspectorOpen ? '收起属性栏' : '展开属性栏'} aria-expanded={inspectorOpen} onClick={() => setInspectorOpen(!inspectorOpen)}>{inspectorOpen ? '›' : '‹'}</button>
         {exportOpen && <ExportPanel {...exports} resourceRevision={resources.revision} onClose={() => setExportOpen(false)} currentJson={JSON.stringify(state.doc, null, 2) + '\n'}/>}
-        {(behaviorOpen || behaviorMode) && <div hidden={!behaviorOpen}><BehaviorPanel key={state.currentScreenId} preview={behaviorPreview} setPreview={setBehaviorPreview} mode={behaviorMode} setMode={setBehaviorMode} canClick={!preview} triggerRef={behaviorTrigger} sliderTriggerRef={sliderBehaviorTrigger} selectionTriggerRef={selectionBehaviorTrigger}
-          onOpenScreen={id => { setNumericPreviewEpoch(epoch => epoch + 1); if (editorStore.getState().currentScreenId !== id) { behaviorNavigation.current = 'navigate'; editorStore.getState().switchScreen(id); } setBehaviorPreview(initialControlState(currentScreen(editorStore.getState()))); setBehaviorMode(true); }} onOpenBlocklyRule={id => enterBlocklyMode(id)}
-          onResetPreview={() => { setNumericPreviewEpoch(epoch => epoch + 1); setInteraction(false); setBehaviorPreview(null); setBehaviorMode(false); const s = editorStore.getState(), id = s.doc.entryScreenId; behaviorStartScreen.current = null; if (id && s.doc.screens.some(item => item.id === id) && s.currentScreenId !== id) { behaviorNavigation.current = 'reset'; s.switchScreen(id); } }}
-          close={() => setBehaviorOpen(false)} notify={notify}/></div>}
+
         <div className="studio-footer"><span><i/> {screen.nodes.length} COMPONENTS</span><span data-testid="history-count">{state.past.length} undo / {state.future.length} redo</span><span>INTEGER COORDINATES · GUI px</span></div>
       </main>
       </>}
-      {blocklyMounted && <Suspense fallback={<div role="status">正在加载 Blockly 工作区…</div>}><BlocklyBehaviorEditor active={blocklyMode} openRuleId={blocklyRuleId} setMode={setBlocklyMode} notify={notify} onDirtyChange={dirty => { blocklyDraftDirty.current = dirty; }}/></Suspense>}
+      {blocklyMounted && <Suspense fallback={<div role="status">正在加载 Blockly 工作区…</div>}><BlocklyBehaviorEditor toolbarHost={blocklyToolbarHost} theme={theme} beforeScreenChange={requireBehaviorDraftSettled} active={blocklyMode} openRuleId={blocklyRuleId} setMode={setBlocklyMode} notify={notify} onDirtyChange={dirty => { blocklyDraftDirty.current = dirty; }}/></Suspense>}
       <details className="json-preview" hidden={blocklyMode}><summary>项目 JSON <span>只读 / 当前已提交文档</span></summary><pre data-testid="project-json">{JSON.stringify(state.doc, null, 2)}</pre></details>
     </div>
 
     <footer className={`statusbar ${message.error ? 'error' : ''}`}>
-      <div role={message.error ? 'alert' : 'status'}>{message.text}</div>
+      <div role={message.error ? 'alert' : 'status'} title={message.text}>{message.text}</div>
       <span className="status-meta">{screen.designSize.width} × {screen.designSize.height} GUI px · 编辑缩放 {Math.round(view.zoom * 100)}% · 资源 {resources.baseName ?? '中性预览'}{resources.overlayName ? ` · 覆盖：${resources.overlayName}` : ''}</span>
-      <span className="status-target">1.21.1 / NeoForge 21.1.244 <b>·</b> Java 21 <b>·</b> Schema {state.doc.schemaVersion}</span>
+      <span className="status-target" title={`Minecraft 1.21.1 / NeoForge 21.1.244 · Java 21 · Schema ${state.doc.schemaVersion}`}>1.21.1 / NeoForge 21.1.244 <b>·</b> Java 21 <b>·</b> Schema {state.doc.schemaVersion}</span>
     </footer>
     {importError && <ImportErrorDialog failure={importError} onClose={() => setImportError(null)} onChoose={() => { setImportError(null); fileRef.current?.click(); }}/>}
   </div>;

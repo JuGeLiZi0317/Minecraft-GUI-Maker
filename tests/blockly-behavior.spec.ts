@@ -105,7 +105,7 @@ test('B1 preserves ordered actions and resets both sources and Status on self na
   await expect(page.locator('.statusbar [role="status"]')).toContainText('导入成功');
   await page.getByRole('button', { name: 'Blockly 实验', exact: true }).click(); const editor = page.getByTestId('blockly-editor');
   await expect(editor.locator('.blocklySvg .blocklyBlockCanvas [data-block-type="gui_set_status"]')).toHaveCount(2);
-  await expect(editor.getByLabel('Blockly 规则').locator('option[value="rule_legacy"]')).toHaveAttribute('disabled', '');
+  await expect(page.getByTestId('blockly-context-tools').getByLabel('Blockly 规则').locator('option[value="rule_legacy"]')).toHaveAttribute('disabled', '');
   await expect(editor.getByRole('button', { name: '保存积木规则', exact: true })).toBeDisabled(); expect(await read(page)).toEqual(doc);
   await page.getByRole('button', { name: 'GUI 设计模式' }).click();
   await page.getByRole('button', { name: '行为', exact: true }).click(); await page.getByRole('button', { name: '交互预览', exact: true }).click();

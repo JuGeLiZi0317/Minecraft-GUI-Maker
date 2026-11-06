@@ -5,6 +5,8 @@
   min-width: 0;
   display: flex;
   flex-direction: column;
+  gap: var(--bento-gap);
+  padding: var(--bento-gap);
   overflow: hidden;
   background: var(--bg-app);
   color: var(--text-1);
@@ -19,8 +21,10 @@
   gap: 8px;
   min-height: 52px;
   padding: 6px 10px;
-  background: var(--bg-app);
-  border-bottom: 1px solid var(--line-subtle);
+  background: var(--bg-bento);
+  border: 1px solid var(--line-subtle);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-1);
 }
 
 .brand { display: flex; align-items: center; gap: 8px; flex: 0 0 auto; min-width: 0; }
@@ -232,8 +236,10 @@
   gap: 4px 10px;
   min-height: 40px;
   padding: 4px 10px;
-  border-bottom: 1px solid var(--line-subtle);
-  background: var(--bg-panel);
+  border: 1px solid var(--line-subtle);
+  border-radius: var(--radius-card);
+  background: var(--bg-bento);
+  box-shadow: var(--shadow-1);
 }
 .context-group { display: flex; align-items: center; flex-wrap: wrap; gap: 4px; min-width: 0; }
 .context-divider { width: 1px; height: 16px; margin: 0 2px; background: var(--line-subtle); flex: 0 0 1px; }
@@ -329,8 +335,10 @@
   gap: 14px;
   min-height: 26px;
   padding: 3px 10px;
-  border-top: 1px solid var(--line-subtle);
-  background: var(--bg-panel);
+  border: 1px solid var(--line-subtle);
+  border-radius: var(--radius-card);
+  background: var(--bg-bento);
+  box-shadow: var(--shadow-1);
   color: var(--text-3);
   font-size: var(--fs-10);
 }
@@ -352,3 +360,64 @@
 }
 .status-target { color: var(--text-disabled); }
 .statusbar b { margin: 0 5px; color: var(--line-strong); font-weight: 400; }
+
+/* H4-A: application identity, workspace tools and secondary settings are distinct. */
+.app-header { min-height: 44px; padding: 5px 10px; gap: 12px; }
+.app-header .brand { order: 0; }
+.app-header .brand h1 { font-size: 12px; }
+.app-header .document-bar { order: 1; gap: 8px; }
+.app-header .editor-menu { order: 2; }
+.app-header .header-actions { order: 3; }
+.app-header .project-field { flex: 1 1 180px; min-width: 100px; max-width: 280px; }
+.app-header .save-toggle { max-width: 110px; }
+.app-header .revision-chip { display: none; }
+.app-header .result-link.is-hidden { display: block; }
+.editor-menu summary { font-size: 11px; }
+.context-bar { justify-content: flex-start; min-height: 36px; padding: 3px 10px; gap: 8px; }
+.context-bar .context-group { flex: 0 0 auto; flex-wrap: nowrap; gap: 5px; }
+.context-bar .context-right { margin-left: auto; }
+.workspace-mode-switch { padding: 2px; }
+.workspace-mode-switch button { padding: 4px 10px; }
+.context-bar .tool-button, .context-bar .context-action { font-size: 11px; }
+.context-bar .screen-settings > summary { font-size: 11px; min-height: 28px; }
+.context-bar .screen-settings > summary > span { display: none; }
+.workspace-settings { position: relative; flex: 0 0 auto; }
+.workspace-settings > summary { display: flex; align-items: center; gap: 6px; min-height: 28px; padding: 0 8px; border: 1px solid var(--line-subtle); border-radius: var(--radius-1); color: var(--text-2); font-size: 11px; white-space: nowrap; }
+.workspace-settings[open] > summary { color: var(--accent); background: var(--accent-soft); border-color: var(--accent-line); }
+.workspace-settings-popover { position: fixed; top: 100px; right: 16px; z-index: 88; width: min(340px, calc(100vw - 24px)); max-height: calc(100dvh - 116px); overflow: auto; padding: 12px; border: 1px solid var(--line); border-radius: var(--radius-3); background: var(--bg-raised); box-shadow: var(--shadow-popover); }
+.workspace-settings-heading { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; font-size: 12px; }
+.workspace-settings-heading button { min-width: 26px; padding: 2px 6px; }
+.precise-view-fields { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; padding-bottom: 12px; border-bottom: 1px solid var(--line-subtle); }
+.precise-view-fields .inline-field { display: grid; gap: 5px; font-size: 11px; }
+.precise-view-fields input { width: 100%; }
+.preview-font-fields { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; padding-top: 10px; }
+.preview-font-fields .font-status { display: block; flex: 1 1 100%; max-width: none; white-space: normal; font-size: 11px; }
+.app-header :focus-visible, .context-bar :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.context-bar .workspace-mode-switch { padding: 1px; }
+.context-bar .workspace-mode-switch button { min-height: 24px; line-height: 1.2; }
+
+/* H4-B grouping uses surface contrast, rather than taller toolbar rows. */
+.app-header, .context-bar { box-shadow: var(--shadow-1); border-color: color-mix(in srgb, var(--line) 65%, var(--line-subtle)); }
+.context-bar .context-left { padding: 0 4px; border-radius: var(--radius-3); background: color-mix(in srgb, var(--bg-raised) 40%, transparent); box-shadow: inset 0 0 0 1px var(--line-subtle); }
+.context-bar .workspace-mode-switch { background: var(--bg-input); }
+.context-bar .workspace-mode-switch button[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent-line); }
+.statusbar { background: color-mix(in srgb, var(--bg-bento) 96%, var(--accent)); border-color: var(--line-subtle); }
+
+/* H4-C status priority; global toolbar density stays unchanged. */
+.statusbar { font-size: var(--fs-11); }
+.statusbar > [role="status"], .statusbar > [role="alert"] { color: var(--text-2); }
+.statusbar.error > [role="alert"] { color: var(--danger); white-space: normal; overflow-wrap: anywhere; max-height: 96px; overflow-y: auto; }
+.status-meta, .status-target { font-size: var(--fs-11); overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.status-meta { flex: 0 1 auto; }
+.status-target { flex: 0 1 auto; color: var(--text-2); }
+.workspace-settings-popover { font-size: var(--fs-12); }
+.workspace-settings-heading { font-size: var(--fs-13); }
+.workspace-settings-popover .inline-field { color: var(--text-2); font-size: var(--fs-12); }
+.workspace-settings-popover :is(input,select,button) { font-size: var(--fs-12); }
+.preview-font-fields .font-status { color: var(--text-2); font-size: var(--fs-11); }
+.context-font-menu { padding: 10px; }
+.context-font-menu button { padding: 6px 8px; font-size: var(--fs-12); }
+
+/* Prototype H.2-style theme shortcut; uses the existing app theme preference. */
+.theme-shortcut { flex: 0 0 28px; width: 28px; height: 28px; min-height: 28px; display: grid; place-items: center; padding: 0; border-color: var(--line-subtle); background: var(--bg-raised); color: var(--text-2); font-size: 16px; line-height: 1; }
+.theme-shortcut:hover { background: var(--bg-hover); color: var(--text-1); }
