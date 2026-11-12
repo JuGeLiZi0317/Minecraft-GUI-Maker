@@ -13,11 +13,15 @@ import { drawStatusIndicator } from '../render/statusIndicator';
 import { isImageNode } from '../domain/image';
 import { drawImageNode } from '../render/imageWidget';
 import { drawScrollText } from '../render/scrollText';
-import { tabManaged, tabVisibility } from '../domain/tabGroups';
-import { screenNavigationSelected } from '../domain/screenTabNavigation';
+import { diagnoseBakeGroup } from '../domain/bake';
+import { drawFillStyle } from '../domain/fillStyle';
+import type { BakeGroup } from '../domain/schema';
+import { drawPlayerInventory, drawSingleSlot } from '../render/nativeRegion';
 import type { VisualSnapshot } from './visualSnapshot';
+import { resolvePageVisualState, type PageSelectionState } from './pageExport';
 import { contentSize, isScrollablePanelNode } from '../domain/scrollablePanel';
 import { containerScreenViewport, containerChildScreenBounds, isCollapsiblePanelNode, isContainerNode } from '../domain/collapsiblePanel';
+import { REPEATABLE_LIST_DESIGN_PREVIEW_ROWS, isRepeatableListNode, repeatableContentSize, repeatableStride } from '../domain/repeatableList';
 import { displayText } from '../domain/model';
 import { isTreeViewNode } from '../domain/treeView';
 import { drawTreeView } from '../render/treeView';
@@ -73,7 +77,8 @@ export function addPngMetadata(bytes: Uint8Array, metadata: unknown): Uint8Array
   result.set(bytes.slice(0, end)); result.set(chunk, end); result.set(bytes.slice(end), end + chunk.length);
   return result;
 }
-export async function renderDesignPng(snapshot: ExportSnapshot, reference: ExportReference, pixelRatio = 1, visual?: VisualSnapshot, font: FontChoice = fontSession.get(), screenId = snapshot.document.screens[0].id): Promise<Uint8Array> {
+export type BakedImageLayer = { group: BakeGroup; bounds: NonNullable<ReturnType<typeof diagnoseBakeGroup>['bounds']>; canvas: HTMLCanvasElement };
+export async function renderDesignPng(snapshot: ExportSnapshot, reference: ExportReference, pixelRatio = 1, visual?: VisualSnapshot, font: FontChoice = fontSession.get(), screenId = snapshot.document.screens[0].id, bakedLayers: BakedImageLayer[] = [], pageSelections?: PageSelectionState): Promise<Uint8Array> {
   const screen = snapshot.document.screens.find(item => item.id === screenId);
   if (!screen) throw new Error(`导出 Screen 不存在：${screenId}`);
   const activeScreen = screen;
@@ -88,13 +93,42 @@ export async function renderDesignPng(snapshot: ExportSnapshot, reference: Expor
     ctx.clearRect(0, 0, width, height);
     // The enlarged image is a visual reference; this matte is not a game background.
     if (pixelRatio > 1) { ctx.fillStyle = '#1c2634'; ctx.fillRect(0, 0, width, height); }
-    const visibleInGroup = tabVisibility(activeScreen.nodes), managed = tabManaged(activeScreen.nodes);
-    const resolvedNodes = activeScreen.nodes.map(node => { const selected = screenNavigationSelected(node, activeScreen.id, snapshot.document.screenTabGroups ?? []); return node.type === 'minecraft:creative-tab' && selected !== null ? { ...node, props: { ...node.props, selected } } : node; });
-    function drawNode(original: typeof activeScreen.nodes[number], drawBounds = original.bounds) {
-      const selected = screenNavigationSelected(original, activeScreen.id, snapshot.document.screenTabGroups ?? []);
-      const node = selected === null || original.type !== 'minecraft:creative-tab' ? original : { ...original, props: { ...original.props, selected } };
-      if ((!managed.has(node.id) && !node.state.visible) || !visibleInGroup(node.id)) return;
+    const { nodes: resolvedNodes, isVisible } = resolvePageVisualState(activeScreen, snapshot.document.screenTabGroups ?? [], pageSelections);
+    const bakedByMember = new Map<string, BakedImageLayer>();
+    for (const layer of bakedLayers) for (const id of layer.group.memberIds) bakedByMember.set(id, layer);
+    const drawnBakeGroups = new Set<string>();
+    const drawRootNode = (node: typeof activeScreen.nodes[number]) => {
+      const bake = bakedByMember.get(node.id);
+      if (!bake) { drawNode(node); return; }
+      if (drawnBakeGroups.has(bake.group.id)) return;
+      drawnBakeGroups.add(bake.group.id);
+      if (!isVisible(node)) return;
+      renderContext.save(); renderContext.imageSmoothingEnabled = false;
+      renderContext.drawImage(bake.canvas, bake.bounds.x, bake.bounds.y, bake.bounds.w, bake.bounds.h);
+      renderContext.restore();
+    };
+    function drawNode(node: typeof activeScreen.nodes[number], drawBounds = node.bounds) {
+      if (!isVisible(node)) return;
       const { x, y, w } = drawBounds, h = isCollapsiblePanelNode(node) && !node.props.initialExpanded ? node.props.headerHeight : drawBounds.h;
+      if (isRepeatableListNode(node)) {
+        const rows = resolvedNodes.some(child => child.parentContainerId === node.id) ? REPEATABLE_LIST_DESIGN_PREVIEW_ROWS : 0, viewport = containerScreenViewport(node, resolvedNodes), content = repeatableContentSize(node, rows);
+        renderContext.save(); renderContext.fillStyle = rgba(node.props.backgroundColor); renderContext.fillRect(x, y, w, h); renderContext.strokeStyle = rgba(node.props.borderColor); renderContext.lineWidth = 1; renderContext.strokeRect(x + 0.5, y + 0.5, Math.max(0, w - 1), Math.max(0, h - 1));
+        if (rows === 0 && node.props.emptyText) { renderContext.fillStyle = '#FFB8C4D2'; renderContext.font = `9px ${font.family}`; renderContext.textAlign = 'center'; renderContext.textBaseline = 'middle'; renderContext.fillText(displayText(node.props.emptyText), viewport.x + viewport.w / 2, viewport.y + viewport.h / 2); renderContext.textAlign = 'left'; }
+        renderContext.save(); renderContext.beginPath(); renderContext.rect(viewport.x, viewport.y, viewport.w, viewport.h); renderContext.clip();
+        for (let rowIndex = 0; rowIndex < rows; rowIndex++) {
+          const rowTop = viewport.y + rowIndex * repeatableStride(node);
+          if (rowTop >= viewport.y + viewport.h || rowTop + node.props.rowHeight <= viewport.y) continue;
+          for (const child of resolvedNodes) if (child.parentContainerId === node.id) {
+            const childBounds = { ...child.bounds, x: viewport.x + child.bounds.x, y: rowTop + child.bounds.y };
+            if (childBounds.y + childBounds.h <= viewport.y || childBounds.y >= viewport.y + viewport.h) continue;
+            drawNode(child, childBounds);
+          }
+        }
+        renderContext.restore();
+        if (content.maxScroll > 0) { const thumb = Math.max(8, viewport.h * viewport.h / Math.max(1, content.height)); renderContext.fillStyle = '#111821'; renderContext.fillRect(viewport.x + viewport.w + 2, viewport.y, 6, viewport.h); renderContext.fillStyle = '#8795a5'; renderContext.fillRect(viewport.x + viewport.w + 2, viewport.y, 6, thumb); }
+        renderContext.restore();
+        return;
+      }
       if (isContainerNode(node)) {
         const viewport = containerScreenViewport(node, resolvedNodes), metrics = isScrollablePanelNode(node) ? contentSize(node) : { maxScroll: 0 };
         renderContext.save(); renderContext.fillStyle = rgba(node.props.backgroundColor); renderContext.fillRect(x, y, w, h); renderContext.strokeStyle = rgba(node.props.borderColor); renderContext.lineWidth = 1; renderContext.strokeRect(x + 0.5, y + 0.5, Math.max(0, w - 1), Math.max(0, h - 1));
@@ -110,6 +144,8 @@ export async function renderDesignPng(snapshot: ExportSnapshot, reference: Expor
         return;
       }
       if (isSelectionNode(node)) { renderContext.save(); renderContext.translate(x, y); drawSelectionWidget(renderContext, node, w, h, font.family); renderContext.restore(); return; }
+      if (node.type === 'minecraft:single_slot') { renderContext.save(); renderContext.translate(x, y); drawSingleSlot(renderContext, node.props.usage, node.props.placeholderItemId); renderContext.restore(); return; }
+      if (node.type === 'native_region') { renderContext.save(); renderContext.translate(x, y); drawPlayerInventory(renderContext); renderContext.restore(); return; }
       if (isTreeViewNode(node)) { renderContext.save(); renderContext.translate(x, y); drawTreeView(renderContext, node, w, h, font.family); renderContext.restore(); return; }
       if (isNumericNode(node)) {
         renderContext.save(); renderContext.translate(x, y); drawNumericWidget(renderContext, node, w, h, font.family, visual?.entries ?? {}, visual?.cache ?? new SpriteRasterCache(), { resourceActive: visual?.active }); renderContext.restore(); return;
@@ -123,7 +159,7 @@ export async function renderDesignPng(snapshot: ExportSnapshot, reference: Expor
       let raster: HTMLCanvasElement | null = null, renderError = '';
       if (spriteId && entry?.sprite) { try { raster = visual!.cache.get(spriteId, entry.sprite, node.type === 'minecraft:checkbox' ? 17 : w, node.type === 'minecraft:checkbox' ? 17 : h); } catch (error) { renderError = (error as Error).message; } }
       renderContext.globalAlpha = 'enabled' in node.state && !node.state.enabled && !raster && node.type !== 'minecraft:checkbox' ? 0.45 : 1;
-      if (node.type === 'minecraft:fill') { renderContext.fillStyle = rgba(node.props.color); renderContext.fillRect(x, y, w, h); }
+      if (node.type === 'minecraft:fill') { renderContext.save(); renderContext.translate(x, y); drawFillStyle(renderContext, node); renderContext.restore(); }
       else {
         if (raster) { renderContext.save(); renderContext.imageSmoothingEnabled = false; renderContext.drawImage(raster, x, y); renderContext.restore(); }
         else if (node.type === 'minecraft:creative-tab') { renderContext.save(); renderContext.translate(x, y); drawCreativeTabFallback(renderContext, node.props.selected); renderContext.restore(); }
@@ -137,9 +173,9 @@ export async function renderDesignPng(snapshot: ExportSnapshot, reference: Expor
       }
       renderContext.restore();
     }
-    resolvedNodes.filter(node => node.parentContainerId === undefined && beforePanel(node)).forEach(node => drawNode(node));
+    resolvedNodes.filter(node => node.parentContainerId === undefined && beforePanel(node)).forEach(drawRootNode);
     if (activeScreen.background.kind === 'panel') { const panel = panelBounds(screen); renderContext.save(); renderContext.translate(panel.x, panel.y); await drawPanel(renderContext, panel.w, panel.h, activeScreen.background.style); renderContext.restore(); }
-    resolvedNodes.filter(node => node.parentContainerId === undefined && !beforePanel(node)).forEach(node => drawNode(node));
+    resolvedNodes.filter(node => node.parentContainerId === undefined && !beforePanel(node)).forEach(drawRootNode);
     return addPngMetadata(await encode(canvas), { reference, kind: pixelRatio === 1 ? 'design-area-reference' : 'enlarged-design-area-reference', screenId: screen.id,
       width: width * pixelRatio, height: height * pixelRatio, designWidth: width, designHeight: height, unit: 'gui-px', origin: [0, 0], xDirection: 'right', yDirection: 'down', pixelRatio, background: screen.background.kind === 'panel' ? panelSource(screen.background.style) : pixelRatio === 1 ? 'transparent' : 'preview-matte-#1c2634', resourceGeneration: visual?.generation ?? null, visualVerification: 'approximate-browser-rendering-only' });
   } finally { canvas.width = 0; canvas.height = 0; }

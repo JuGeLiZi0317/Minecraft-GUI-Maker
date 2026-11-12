@@ -132,7 +132,7 @@ test('W2-A multi-Screen ZIP keeps the authoritative parent-child graph and match
   await expect(page.locator('.statusbar [role="status"]')).toContainText('导入成功');
   const before = await projectJson(page), history = await page.getByTestId('history-count').textContent();
   await page.getByRole('button', { name: '导出规格', exact: true }).click();
-  await expect(page.locator('.export-links a')).toHaveCount(8);
+  await expect(page.locator('.export-links a')).toHaveCount(9);
   await page.evaluate(() => {
     const original = URL.createObjectURL.bind(URL);
     URL.createObjectURL = (object: Blob | MediaSource) => {
@@ -153,6 +153,7 @@ test('W2-A multi-Screen ZIP keeps the authoritative parent-child graph and match
   const manifest = JSON.parse([...entries.entries()].find(([name]) => name.endsWith('.manifest.json'))![1].toString());
   const specification = JSON.parse([...entries.entries()].find(([name]) => name.endsWith('.implementation.json'))![1].toString());
   expect(authority).toEqual(before);
+  expect(entries.has(manifest.behaviorDiagnostics.name)).toBe(true);
   expect(manifest.authority.file).toBe('W2A-container-export.json');
   expect(manifest.screens.map((screen: { screenId: string }) => screen.screenId)).toEqual(['screen_main', 'screen_settings']);
   expect(manifest.screens.map((screen: { scrollablePanels: { nodeId: string; children: { nodeId: string; localBounds: { y: number } }[] }[] }) => screen.scrollablePanels[0].children[0])).toEqual([

@@ -24,6 +24,7 @@ export function dropdownPlacement(b: { x: number; y: number; w: number; h: numbe
 }
 export const SELECTION_RUNTIME_CONTRACT = {
   version: '1.0.0', identity: 'option IDs unique within owner node; labels never identify options; reorder preserves IDs',
+  localization: 'each option label is a Literal or Translatable TextSpec; translate keys resolve in game and the browser preview shows only the fallback; changing display language never changes option IDs',
   authority: 'nonempty options, at least one enabled, initialSelectedOptionId references enabled option; reject invalid JSON atomically; deletion/disable requires explicit replacement',
   runtime: 'selectedOptionId, activeOptionId, focus, hover, scroll and open are transient; every open_screen including self restores initial selection; removal/restart clears all',
   event: { type: 'selection-change', fields: ['screenId', 'nodeId', 'optionId', 'phase', 'source'], phase: 'confirm', binding: 'optional explicit same-Screen F2 selection-change → set-status rules; without a matching rule the event remains an implementation intent and never navigates implicitly', suppress: ['disabled', 'unchanged', 'focus-only', 'cancel'] },

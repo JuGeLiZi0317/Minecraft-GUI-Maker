@@ -17,6 +17,9 @@ export function NumericPreview({ nodes, activeNodeIds, screenId, origin, zoom, f
   useLayoutEffect(() => { alive.current = true; return () => { alive.current = false; }; }, []);
   useEffect(() => { onVisualChange(states); }, [states, onVisualChange]);
   useEffect(() => {
+    for (const wrapper of document.querySelectorAll<HTMLElement>('[data-numeric-node-id]')) {
+      if (!activeIds.current.has(wrapper.dataset.numericNodeId ?? '') && wrapper.contains(document.activeElement)) wrapper.querySelector('input')?.blur();
+    }
     for (const element of document.querySelectorAll<HTMLElement>('.numeric-live-slider[data-pointer-id]')) {
       const wrapper = element.closest<HTMLElement>('[data-numeric-node-id]');
       if (wrapper && activeIds.current.has(wrapper.dataset.numericNodeId ?? '')) continue;

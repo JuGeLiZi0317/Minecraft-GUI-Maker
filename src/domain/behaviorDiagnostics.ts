@@ -1,4 +1,4 @@
-import { actionsOf, eventBindingsOf, projectSchema, type BehaviorAction, type BehaviorCondition, type GuiNode, type GuiProject } from './schema';
+import { actionsOf, behaviorBranches, behaviorConditions, behaviorReadDependencies, isBranchAction, eventBindingsOf, isLookupExpression, projectSchema, type BehaviorAction, type BehaviorCondition, type GuiNode, type GuiProject } from './schema';
 
 export type DiagnosticKind = 'invalid-reference' | 'type-incompatible' | 'source-unavailable' | 'expected-skip' | 'no-matching-rule' | 'unmapped-option' | 'invalid-payload' | 'target-unavailable' | 'action-success' | 'unchanged' | 'condition-result' | 'information';
 export type DiagnosticSeverity = 'error' | 'warning' | 'info' | 'success';
@@ -16,7 +16,7 @@ export function classifyBehaviorOutcome(message: string): BehaviorDiagnostic {
   else if (/引用无效|引用不存在/.test(message)) { kind = 'invalid-reference'; severity = 'warning'; }
   else if (/已是当前状态|数值未变化|无更新/.test(message)) kind = 'unchanged';
   else if (/已执行|已更新|已模拟执行/.test(message)) { kind = 'action-success'; severity = 'success'; }
-  else if (/进入 then|进入 else/.test(message)) kind = 'condition-result';
+  else if (/进入 then|进入 else|进入 branch|switch →/.test(message)) kind = 'condition-result';
   return { kind, severity, message };
 }
 export function classifyValidationIssue(message: string, code?: string): BehaviorDiagnostic {
@@ -29,10 +29,10 @@ const f2Events: Partial<Record<GuiNode['type'], string[]>> = {
 };
 const builtIn = new Set<GuiNode['type']>(['minecraft:button', 'minecraft:checkbox', 'minecraft:edit-box', 'minecraft:cycle-button', 'minecraft:numeric-input', 'minecraft:slider', 'minecraft:radio-group', 'minecraft:dropdown', 'minecraft:tree-view', 'minecraft:scrollable-panel', 'minecraft:collapsible-panel', 'minecraft:fitting-multi-line-text-widget']);
 const readOnly = new Set<GuiNode['type']>(['minecraft:status-indicator', 'minecraft:progress-bar', 'minecraft:image', 'minecraft:string-widget', 'minecraft:multi-line-text-widget']);
-export type ActionReference = { path: string; type: BehaviorAction['type']; targetId?: string; targetCapability?: string; valueMode?: 'constant-status' | 'inline-map' | 'shared-map'; mapping?: 'direct' | 'normalize'; mapRef?: string; targetDeclarationId?: string; boundScreenId?: string | null };
-export type RuleSummary = { screenId: string; ruleId: string; ruleIndex: number; event: { type: string; sourceIds: string[]; payloadType: string; payloadFields: string[] }; eventBindings: { type: string; sourceId: string; payloadType: string; payloadFields: string[] }[]; reads: { path: string; nodeId: string; valueType: 'Number' | 'OptionId' }[]; readDependencies: { path: string; nodeId: string; valueType: 'Number' | 'OptionId' }[]; actionTargets: ActionReference[]; conditions: { path: string; actionType: 'if'; type: string; operator: string; valueType: string; elseEmpty: boolean }[]; actions: ActionReference[]; staticValidation: { status: 'valid' | 'invalid'; issues: BehaviorDiagnostic[] }; runtimeResponsibility: string };
+export type ActionReference = { path: string; type: BehaviorAction['type']; targetId?: string; targetCapability?: string; valueMode?: 'constant-status' | 'inline-map' | 'shared-map' | 'exclusive-map'; mapping?: 'direct' | 'normalize'; mapRef?: string; targetDeclarationId?: string; boundScreenId?: string | null };
+export type RuleSummary = { screenId: string; ruleId: string; ruleIndex: number; event: { type: string; sourceIds: string[]; payloadType: string; payloadFields: string[] }; eventBindings: { type: string; sourceId: string; payloadType: string; payloadFields: string[] }[]; reads: { path: string; nodeId: string; valueType: 'Number' | 'OptionId' }[]; readDependencies: { path: string; nodeId: string; valueType: 'Number' | 'OptionId' }[]; textMappingRefs: { path: string; mappingId: string; targetId: string }[]; actionTargets: ActionReference[]; conditions: { path: string; actionType: 'if'; type: string; operator: string; valueType: string; elseEmpty: boolean }[]; actions: ActionReference[]; staticValidation: { status: 'valid' | 'invalid'; issues: BehaviorDiagnostic[] }; runtimeResponsibility: string };
 export type NodeBinding = { nodeId: string; sourceRuleIds: string[]; targetRuleIds: string[]; readRuleIds: string[]; f2EventTypes: string[]; declaredIntents: string[]; builtInInteraction: boolean; displayOnly: boolean; label: string; details: string };
-const capabilities: Record<string, string> = { 'set-text': 'StringWidget.text', 'set-visible': 'node.visible', 'set-status': 'StatusIndicator.currentStatusId', 'set-progress-value': 'ProgressBar.currentValue', open_screen: 'Screen.navigation' };
+const capabilities: Record<string, string> = { 'set-text': 'StringWidget.text', 'set-visible': 'node.visible', 'set-exclusive-visible': 'exclusive group of node.visible', 'set-status': 'StatusIndicator.currentStatusId', 'set-progress-value': 'ProgressBar.currentValue', open_screen: 'Screen.navigation' };
 export function buildBehaviorIndex(doc: GuiProject) {
   const parsed = projectSchema.safeParse(doc), issues = parsed.success ? [] : parsed.error.issues;
   return doc.screens.map((screen, screenIndex) => {
@@ -41,23 +41,26 @@ export function buildBehaviorIndex(doc: GuiProject) {
       const payloadType = eventType === 'selection-change' ? 'OptionId' : eventType === 'slider-change' ? 'Number' : 'none';
       const payloadFields = eventType === 'selection-change' ? ['screenId', 'nodeId', 'optionId', 'phase', 'source'] : eventType === 'slider-change' ? ['screenId', 'nodeId', 'value', 'phase'] : ['sourceId'];
       const eventBindings = eventBindingsOf(rule).map(binding => ({ ...binding, payloadFields: binding.type === 'selection-change' ? ['screenId','nodeId','optionId','phase','source'] : binding.type === 'slider-change' ? ['screenId','nodeId','value','phase'] : ['sourceId'] }));
-      const conditions: RuleSummary['conditions'] = [], reads: RuleSummary['reads'] = [], actions: ActionReference[] = [];
-      const leaf = (action: Exclude<BehaviorAction, { type: 'if' }>, path: string) => {
+      const conditions: RuleSummary['conditions'] = [], reads: RuleSummary['reads'] = [], actions: ActionReference[] = [], textMappingRefs: RuleSummary['textMappingRefs'] = [];
+      const leaf = (action: Exclude<BehaviorAction, { type: 'if' | 'switch' }>, path: string) => {
+        if (action.type === 'set-text' && 'value' in action && isLookupExpression(action.value)) textMappingRefs.push({ path: `${path}.value`, mappingId: action.value.mappingId, targetId: action.targetId });
         if (action.type === 'open_screen') { const declaration = screen.screenTargets?.find(target => target.id === action.targetScreenId); actions.push({ path, type: action.type, targetCapability: capabilities[action.type], targetDeclarationId: action.targetScreenId, boundScreenId: declaration?.boundScreenId ?? null }); }
+        else if (action.type === 'set-exclusive-visible') { action.mapping.forEach((mapping, index) => actions.push({ path: `${path}.mapping[${index}]`, type: action.type, targetId: mapping.targetId, targetCapability: capabilities[action.type], valueMode: 'exclusive-map' })); }
         else actions.push({ path, type: action.type, targetId: action.targetId, targetCapability: capabilities[action.type], ...(action.type === 'set-status' ? { valueMode: 'statusId' in action ? 'constant-status' as const : 'mapRef' in action ? 'shared-map' as const : 'inline-map' as const } : {}), ...(action.type === 'set-status' && 'mapRef' in action ? { mapRef: action.mapRef } : {}), ...(action.type === 'set-progress-value' ? { mapping: action.mapping } : {}) });
       };
       actionsOf(rule).forEach((action, index) => {
         const path = 'action' in rule ? 'action' : `actions[${index}]`;
-        if (action.type !== 'if') { leaf(action, path); return; }
+        if (action.type === 'set-exclusive-visible') reads.push(...behaviorReadDependencies(action).map(read => ({ ...read, path: `${path}.${read.path.join('.')}` })));
+        if (!isBranchAction(action)) { leaf(action, path); return; }
         const addCondition = (condition: BehaviorCondition, conditionPath: string) => {
-          conditions.push({ path: conditionPath, actionType: 'if', type: condition.type, operator: condition.type === 'and' || condition.type === 'or' || condition.type === 'not' ? condition.type : condition.operator, valueType: condition.type === 'event-option' ? 'OptionId' : condition.type === 'compare' ? condition.valueType : 'Boolean', elseEmpty: action.elseActions.length === 0 });
+          conditions.push({ path: conditionPath, actionType: 'if', type: condition.type, operator: condition.type === 'and' || condition.type === 'or' || condition.type === 'not' ? condition.type : condition.operator, valueType: condition.type === 'event-option' ? 'OptionId' : condition.type === 'compare' ? condition.valueType : 'Boolean', elseEmpty: action.type === 'if' ? action.elseActions.length === 0 : !action.defaultActions?.length });
           if (condition.type === 'compare') for (const side of ['left','right'] as const) { const operand = condition[side]; if (operand.type === 'read-control-value') reads.push({ path: `${conditionPath}.${side}`, nodeId: operand.nodeId, valueType: condition.valueType }); }
           if (condition.type === 'not') addCondition(condition.condition, `${conditionPath}.condition`);
           else if (condition.type === 'and' || condition.type === 'or') condition.conditions.forEach((child, i) => addCondition(child, `${conditionPath}.conditions[${i}]`));
         };
-        addCondition(action.condition, `${path}.condition`);
-        action.thenActions.forEach((entry, i) => leaf(entry, `${path}.thenActions[${i}]`));
-        action.elseActions.forEach((entry, i) => leaf(entry, `${path}.elseActions[${i}]`));
+        for (const entry of behaviorConditions(action)) addCondition(entry.condition, `${path}.${entry.path.join('.')}`);
+        if (action.type === 'switch') reads.push(...behaviorReadDependencies(action).map(read => ({ ...read, path: `${path}.${read.path.join('.')}` })));
+        for (const branch of behaviorBranches(action)) branch.actions.forEach((entry, i) => leaf(entry, `${path}.${branch.path.join('.')}[${i}]`));
       });
       const ruleIssues = issues.filter(issue => issue.path[0] === 'screens' && issue.path[1] === screenIndex && issue.path[2] === 'behaviors' && issue.path[3] === ruleIndex).map(issue => {
         const value = issue.path.reduce<unknown>((current, key) => current && typeof current === 'object' ? (current as Record<PropertyKey, unknown>)[key] : undefined, doc);
@@ -65,7 +68,7 @@ export function buildBehaviorIndex(doc: GuiProject) {
         if ((last === 'sourceId' || last === 'targetId') && typeof value === 'string' && screen.nodes.some(node => node.id === value) && /类型不匹配/.test(issue.message)) return { kind: 'type-incompatible' as const, severity: 'error' as const, message: issue.message };
         return classifyValidationIssue(issue.message, issue.code);
       });
-      return { screenId: screen.id, ruleId: rule.id, ruleIndex, event: { type: eventType, sourceIds, payloadType, payloadFields }, eventBindings, reads, readDependencies: reads, actionTargets: actions.filter(action => !!action.targetId || !!action.targetDeclarationId), conditions, actions, staticValidation: { status: ruleIssues.length ? 'invalid' as const : 'valid' as const, issues: ruleIssues }, runtimeResponsibility: 'eventBindings 为全部触发来源，reads 为不自动订阅的读取依赖。事件是否发生、来源实际可见及启用状态、载荷、条件结果与动作结果均须在运行时判定；游戏实现者按权威规则顺序实现。' };
+      return { screenId: screen.id, ruleId: rule.id, ruleIndex, event: { type: eventType, sourceIds, payloadType, payloadFields }, eventBindings, reads, readDependencies: reads, actionTargets: actions.filter(action => !!action.targetId || !!action.targetDeclarationId), conditions, actions, textMappingRefs, staticValidation: { status: ruleIssues.length ? 'invalid' as const : 'valid' as const, issues: ruleIssues }, runtimeResponsibility: 'eventBindings 为全部触发来源，reads 为不自动订阅的读取依赖。事件是否发生、来源实际可见及启用状态、载荷、条件结果与动作结果均须在运行时判定；游戏实现者按权威规则顺序实现。' };
     });
     const nodes: NodeBinding[] = screen.nodes.map(node => {
       const sourceRuleIds = rules.filter(rule => rule.eventBindings.some(binding => binding.sourceId === node.id)).map(rule => rule.ruleId);

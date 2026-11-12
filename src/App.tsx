@@ -1,12 +1,13 @@
 import { initialControlState } from './domain/genericBehavior';
 import { buildBehaviorIndex } from './domain/behaviorDiagnostics';
-import { lazy, Suspense, useEffect, useMemo, useRef, useState, useSyncExternalStore, type CSSProperties, type PointerEvent as ReactPointerEvent, type ReactNode } from 'react';
+import { Fragment, lazy, Suspense, useEffect, useMemo, useRef, useState, useSyncExternalStore, type CSSProperties, type PointerEvent as ReactPointerEvent } from 'react';
 import { useStore } from 'zustand';
 import { CATALOG, NODE_TYPES, type NodeType } from './domain/catalog';
 import { isScrollableChildType, type ContainerDrop } from './domain/scrollablePanel';
+import { isRepeatableChildType, isRepeatableListNode, repeatableChildRejection } from './domain/repeatableList';
 import { displayText } from './domain/model';
 import { containerLocalViewport, isCollapsiblePanelNode, nodeAbsoluteBounds } from './domain/collapsiblePanel';
-import { MAX_JSON_BYTES, type GuiNode } from './domain/schema';
+import { MAX_JSON_BYTES } from './domain/schema';
 import { currentScreen, editorStore } from './editor/store';
 import { commitExportDrafts } from './exports/draftBarrier';
 import { Canvas, type View } from './canvas/Canvas';
@@ -19,6 +20,7 @@ import { LocalSavePanel } from './ui/LocalSavePanel';
 import { previewAssets } from './io/previewAssets';
 import { captureExport, useExports } from './exports/useExports';
 import { ExportPanel } from './ui/ExportPanel';
+import { TemplatesPanel } from './ui/TemplatesPanel';
 import { ResourceTestPanel } from './ui/ResourceTestPanel';
 import { LayeredResources } from './resources/layered';
 import { fontSession } from './render/previewFont';
@@ -33,6 +35,10 @@ import type { SelectionEvent } from './domain/selection';
 import { useDismissOutside } from './ui/useDismissOutside';
 import { ImportErrorDialog, type ImportFailure } from './ui/ImportErrorDialog';
 import { confirmDeleteScreen, confirmDeleteSelected } from './ui/confirmDeletion';
+import { BakePanel } from './ui/BakePanel';
+import { LocalizationPanel } from './ui/LocalizationPanel';
+import { EditorLayerControls, EditorLayerTree } from './ui/EditorLayerTree';
+import { DEFAULT_EDITOR_LAYER_VIEW, editorLayerContext, editorLayerVisibility, pruneEditorLayerViews, type EditorLayerView, type EditorLayerViews } from './domain/editorLayerVisibility';
 
 const THEME_KEY = 'minecraft-gui-maker.theme.v1';
 const THEME_QUERY = '(prefers-color-scheme: dark)';
@@ -43,16 +49,16 @@ const loadThemeMode = (): ThemeMode => {
 };
 
 export function App() {
-  const [blocklyMode, setBlocklyMode] = useState(false), [blocklyMounted, setBlocklyMounted] = useState(false), [blocklyRuleId, setBlocklyRuleId] = useState<string | null>(null);
+  const [blocklyMode, setBlocklyMode] = useState(false), [bakeMode, setBakeMode] = useState(false), [blocklyMounted, setBlocklyMounted] = useState(false), [blocklyRuleId, setBlocklyRuleId] = useState<string | null>(null);
+  const designMode = !blocklyMode && !bakeMode, activeBlockly = blocklyMode && !bakeMode;
   const [blocklyToolbarHost, setBlocklyToolbarHost] = useState<HTMLDivElement | null>(null);
   const blocklyDraftDirty = useRef(false), behaviorDraftDirty = useRef(false);
-  const enterBlocklyMode = (ruleId?: string) => { if (ruleId && blocklyDraftDirty.current) { notify('Blockly 有未保存草稿；请先保存或放弃草稿，再定位其他规则。', true); return; } setBlocklyRuleId(ruleId ?? null); setBlocklyMounted(true); setBlocklyMode(true); };
+  const enterBlocklyMode = (ruleId?: string) => { if (ruleId && blocklyDraftDirty.current) { notify('Blockly 有未保存草稿；请先保存或放弃草稿，再定位其他规则。', true); return; } setBakeMode(false); setBlocklyRuleId(ruleId ?? null); setBlocklyMounted(true); setBlocklyMode(true); };
   const requireBehaviorDraftSettled = () => { if (behaviorDraftDirty.current) throw new Error('行为面板有未保存草稿，请先保存或取消编辑'); };
   const requireBlocklyDraftSettled = () => { if (blocklyDraftDirty.current) throw new Error('Blockly 有未保存草稿，请先保存积木规则或放弃草稿'); requireBehaviorDraftSettled(); };
   const state = useStore(editorStore);
   const screen = currentScreen(state);
   const behaviorBindings = useMemo(() => buildBehaviorIndex(state.doc).find(item => item.screenId === screen.id)?.nodes ?? [], [state.doc, screen.id]);
-  const renderLayer = (node: GuiNode, depth = 0): ReactNode[] => [<button key={node.id} style={depth ? { paddingLeft: 12 + depth * 12 } : undefined} disabled={!!behaviorPreview} className={node.id === state.selected ? 'layer selected' : 'layer'} aria-label={`选择 ${node.id}`} aria-describedby={`binding-description-${screen.id}-${node.id}`} aria-pressed={node.id === state.selected} onClick={() => state.select(node.id)}><span aria-hidden="true">{CATALOG[node.type].glyph}</span><span>{node.id}<small>{CATALOG[node.type].label}{node.parentContainerId ? ' · 子节点' : ''}</small><small id={`binding-description-${screen.id}-${node.id}`} className="behavior-binding-badge" data-testid={`binding-${node.id}`} title={behaviorBindings.find(item => item.nodeId === node.id)?.details}>{behaviorBindings.find(item => item.nodeId === node.id)?.label}</small></span><span aria-hidden="true" title={node.state.visible ? '可见初态：显示' : '可见初态：隐藏'}>{node.state.visible ? '◦' : '–'}</span></button>, ...screen.nodes.filter(child => child.parentContainerId === node.id).reverse().flatMap(child => renderLayer(child, depth + 1))];
   const [screenName, setScreenName] = useState(() => displayText(screen.title));
   const [renamingScreen, setRenamingScreen] = useState(false);
   useEffect(() => { setScreenName(displayText(screen.title)); }, [screen.id, screen.title]);
@@ -76,11 +82,44 @@ export function App() {
   const [fontMenuOpen, setFontMenuOpen] = useState(false);
   useDismissOutside(fontMenuRef, fontMenuOpen, () => setFontMenuOpen(false));
   useEffect(() => { setInteraction(false); setBehaviorPreview(null); setBehaviorMode(false); behaviorStartScreen.current = null; }, [state.doc]);
-  const [exportOpen, setExportOpen] = useState(false);
+  const [exportOpen, setExportOpen] = useState(false), [templatesOpen, setTemplatesOpen] = useState(false);
   const [behaviorPreview, setBehaviorPreview] = useState<BehaviorPreview | null>(null);
   const [editTabs, setEditTabs] = useState<Record<string, string>>({});
+  const [layerViews, setLayerViews] = useState<EditorLayerViews>({});
+  const layerContext = editorLayerContext(screen, editTabs);
+  const layerView = layerViews[layerContext.key]?.view ?? DEFAULT_EDITOR_LAYER_VIEW;
+  const layerMask = useMemo(() => editorLayerVisibility(screen, editTabs, layerView), [screen, editTabs, layerView]);
+  const selectedLayerNode = screen.nodes.find(node => node.id === state.selected);
+  const updateLayerView = (view: EditorLayerView) => {
+    editorStore.getState().cancelGesture();
+    setLayerViews(previous => ({ ...previous, [layerContext.key]: { screenId: screen.id, pages: layerContext.pages, view } }));
+  };
+  useEffect(() => { setLayerViews(previous => pruneEditorLayerViews(previous, state.doc)); }, [state.doc]);  useEffect(() => {
+    if (!state.selected) return;
+    const locked = new Set(layerView.lockedIds ?? []);
+    let node = screen.nodes.find(item => item.id === state.selected), seen = new Set<string>();
+    while (node && !seen.has(node.id)) {
+      seen.add(node.id);
+      if (locked.has(node.id)) { editorStore.getState().select(null); return; }
+      node = node.parentContainerId ? screen.nodes.find(item => item.id === node!.parentContainerId) : undefined;
+    }
+  }, [state.selected, layerView.lockedIds, screen.nodes]);
+
   const [screenPositions, setScreenPositions] = useState<Record<string, { x: number; y: number }>>({});
   const [containerScroll, setContainerScroll] = useState<Record<string, number>>({});
+  const [templateEditingId, setTemplateEditingId] = useState<string | null>(null);
+  const [repeatPreviewRows, setRepeatPreviewRows] = useState<Record<string, number>>({});
+  useEffect(() => { setTemplateEditingId(null); }, [state.currentScreenId]);
+  useEffect(() => { if (state.operation === 'import' || state.operation === 'restore') setTemplateEditingId(null); }, [state.doc, state.operation]);
+  useEffect(() => {
+    if (!templateEditingId) return;
+    if (!screen.nodes.some(node => node.id === templateEditingId && node.type === 'minecraft:repeatable-list')) setTemplateEditingId(null);
+  }, [screen, templateEditingId]);
+  useEffect(() => { setRepeatPreviewRows(previous => {
+    const ids = new Set(state.doc.screens.flatMap(item => item.nodes.filter(node => node.type === 'minecraft:repeatable-list').map(node => node.id)));
+    const next = Object.fromEntries(Object.entries(previous).filter(([id]) => ids.has(id)));
+    return Object.keys(next).length === Object.keys(previous).length ? previous : next;
+  }); }, [state.doc]);
   const [behaviorMode, setBehaviorMode] = useState(false), behaviorTrigger = useRef<((id: string) => void) | null>(null), sliderBehaviorTrigger = useRef<((event: SliderChangeEvent) => void) | null>(null), selectionBehaviorTrigger = useRef<((event: SelectionEvent) => void) | null>(null);
   const behaviorStartScreen = useRef<string | null>(null), behaviorNavigation = useRef<'navigate' | 'reset' | null>(null);
   const [themeMode, setThemeMode] = useState<ThemeMode>(loadThemeMode);
@@ -105,7 +144,7 @@ export function App() {
     }
     behaviorStartScreen.current = null; setBehaviorPreview(null); setBehaviorMode(false);
   }, [state.currentScreenId]);
-  useEffect(() => { if (state.operation === 'import' || state.operation === 'restore') { setEditTabs({}); setScreenPositions({}); } }, [state.doc, state.operation]);
+  useEffect(() => { if (state.operation === 'import' || state.operation === 'restore') { setEditTabs({}); setScreenPositions({}); setLayerViews({}); } }, [state.doc, state.operation]);
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
     try { localStorage.setItem(THEME_KEY, themeMode); } catch { /* theme is a preference, never blocks editing */ }
@@ -177,7 +216,9 @@ export function App() {
   const moveLayer = (direction: 'up' | 'down' | 'first' | 'last') => {
     const buttons = [...(layersRef.current?.querySelectorAll<HTMLButtonElement>('.layer') ?? [])];
     if (!buttons.length) return;
-    const index = buttons.indexOf(document.activeElement as HTMLButtonElement);
+    const focused = document.activeElement as HTMLElement | null;
+    const focusedLayer = focused?.closest('.layer-row')?.querySelector<HTMLButtonElement>('.layer') ?? focused;
+    const index = buttons.indexOf(focusedLayer as HTMLButtonElement);
     const next = direction === 'first' ? 0 : direction === 'last' ? buttons.length - 1
       : direction === 'up' ? Math.max(0, (index < 0 ? 0 : index) - 1)
       : Math.min(buttons.length - 1, (index < 0 ? -1 : index) + 1);
@@ -198,29 +239,66 @@ export function App() {
     void fontSession.restore().catch(error => { if (active) notify(`本机字体恢复失败：${(error as Error).message}`, true); });
     return () => { active = false; };
   }, [resources]);
+  const enterRowTemplate = (id: string) => {
+    const node = currentScreen(editorStore.getState()).nodes.find(item => item.id === id);
+    if (node?.type !== 'minecraft:repeatable-list') return;
+    setTemplateEditingId(id);
+    setContainerScroll(previous => ({ ...previous, [id]: 0 }));
+    editorStore.getState().select(id);
+  };
+  const exitRowTemplate = () => {
+    const id = templateEditingId;
+    setTemplateEditingId(null);
+    if (id) editorStore.getState().select(id);
+  };
   const addComponent = (type: NodeType, position?: { x: number; y: number }, containerDrop?: ContainerDrop) => {
     try {
       const editor = editorStore.getState(); let target = containerDrop, addPosition = position;
-      if (!target && !addPosition && isScrollableChildType(type)) {
-        const active = currentScreen(editor), selected = active.nodes.find(node => node.id === editor.selected);
-        const candidate = selected && isCollapsiblePanelNode(selected) ? selected
-          : selected?.parentContainerId ? active.nodes.find(node => node.id === selected.parentContainerId) : undefined;
-        if (candidate && isCollapsiblePanelNode(candidate)) {
-          const absolute = nodeAbsoluteBounds(candidate, active.nodes, containerScroll), viewport = containerLocalViewport(candidate);
+      if (templateEditingId) {
+        const active = currentScreen(editor), root = active.nodes.find(node => node.id === templateEditingId);
+        if (!root || !isRepeatableListNode(root)) throw new Error('Row Template 已不存在，请退出模板编辑');
+        if (!isRepeatableChildType(type)) throw new Error(repeatableChildRejection(type) ?? 'Row Template 首版只接受普通叶子控件');
+        if (!addPosition) {
+          const absolute = nodeAbsoluteBounds(root, active.nodes, containerScroll), viewport = containerLocalViewport(root);
           addPosition = { x: absolute.x + viewport.x + viewport.w / 2, y: absolute.y + viewport.y + viewport.h / 2 };
-          target = { parentContainerId: candidate.id, scrollOffsets: containerScroll, appendAtEnd: true };
+        }
+        target = { parentContainerId: templateEditingId, scrollOffsets: containerScroll, appendAtEnd: false };
+      }
+      if (!target && !addPosition && (isScrollableChildType(type) || isRepeatableChildType(type))) {
+        const active = currentScreen(editor), selected = active.nodes.find(node => node.id === editor.selected);
+        const candidate = selected && isRepeatableListNode(selected) ? selected
+          : selected && isCollapsiblePanelNode(selected) ? selected
+          : selected?.parentContainerId ? active.nodes.find(node => node.id === selected.parentContainerId) : undefined;
+        if (candidate && (isRepeatableListNode(candidate) || isCollapsiblePanelNode(candidate))) {
+          const absolute = nodeAbsoluteBounds(candidate, active.nodes, containerScroll), viewport = containerLocalViewport(candidate);
+          addPosition = isRepeatableListNode(candidate)
+            ? { x: absolute.x + viewport.x + 8, y: absolute.y + viewport.y + 4 }
+            : { x: absolute.x + viewport.x + viewport.w / 2, y: absolute.y + viewport.y + viewport.h / 2 };
+          target = { parentContainerId: candidate.id, scrollOffsets: containerScroll, appendAtEnd: !isRepeatableListNode(candidate) };
         }
       }
       editor.add(type, addPosition, target);
     }
     catch (error) { notify(`无法添加组件：${(error as Error).message}`, true); }
   };
-  const exports = useExports(notify, resources);
+  const exports = useExports(notify, resources, layerContext.pages);
   const revision = state.doc.project.revision;
 
   useEffect(() => {
     const key = (e: KeyboardEvent) => {
       if (blocklyMode) return;
+      const target = e.target as HTMLElement;
+      if (designMode && !preview && !behaviorMode && !behaviorPreview && !e.altKey && !e.shiftKey && (e.ctrlKey || e.metaKey) && ['c', 'v'].includes(e.key.toLowerCase()) && !target?.closest('input,textarea,select,[contenteditable]') && !window.getSelection()?.toString()) {
+        const editor = editorStore.getState();
+        if (editor.blocked || editor.gesture) return;
+        e.preventDefault();
+        try {
+          if (e.key.toLowerCase() === 'c') {
+            if (editor.copySelected()) notify('控件已复制，Ctrl+V 粘贴。属性与子控件保留，F2 规则和 Bake 分组不复制');
+          } else editor.pasteCopied(Object.values(layerContext.pages));
+        } catch (error) { notify((error as Error).message, true); }
+        return;
+      }
       if ((e.target as HTMLElement)?.closest('input,textarea,select,button,[contenteditable]')) return;
       const s = editorStore.getState();
       if (preview || behaviorMode || behaviorPreview || s.blocked) return;
@@ -234,7 +312,7 @@ export function App() {
       }
     };
     window.addEventListener('keydown', key); return () => window.removeEventListener('keydown', key);
-  }, [preview, behaviorMode, behaviorPreview, blocklyMode]);
+  }, [preview, behaviorMode, behaviorPreview, blocklyMode, designMode, layerContext.key]);
 
   const saveBlob = (json: string, filename: string, done: string) => {
     const url = URL.createObjectURL(new Blob([json], { type: 'application/json' }));
@@ -314,7 +392,7 @@ export function App() {
           <button aria-pressed={themeMode === 'system'} onClick={() => setThemeMode('system')}>主题：跟随系统</button>
         </div></details>
         <details><summary>模式</summary><div>
-          <button aria-pressed={!blocklyMode} onClick={() => setBlocklyMode(false)}>切换到 GUI 设计</button>
+          <button aria-pressed={designMode} onClick={() => { setBakeMode(false); setBlocklyMode(false); }}>切换到 GUI 设计</button>
           <button aria-pressed={blocklyMode} disabled={!!state.blocked || !!state.gesture || interaction || !!preview} onClick={() => enterBlocklyMode()}>切换到 Blockly 行为</button>
           <button onClick={toggleBehavior}>切换行为面板</button>
         </div></details>
@@ -341,6 +419,7 @@ export function App() {
           <button className="primary" aria-label="导出规格" disabled={!!state.gesture || exports.busy} onClick={() => { setExportOpen(true); void exports.generate(() => setSettingsOpen(false)); }}>导出规格</button>
           {exports.batch && <button className={`result-link ${exportOpen ? 'is-hidden' : ''}`} tabIndex={exportOpen ? -1 : 0} onClick={() => { setSettingsOpen(false); setExportOpen(true); }}>查看导出结果</button>}
         </div>
+        <button type="button" className="quiet" aria-label="模板库" title="个人模板库：保存并复用控件组合" disabled={!!state.gesture || !!preview || !!behaviorPreview} onClick={() => setTemplatesOpen(true)}>模板</button>
         <button type="button" className="theme-shortcut" aria-label="切换主题" aria-pressed={theme === 'dark'} title={`当前：${theme === 'dark' ? '深色' : '浅色'}${themeMode === 'system' ? '（跟随系统）' : ''} · 切换为${theme === 'dark' ? '浅色' : '深色'}`} onClick={() => setThemeMode(theme === 'dark' ? 'light' : 'dark')}><span aria-hidden="true">{theme === 'dark' ? '☾' : '☀'}</span></button>
       </div>
       <input ref={fileRef} type="file" aria-label="导入项目文件" accept=".json,application/json" hidden disabled={!!state.blocked || !!state.gesture || !!preview} onChange={async e => {
@@ -363,13 +442,15 @@ export function App() {
       }}/>
     </header>
 
-    <div className={`context-bar ${blocklyMode ? 'blockly-context-bar' : ''}`}>
+    <div className={`context-bar ${activeBlockly ? 'blockly-context-bar' : ''}`}>
       <div className="workspace-mode-switch" role="group" aria-label="工作模式">
-        <button type="button" aria-label="GUI 设计模式" aria-pressed={!blocklyMode} onClick={() => setBlocklyMode(false)}>GUI 设计</button>
-        <button type="button" aria-label="Blockly 实验" aria-pressed={blocklyMode} disabled={!!state.blocked || !!state.gesture || interaction || !!preview} onClick={() => enterBlocklyMode()}>Blockly 行为</button>
+        <button type="button" aria-label="GUI 设计模式" aria-pressed={designMode} onClick={() => { setBakeMode(false); setBlocklyMode(false); }}>GUI 设计</button>
+        <button type="button" aria-label="Blockly 实验" aria-pressed={activeBlockly} disabled={!!state.blocked || !!state.gesture || interaction || !!preview} onClick={() => enterBlocklyMode()}>Blockly 行为</button>
+        <button type="button" aria-label="Bake / Assets 工作区" aria-pressed={bakeMode} disabled={!!state.gesture || interaction || !!preview || !!behaviorPreview} onClick={() => { setBlocklyMode(false); setBakeMode(true); }}>Bake / Assets</button>
       </div>
-      <div ref={setBlocklyToolbarHost} className="blockly-context-tools" data-testid="blockly-context-tools" hidden={!blocklyMode}/>
-      {!blocklyMode && <>
+      {designMode && templateEditingId && <div className="template-edit-banner" role="status" data-testid="template-edit-banner"><span>正在编辑 Row Template · <code>{templateEditingId}</code></span><button type="button" onClick={exitRowTemplate}>退出模板编辑</button></div>}
+      <div ref={setBlocklyToolbarHost} className="blockly-context-tools" data-testid="blockly-context-tools" hidden={!activeBlockly}/>
+      {designMode && <>
         <div className="context-group context-screen" role="group" aria-label="Screen 画布工具">
           <label className="context-screen-select"><span>画布</span><select aria-label="当前画布" value={state.currentScreenId} disabled={!!state.gesture || !!preview || !!behaviorPreview} onChange={e => { try { commitExportDrafts(); state.switchScreen(e.target.value); } catch (error) { notify((error as Error).message, true); } }}>{state.doc.screens.map(item => <option key={item.id} value={item.id}>{displayText(item.title)} · {item.id}</option>)}</select></label>
           {renamingScreen ? <form className="screen-rename-form" onSubmit={e => { e.preventDefault(); try { commitExportDrafts(); state.renameScreen(screen.id, screenName); setRenamingScreen(false); notify('画布已重命名'); } catch (error) { notify((error as Error).message, true); } }}><input autoFocus aria-label="画布名称" maxLength={128} value={screenName} onChange={e => setScreenName(e.target.value)}/><button className="screen-tool-button" type="submit" title="保存画布名称" aria-label="保存画布名称">✓</button><button className="screen-tool-button" type="button" title="取消重命名" aria-label="取消重命名" onClick={() => { setRenamingScreen(false); setScreenName(displayText(screen.title)); }}>×</button></form> : null}
@@ -393,9 +474,9 @@ export function App() {
         <button className="icon-button" aria-label="重置视图" title="重置画布视图" disabled={!!state.gesture || !!preview} onClick={() => setView({ zoom: 2, panX: 0, panY: 0, tool: 'select' })}>⌖</button>
       </div>
       </>}
-      <div className="context-group context-right">
-        <WorkspaceSettingsPopover blockly={blocklyMode}>
-          {!blocklyMode && <div className="precise-view-fields">
+      <div className="context-group context-right" hidden={bakeMode}>
+        <WorkspaceSettingsPopover blockly={activeBlockly}>
+          {designMode && <div className="precise-view-fields">
         <label className="inline-field">间距 <input type="number" aria-label="网格间距" min="1" max="200" step="1" disabled={!!preview} aria-invalid={!gridValid} title="网格间距：1～200 GUI 逻辑像素" value={gridDraft} onChange={e => {
           const value = e.target.value; setGridDraft(value); const n = Number(value);
           if (/^\d+$/.test(value) && n >= 1 && n <= 200) setGrid({ ...grid, spacing: n });
@@ -415,48 +496,49 @@ export function App() {
         </div>
           </div>
         </WorkspaceSettingsPopover>
-        <ResourceTestPanel manager={resources} hideTrigger={blocklyMode} openRequest={resourceOpenRequest} onChange={() => setResourceGeneration(n => n + 1)}/>
-        {!blocklyMode && <button className="context-action" aria-label="交互预览" aria-pressed={interaction} disabled={!!preview || !!state.gesture} onClick={toggleInteractionPreview}>交互预览{interaction ? ' · 运行中' : ''}</button>}
+        <ResourceTestPanel manager={resources} hideTrigger={!designMode} openRequest={resourceOpenRequest} onChange={() => setResourceGeneration(n => n + 1)}/>
+        {designMode && <button className="context-action" aria-label="交互预览" aria-pressed={interaction} disabled={!!preview || !!state.gesture} onClick={toggleInteractionPreview}>交互预览{interaction ? ' · 运行中' : ''}</button>}
         <ScreenSettings preview={preview} setPreview={setPreview} notify={notify} open={settingsOpen} setOpen={setSettingsOpen}/>
         <button className="behavior-toggle" aria-label="行为" aria-expanded={behaviorOpen} aria-pressed={behaviorOpen} onClick={toggleBehavior}>行为</button>
 
       </div>
     </div>
 
-    <div ref={workspaceRef} style={{ '--library-width': `${44 + (libraryOpen && prefs.openedModules.length ? libraryWidth + 6 : 0)}px`, '--inspector-width': inspectorOpen ? `${inspectorWidth}px` : '0px', '--left-float-width': `${libraryWidth}px`, '--right-float-width': `${inspectorWidth}px`, '--tree-ratio': `${prefs.treeRatio * 100}%` } as CSSProperties} className={`workspace ${blocklyMode ? 'blockly-mode' : ''} ${libraryOpen ? '' : 'library-collapsed'} ${inspectorOpen ? '' : 'inspector-collapsed'} ${!compactWorkspace && prefs.right.mode !== 'pinned' ? 'auto-right' : ''} ${peek.left ? 'peek-left' : ''} ${peek.right ? 'peek-right' : ''}`}>
-      <HybridSidebar prefs={prefs} setPrefs={setPrefs} open={libraryOpen} setOpen={setLibraryOpen} width={libraryWidth} blocked={!!state.gesture} hidden={blocklyMode} reveal={behaviorReveal} onResize={event => resizeSidebar('left', event)}>{{
+    <div ref={workspaceRef} style={{ '--library-width': `${44 + (libraryOpen && prefs.openedModules.length ? libraryWidth + 6 : 0)}px`, '--inspector-width': inspectorOpen ? `${inspectorWidth}px` : '0px', '--left-float-width': `${libraryWidth}px`, '--right-float-width': `${inspectorWidth}px`, '--tree-ratio': `${prefs.treeRatio * 100}%` } as CSSProperties} className={`workspace ${activeBlockly || bakeMode ? 'blockly-mode' : ''} ${bakeMode ? 'bake-mode' : ''} ${libraryOpen ? '' : 'library-collapsed'} ${inspectorOpen ? '' : 'inspector-collapsed'} ${!compactWorkspace && prefs.right.mode !== 'pinned' ? 'auto-right' : ''} ${peek.left ? 'peek-left' : ''} ${peek.right ? 'peek-right' : ''}`}>
+      <HybridSidebar prefs={prefs} setPrefs={setPrefs} open={libraryOpen} setOpen={setLibraryOpen} width={libraryWidth} blocked={!!state.gesture} hidden={!designMode} reveal={behaviorReveal} selectedNodeId={selectedLayerNode && layerMask.pageActive(selectedLayerNode) ? selectedLayerNode.id : null} onResize={event => resizeSidebar('left', event)}>{{
         screens: <>          <label className="entry-screen-field">项目入口<select aria-label="项目入口 Screen" disabled={!!state.blocked || !!state.gesture || !!preview || !!behaviorPreview} value={state.doc.entryScreenId ?? ''} onChange={e => { if (!e.target.value) return; try { commitExportDrafts(); state.setEntryScreen(e.target.value); notify('项目入口已更新'); } catch (error) { notify((error as Error).message, true); } }}><option value="" disabled>选择项目入口…</option>{state.doc.screens.map(item => <option key={item.id} value={item.id}>{displayText(item.title)} · {item.id}</option>)}</select></label><div className="hybrid-screen-list">{state.doc.screens.map(item => <button type="button" key={item.id} aria-label={`切换 Screen ${item.id}`} aria-pressed={item.id === state.currentScreenId} disabled={!!state.gesture || !!preview || !!behaviorPreview} onClick={() => { try { commitExportDrafts(); state.switchScreen(item.id); } catch (error) { notify((error as Error).message, true); } }}><span>{displayText(item.title)}</span><small>{item.id} · {item.nodes.length}</small></button>)}<button type="button" aria-label="新增 Screen" disabled={!!state.blocked || !!state.gesture || !!preview || !!behaviorPreview || behaviorMode} onClick={() => { try { commitExportDrafts(); state.addScreen(); setView(v => ({ ...v, zoom: Math.min(v.zoom, 0.5), panX: 0, panY: 0 })); notify('已新增 Screen 画布'); } catch (error) { notify((error as Error).message, true); } }}>＋ 新增 Screen</button></div></>,
         structure: <>          <div className="layers-heading"><span>项目结构 · {screen.id}</span><button type="button" disabled={!state.selected || !!behaviorPreview} onClick={() => setBehaviorOpen(true)}>查看关联行为</button><span>{screen.nodes.length}</span></div>
 
-          <div className="layers" ref={layersRef} onKeyDown={e => {
+          <EditorLayerControls view={layerView} disabled={!!behaviorPreview || !!preview || !!state.blocked} onChange={updateLayerView}/><div className="layers" ref={layersRef} onKeyDown={e => {
             if (e.key === 'ArrowDown') { e.preventDefault(); moveLayer('down'); }
             else if (e.key === 'ArrowUp') { e.preventDefault(); moveLayer('up'); }
             else if (e.key === 'Home') { e.preventDefault(); moveLayer('first'); }
             else if (e.key === 'End') { e.preventDefault(); moveLayer('last'); }
-          }}>{!screen.nodes.length ? <p className="muted">尚无组件</p> : [...screen.nodes].filter(node => node.parentContainerId === undefined).reverse().flatMap(node => renderLayer(node))}</div>
+          }}><EditorLayerTree focusRootId={templateEditingId ?? undefined} screen={screen} selected={state.selected} bindings={behaviorBindings} view={layerView} mask={layerMask} disabled={!!behaviorPreview || !!preview || !!state.blocked} onSelect={state.select} onChange={updateLayerView}/></div>
 </>,
-        components: <>          <div className="component-list">{NODE_TYPES.map(type => <button key={type} className="component-card" disabled={!!state.blocked || !!state.gesture || !!preview || !!behaviorPreview || screen.nodes.length >= 1000}
+        components: <>          <div className="component-list">{NODE_TYPES.map(type => <Fragment key={type}>{type === 'native_region' && <h3 className="section-title">Native Regions</h3>}{type === 'minecraft:scrollable-panel' && <h3 className="section-title">Widgets</h3>}<button className="component-card" disabled={!!state.blocked || !!state.gesture || !!preview || !!behaviorPreview || screen.nodes.length >= 1000}
             aria-label={`添加 ${CATALOG[type].label}`} draggable={!state.gesture && !behaviorPreview} onDragStart={e => { pointerDown.current = true; e.dataTransfer.setData('application/x-minecraft-gui-component', type); }} onClick={() => addComponent(type)}>
             <span className="component-glyph" aria-hidden="true">{CATALOG[type].glyph}</span><span><strong>{CATALOG[type].label}</strong><small>{CATALOG[type].subtitle}</small></span>
-          </button>)}</div></>,
+          </button></Fragment>)}</div></>,
         behavior: <BehaviorPanel key={state.currentScreenId} preview={behaviorPreview} setPreview={setBehaviorPreview} mode={behaviorMode} setMode={setBehaviorMode} canClick={!preview} triggerRef={behaviorTrigger} sliderTriggerRef={sliderBehaviorTrigger} selectionTriggerRef={selectionBehaviorTrigger}
           onOpenScreen={id => { setNumericPreviewEpoch(epoch => epoch + 1); if (editorStore.getState().currentScreenId !== id) { behaviorNavigation.current = 'navigate'; editorStore.getState().switchScreen(id); } setBehaviorPreview(initialControlState(currentScreen(editorStore.getState()))); setBehaviorMode(true); }} onOpenBlocklyRule={id => enterBlocklyMode(id)} onDraftChange={dirty => { behaviorDraftDirty.current = dirty; }}
           onResetPreview={() => { setNumericPreviewEpoch(epoch => epoch + 1); setInteraction(false); setBehaviorPreview(null); setBehaviorMode(false); const s = editorStore.getState(), id = s.doc.entryScreenId; behaviorStartScreen.current = null; if (id && s.doc.screens.some(item => item.id === id) && s.currentScreenId !== id) { behaviorNavigation.current = 'reset'; s.switchScreen(id); } }}
           close={() => setBehaviorOpen(false)} notify={notify}/>,
       }}</HybridSidebar>
-      {!blocklyMode && <>
-      <Inspector containerScroll={containerScroll} key={state.currentScreenId} editTabs={editTabs} setEditTabs={setEditTabs} notify={notify} readOnly={!!preview || !!state.blocked || !!behaviorPreview} onMouseEnter={() => showPeek('right')} onMouseLeave={() => hidePeek('right')} onPin={prefs.right.mode !== 'pinned' && peek.right ? () => mode('right', 'pinned') : undefined} emptyControls={null}/>
+      {designMode && <>
+      <Inspector templateEditingId={templateEditingId} onEnterTemplate={enterRowTemplate} onExitTemplate={exitRowTemplate} containerScroll={containerScroll} repeatPreviewRows={repeatPreviewRows} setRepeatPreviewRows={setRepeatPreviewRows} key={state.currentScreenId} editTabs={editTabs} setEditTabs={setEditTabs} notify={notify} readOnly={!!preview || !!state.blocked || !!behaviorPreview} onOpenBake={() => setBakeMode(true)} onMouseEnter={() => showPeek('right')} onMouseLeave={() => hidePeek('right')} onPin={prefs.right.mode !== 'pinned' && peek.right ? () => mode('right', 'pinned') : undefined} emptyControls={null}/>
       <main className="studio">
-            <Canvas containerScroll={containerScroll} setContainerScroll={setContainerScroll} onEditError={message => notify(message, true)} onAddNode={addComponent} numericPreviewEpoch={numericPreviewEpoch} statusValues={previewStatusValues} screenPositions={screenPositions} setScreenPositions={setScreenPositions} onSelectScreen={id => { try { commitExportDrafts(); editorStore.getState().switchScreen(id); } catch (error) { notify((error as Error).message, true); } }} interaction={interaction} view={view} setView={setView} preview={preview} readOnly={!!state.blocked || !!behaviorPreview} behaviorPreview={behaviorPreview} behaviorMode={behaviorMode} editTabs={editTabs} onBehaviorTrigger={id => behaviorTrigger.current?.(id)} onBehaviorSliderChange={event => sliderBehaviorTrigger.current?.(event)} onBehaviorSelectionChange={event => selectionBehaviorTrigger.current?.(event)} grid={grid} alignment={{ guides: prefs.smartGuides, snap: prefs.smartSnap }} resources={resources} resourceGeneration={resourceGeneration} font={font} theme={theme}/>
+            <Canvas templateEditingId={templateEditingId} editorLayers={layerView} containerScroll={containerScroll} setContainerScroll={setContainerScroll} repeatPreviewRows={repeatPreviewRows} onEditError={message => notify(message, true)} onAddNode={addComponent} numericPreviewEpoch={numericPreviewEpoch} statusValues={previewStatusValues} screenPositions={screenPositions} setScreenPositions={setScreenPositions} onSelectScreen={id => { try { commitExportDrafts(); editorStore.getState().switchScreen(id); } catch (error) { notify((error as Error).message, true); } }} interaction={interaction} view={view} setView={setView} preview={preview} readOnly={!!state.blocked || !!behaviorPreview} behaviorPreview={behaviorPreview} behaviorMode={behaviorMode} editTabs={editTabs} onBehaviorTrigger={id => behaviorTrigger.current?.(id)} onBehaviorSliderChange={event => sliderBehaviorTrigger.current?.(event)} onBehaviorSelectionChange={event => selectionBehaviorTrigger.current?.(event)} grid={grid} alignment={{ guides: prefs.smartGuides, snap: prefs.smartSnap }} resources={resources} resourceGeneration={resourceGeneration} font={font} theme={theme}/>
         {inspectorOpen && <div className="sidebar-resizer sidebar-resizer-right" role="separator" aria-label="调整属性栏宽度" onPointerDown={e => resizeSidebar('right', e)}/>}
         <button onMouseEnter={() => showPeek('right')} onMouseLeave={() => hidePeek('right')} className="sidebar-toggle sidebar-toggle-right" aria-label={inspectorOpen ? '收起属性栏' : '展开属性栏'} title={inspectorOpen ? '收起属性栏' : '展开属性栏'} aria-expanded={inspectorOpen} onClick={() => setInspectorOpen(!inspectorOpen)}>{inspectorOpen ? '›' : '‹'}</button>
-        {exportOpen && <ExportPanel {...exports} resourceRevision={resources.revision} onClose={() => setExportOpen(false)} currentJson={JSON.stringify(state.doc, null, 2) + '\n'}/>}
-
         <div className="studio-footer"><span><i/> {screen.nodes.length} COMPONENTS</span><span data-testid="history-count">{state.past.length} undo / {state.future.length} redo</span><span>INTEGER COORDINATES · GUI px</span></div>
       </main>
       </>}
-      {blocklyMounted && <Suspense fallback={<div role="status">正在加载 Blockly 工作区…</div>}><BlocklyBehaviorEditor toolbarHost={blocklyToolbarHost} theme={theme} beforeScreenChange={requireBehaviorDraftSettled} active={blocklyMode} openRuleId={blocklyRuleId} setMode={setBlocklyMode} notify={notify} onDirtyChange={dirty => { blocklyDraftDirty.current = dirty; }}/></Suspense>}
-      <details className="json-preview" hidden={blocklyMode}><summary>项目 JSON <span>只读 / 当前已提交文档</span></summary><pre data-testid="project-json">{JSON.stringify(state.doc, null, 2)}</pre></details>
+      {blocklyMounted && <Suspense fallback={<div role="status">正在加载 Blockly 工作区…</div>}><BlocklyBehaviorEditor toolbarHost={blocklyToolbarHost} theme={theme} beforeScreenChange={requireBehaviorDraftSettled} active={activeBlockly} openRuleId={blocklyRuleId} setMode={setBlocklyMode} notify={notify} onDirtyChange={dirty => { blocklyDraftDirty.current = dirty; }}/></Suspense>}
+      <section className="bake-workspace" aria-label="Bake Workspace" hidden={!bakeMode}><header><div><h2>Bake</h2><p>管理当前 Screen 的 Static Bake Groups，以及项目级 Localization 语言资源。</p></div><label>当前 Screen <select aria-label="Bake 当前 Screen" value={screen.id} disabled={!!state.gesture} onChange={event => { try { commitExportDrafts(); editorStore.getState().switchScreen(event.target.value); } catch (error) { notify((error as Error).message, true); } }}>{state.doc.screens.map(item => <option key={item.id} value={item.id}>{displayText(item.title)} · {item.id}</option>)}</select></label></header><BakePanel workspace screen={screen} disabled={!!state.blocked || !!state.gesture || !!preview || !!behaviorPreview} notify={notify}/><LocalizationPanel disabled={!!state.blocked || !!state.gesture || !!preview || !!behaviorPreview} notify={notify}/></section>
+      <details className="json-preview" hidden={!designMode}><summary>项目 JSON <span>只读 / 当前已提交文档</span></summary><pre data-testid="project-json">{JSON.stringify(state.doc, null, 2)}</pre></details>
+      {exportOpen && <ExportPanel {...exports} resourceRevision={resources.revision} onClose={() => setExportOpen(false)} currentJson={JSON.stringify(state.doc, null, 2) + '\n'}/>}
+      <TemplatesPanel open={templatesOpen} onClose={() => setTemplatesOpen(false)} notify={notify} templateEditingId={templateEditingId} pageIds={Object.values(layerContext.pages)}/>
     </div>
 
     <footer className={`statusbar ${message.error ? 'error' : ''}`}>

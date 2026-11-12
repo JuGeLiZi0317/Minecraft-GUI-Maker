@@ -27,6 +27,14 @@ export function LocalSavePanel({ notify, onBackup, beforeOpen }: { notify: (text
     {!exceptional && <p className="save-detail">{state.message}</p>}
     <div className="save-summary">
       <button disabled={!!blocked || state.phase === 'saving'} onClick={() => void localSession.flush()}>立即保存</button>
+      <button disabled={!!blocked || !selected || state.phase === 'saving'} onClick={async () => {
+        if (!window.confirm('删除所选本地副本？已导出的 JSON/ZIP 不会受影响。若删除当前副本，将打开最近的副本或新建空白项目。')) return;
+        try { await localSession.removeCopy(selected); notify('本地副本已删除'); } catch (error) { notify((error as Error).message, true); }
+      }}>删除副本</button>
+      <button disabled={!!blocked || state.phase === 'saving'} onClick={async () => {
+        if (!window.confirm('清除本机全部本地副本缓存？已导出的 JSON/ZIP 不会受影响；当前设计将替换为空白项目。')) return;
+        try { await localSession.clearCache(); notify('本地缓存已清除，已新建空白项目'); } catch (error) { notify((error as Error).message, true); }
+      }}>清除缓存</button>
       {state.phase === 'error' && <button onClick={() => void localSession.retry()}>重试本地保存</button>}
       {['readonly', 'conflict'].includes(state.phase) && <button onClick={() => location.reload()}>重新连接（未保存时请先导出JSON）</button>}
       {state.phase === 'recovery' && <><button onClick={() => {
@@ -42,6 +50,6 @@ export function LocalSavePanel({ notify, onBackup, beforeOpen }: { notify: (text
       </select><button disabled={!!blocked || !selected || selected === state.localId} onClick={async () => {
         try { beforeOpen?.(); await localSession.openCopy(selected); notify('已打开本地副本，编辑历史已重置'); } catch (e) { notify((e as Error).message, true); }
       }}>打开本地副本</button>
-    </div><p>仅保存本浏览器、当前网址的已提交设计。清理站点数据或私密模式可能丢失，请定期导出JSON。导入会保留旧本地副本；缩放、预览和未提交文字不自动保存。并发保护：{state.lockMode === 'web-lock' ? '标签页写入锁 + 事务版本校验' : '事务版本校验（无标签页写入锁）'}。</p></div>
+    </div><p>仅保存本浏览器、当前网址的已提交设计。清理站点数据或私密模式可能丢失，请定期导出JSON。导入会保留旧本地副本；缩放、预览和未提交文字不自动保存。删除副本/清除缓存只影响本机副本，不影响已导出的 JSON/ZIP。并发保护：{state.lockMode === 'web-lock' ? '标签页写入锁 + 事务版本校验' : '事务版本校验（无标签页写入锁）'}。</p></div>
   </div>;
 }

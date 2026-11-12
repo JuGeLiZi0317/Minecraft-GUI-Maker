@@ -22,6 +22,14 @@ class DelayedRepository implements Repository {
     this.workspace = { key: 'active', localId: job.activate ? job.localId : this.workspace.localId, revision: this.workspace.revision + 1 };
     return { projectRevision, workspaceRevision: this.workspace.revision };
   }
+  async remove(localId: string) {
+    this.rows.delete(localId);
+    if (this.workspace.localId === localId) this.workspace = { key: 'active', localId: null, revision: this.workspace.revision + 1 };
+  }
+  async clearAll() {
+    this.rows.clear();
+    this.workspace = { key: 'active', localId: null, revision: this.workspace.revision + 1 };
+  }
   close() {}
 }
 async function setup() {
@@ -86,4 +94,32 @@ it('a versionchange cannot be overwritten by an in-flight successful acknowledge
   const { store, repo, session } = await setup(); const gate = deferred(); repo.gate = gate;
   const flush = session.flush(); repo.versionChanged(); gate.resolve(); await flush;
   expect(session.status.getState().phase).toBe('conflict'); expect(store.getState().blocked).toBeTruthy(); session.stop();
+});
+
+it('deletes an inactive copy and clears all local copies without touching exported files', async () => {
+  const { store, repo, session } = await setup(); await session.flush();
+  const first = session.status.getState().localId!;
+  await session.createProject(); await session.flush();
+  expect(repo.rows.size).toBe(2);
+  await session.removeCopy(first);
+  expect(repo.rows.has(first)).toBe(false);
+  expect(repo.rows.size).toBe(1);
+  expect(session.status.getState().copies).toHaveLength(1);
+
+  await session.clearCache();
+  expect(repo.rows.size).toBe(1);
+  expect(session.status.getState().copies).toHaveLength(1);
+  expect(session.status.getState().message).toContain('本地缓存已清除');
+  expect(store.getState().doc.screens[0].nodes).toHaveLength(0);
+  session.stop();
+});
+it('deleting the active last copy creates a fresh blank copy', async () => {
+  const { store, repo, session } = await setup(); await session.flush();
+  const active = session.status.getState().localId!;
+  await session.removeCopy(active);
+  expect(repo.rows.size).toBe(1);
+  expect(session.status.getState().localId).not.toBe(active);
+  expect(store.getState().doc.screens[0].nodes).toHaveLength(0);
+  expect(session.status.getState().message).toContain('新建空白项目');
+  session.stop();
 });

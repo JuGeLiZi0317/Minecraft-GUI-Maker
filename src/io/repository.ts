@@ -12,6 +12,8 @@ export interface Repository {
   read: (localId: string) => Promise<unknown>;
   list: () => Promise<LocalSummary[]>;
   write: (job: WriteJob) => Promise<{ projectRevision: number; workspaceRevision: number }>;
+  remove: (localId: string) => Promise<void>;
+  clearAll: () => Promise<void>;
   close: () => void;
 }
 export class PersistenceConflict extends Error {}
@@ -99,6 +101,31 @@ export class IndexedDbRepository implements Repository {
         rows.push({ localId: String(c.primaryKey), name: typeof row.document?.project?.name === 'string' ? row.document.project.name : '不可用副本（原记录保留）', updatedAt: row.updatedAt }); c.continue();
       };
       tx.oncomplete = () => resolve(rows); tx.onabort = () => reject(tx.error ?? new Error('本地副本列表读取失败'));
+    });
+  }
+  remove(localId: string): Promise<void> {
+    return new Promise((resolve, reject) => {
+      const tx = this.transaction(['projects', 'workspace'], 'readwrite');
+      const projects = tx.objectStore('projects'), workspaces = tx.objectStore('workspace'), active = workspaces.get('active');
+      let failure: unknown;
+      active.onsuccess = () => {
+        try {
+          const workspace = workspaceOf(active.result);
+          projects.delete(localId);
+          if (workspace.localId === localId) workspaces.put({ key: 'active', localId: null, revision: workspace.revision + 1 } satisfies Workspace);
+        } catch (error) { failure = error; tx.abort(); }
+      };
+      tx.oncomplete = () => resolve();
+      tx.onabort = () => reject(failure ?? tx.error ?? new Error('本地副本删除事务中止'));
+    });
+  }
+  clearAll(): Promise<void> {
+    return new Promise((resolve, reject) => {
+      const tx = this.transaction(['projects', 'workspace'], 'readwrite');
+      tx.objectStore('projects').clear();
+      tx.objectStore('workspace').clear();
+      tx.oncomplete = () => resolve();
+      tx.onabort = () => reject(tx.error ?? new Error('本地缓存清理事务中止'));
     });
   }
   write(job: WriteJob): Promise<{ projectRevision: number; workspaceRevision: number }> {

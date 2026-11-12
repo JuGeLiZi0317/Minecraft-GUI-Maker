@@ -2,6 +2,8 @@ import type { GuiNode } from './schema';
 
 export type ImageNode = Extract<GuiNode, { type: 'minecraft:image' }>;
 export type TextureImageNode = Omit<ImageNode, 'props'> & { props: Extract<ImageNode['props'], { kind: 'texture' }> };
+export type EmbeddedImageNode = Omit<ImageNode, 'props'> & { props: Extract<ImageNode['props'], { kind: 'embedded' }> };
+export type SampledImageNode = TextureImageNode | EmbeddedImageNode;
 export const isImageNode = (node: GuiNode): node is ImageNode => node.type === 'minecraft:image';
 const namespace = /^[a-z0-9_.-]+$/;
 const path = /^[a-z0-9/._-]+$/;
@@ -19,12 +21,16 @@ export function imageError(node: ImageNode) {
     const idError = resourceLocationError(node.props.resourceId, 'texture'); if (idError) return idError;
     const { uv } = node.props;
     if (uv.x + uv.width > node.props.textureWidth || uv.y + uv.height > node.props.textureHeight) return 'UV 采样区域必须位于逻辑贴图尺寸内';
-  } else {
+  } else if (node.props.kind === 'sprite') {
     const idError = resourceLocationError(node.props.spriteId, 'sprite'); if (idError) return idError;
+  } else {
+    const { uv } = node.props;
+    if (!node.props.assetId) return '嵌入式贴图缺少 assetId';
+    if (uv.x + uv.width > node.props.textureWidth || uv.y + uv.height > node.props.textureHeight) return 'UV 采样区域必须位于嵌入式贴图尺寸内';
   }
   return null;
 }
-export function textureSourceRect(node: TextureImageNode, actualWidth: number, actualHeight: number) {
+export function textureSourceRect(node: SampledImageNode, actualWidth: number, actualHeight: number) {
   return { x: node.props.uv.x * actualWidth / node.props.textureWidth, y: node.props.uv.y * actualHeight / node.props.textureHeight,
     width: node.props.uv.width * actualWidth / node.props.textureWidth, height: node.props.uv.height * actualHeight / node.props.textureHeight };
 }

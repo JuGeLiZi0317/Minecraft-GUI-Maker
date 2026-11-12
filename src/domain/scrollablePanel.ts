@@ -7,6 +7,7 @@ export const CONTAINER_SCROLLBAR_GUTTER = CONTAINER_SCROLLBAR_WIDTH + CONTAINER_
 export const SCROLLABLE_CHILD_TYPES = [
   'minecraft:button', 'minecraft:edit-box', 'minecraft:numeric-input', 'minecraft:slider',
   'minecraft:checkbox', 'minecraft:radio-group', 'minecraft:dropdown', 'minecraft:string-widget', 'minecraft:multi-line-text-widget',
+  'minecraft:image', 'minecraft:fill', 'minecraft:status-indicator', 'minecraft:progress-bar', 'minecraft:cycle-button',
 ] as const;
 
 export type ScrollablePanelNode = Extract<GuiNode, { type: 'minecraft:scrollable-panel' }>;
@@ -18,6 +19,17 @@ export function isScrollablePanelNode(node: GuiNode): node is ScrollablePanelNod
   return node.type === 'minecraft:scrollable-panel';
 }
 
+/** Human-readable reason for a rejected Scrollable/Collapsible child. */
+export function scrollableChildRejection(type: GuiNode['type']): string | null {
+  if (isScrollableChildType(type)) return null;
+  if (type === 'native_region') return '36 格 Native Region 需要稳定的真实 Menu Slot 集合，不能放入可滚动/可折叠内容';
+  if (type === 'minecraft:single_slot') return 'Single Slot 当前仅支持 Screen 根级或 Row Template（仅 visual_only）；可滚动/折叠容器暂不支持';
+  if (type === 'minecraft:creative-tab') return 'CreativeTab/Page Group 是页面结构，不能放入普通容器';
+  if (type === 'minecraft:tree-view') return 'Tree View 拥有独立滚动与焦点，不能嵌套进当前容器';
+  if (type === 'minecraft:repeatable-list') return 'Repeatable List 首版仅支持 Screen 根级';
+  if (type === 'minecraft:scrollable-panel' || type === 'minecraft:collapsible-panel') return '嵌套容器只允许 Scrollable Panel 与 Collapsible Panel 交叉一层';
+  return `${type} 暂不支持作为容器内容`;
+}
 export function isScrollableChildType(type: GuiNode['type']): type is ScrollableChildNode['type'] {
   return (SCROLLABLE_CHILD_TYPES as readonly string[]).includes(type);
 }

@@ -1,4 +1,4 @@
-import { actionsOf, behaviorLeafActions, conditionLeaves, sourcesOf, type GuiProject } from './schema';
+import { behaviorReadDependencies, actionsOf, behaviorLeafActions, sourcesOf, type GuiProject } from './schema';
 import { isSelectionNode } from './selection';
 import { isStatusNode } from './statusIndicator';
 
@@ -34,14 +34,18 @@ export function planDeletion(document: GuiProject, target: DeletionTarget): Dele
     const targets = removedTargets.get(screen.id);
     screen.behaviors = screen.behaviors.filter(rule => {
       const affected = (target.kind === 'screen' && screen.id === owner.id) || sourcesOf(rule).some(id => removedNodes.has(id))
-        || actionsOf(rule).some(action => action.type === 'if' && conditionLeaves(action.condition).some(condition => condition.type === 'compare' && [condition.left, condition.right].some(value => value.type === 'read-control-value' && removedNodes.has(value.nodeId))))
-        || actionsOf(rule).flatMap(behaviorLeafActions).some(action => action.type === 'open_screen' ? targets?.has(action.targetScreenId) : action.type !== 'if' && removedNodes.has(action.targetId));
+        || actionsOf(rule).some(action => behaviorReadDependencies(action).some(read => removedNodes.has(read.nodeId)))
+        || actionsOf(rule).flatMap(behaviorLeafActions).some(action => action.type === 'open_screen' ? targets?.has(action.targetScreenId) : action.type === 'set-exclusive-visible' ? action.mapping.some(mapping => removedNodes.has(mapping.targetId)) : removedNodes.has(action.targetId));
       if (affected) plan.rules.push({ screenId: screen.id, ruleId: rule.id });
       return !affected;
     });
     if (screen.screenTargets && targets?.size) screen.screenTargets = screen.screenTargets.filter(item => !targets.has(item.id));
     const removedSelectedGroups = new Set(screen.nodes.filter(node => removedNodes.has(node.id) && node.type === 'minecraft:creative-tab' && node.props.selected).flatMap(node => node.type === 'minecraft:creative-tab' && node.props.groupId ? [node.props.groupId] : []));
     screen.nodes = screen.nodes.filter(node => !removedNodes.has(node.id));
+    if (screen.bakeGroups) screen.bakeGroups = screen.bakeGroups.flatMap(group => {
+      const memberIds = group.memberIds.filter(id => !removedNodes.has(id));
+      return memberIds.length ? [{ ...group, memberIds }] : [];
+    });
     if (!(target.kind === 'screen' && screen.id === owner.id)) {
       const options = new Set(screen.nodes.filter(isSelectionNode).flatMap(node => node.props.options.map(option => option.id)));
       const statuses = new Set(screen.nodes.filter(isStatusNode).flatMap(node => node.props.statuses.map(status => status.statusId)));

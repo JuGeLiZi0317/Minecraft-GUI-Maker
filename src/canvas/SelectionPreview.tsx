@@ -9,9 +9,10 @@ function SelectionImage({ node, selected, family }: { node: SelectionNode; selec
   return <canvas ref={ref} width={node.bounds.w} height={node.bounds.h} style={{ width: '100%', height: '100%', pointerEvents: 'none', position: 'absolute', inset: 0, imageRendering: 'pixelated' }} aria-hidden="true"/>;
 }
 type Open = { nodeId: string; active: string };
-export function SelectionPreview({ nodes, screenId, design, origin, zoom, family, clipInsets = {}, onSelectionChange, runtimeValues }: { nodes: SelectionNode[]; screenId: string; design: { width: number; height: number }; origin: { x: number; y: number }; zoom: number; family: string; clipInsets?: Record<string, { top: number; right: number; bottom: number; left: number }>; onSelectionChange?: (event: SelectionEvent) => void; runtimeValues?: Record<string, string> }) {
+export function SelectionPreview({ nodes, screenId, design, origin, zoom, family, clipInsets = {}, onSelectionChange, runtimeValues, onOverlayChange }: { nodes: SelectionNode[]; screenId: string; design: { width: number; height: number }; origin: { x: number; y: number }; zoom: number; family: string; clipInsets?: Record<string, { top: number; right: number; bottom: number; left: number }>; onSelectionChange?: (event: SelectionEvent) => void; runtimeValues?: Record<string, string>; onOverlayChange?: (nodeId: string | null) => void }) {
   const [values, setValues] = useState<Record<string, string>>({}), [events, setEvents] = useState<SelectionEvent[]>([]), [open, setOpen] = useState<Open | null>(null);
   const root = useRef<HTMLDivElement>(null), list = useRef<HTMLDivElement>(null), triggers = useRef<Record<string, HTMLButtonElement | null>>({});
+  useEffect(() => { onOverlayChange?.(open?.nodeId ?? null); }, [open, onOverlayChange]);
   const state = useRef({ nodes, open, values, zoom }); state.current = { nodes, open, values: runtimeValues ?? values, zoom };
   const release = useRef(new Set<number>());
   const scrollDrag = useRef<{ pointerId: number; y: number; scroll: number } | null>(null);
@@ -56,7 +57,7 @@ export function SelectionPreview({ nodes, screenId, design, origin, zoom, family
       else if (e.key === 'Tab') {
         const trigger = triggers.current[node.id];
         const scope = root.current?.parentElement;
-        const controls = scope ? Array.from(scope.querySelectorAll<HTMLElement>('[data-selection-focus], .numeric-live-input input:not(:disabled), .numeric-live-slider[tabindex="0"]')).filter(el => el.tabIndex >= 0 && !el.matches(':disabled,[aria-disabled="true"]')) : [];
+        const controls = scope ? Array.from(scope.querySelectorAll<HTMLElement>('[data-selection-focus], .numeric-live-input input:not(:disabled), .numeric-live-slider[tabindex="0"]')).filter(el => el.tabIndex >= 0 && el.getClientRects().length > 0 && !el.matches(':disabled,[aria-disabled="true"]')) : [];
         const index = trigger ? controls.indexOf(trigger) : -1; close(false);
         if (controls.length) controls[(index + (e.shiftKey ? -1 : 1) + controls.length) % controls.length]?.focus();
       } else if (e.key === 'Enter' || e.key === ' ') { confirm(node, current.active, 'keyboard'); close(); }

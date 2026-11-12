@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { createNode, emptyProject } from '../../../src/domain/model';
 import { exportProject, parseProject, projectSchema } from '../../../src/domain/schema';
 import { createEditorStore } from '../../../src/editor/store';
-import { TREE_VIEW_RUNTIME_CONTRACT, treeFocusAfterCollapse, treeFocusAfterEdit, treeParentAllowed, treeViewError, visibleTreeItems, type TreeViewNode } from '../../../src/domain/treeView';
+import { TREE_VIEW_RUNTIME_CONTRACT, nextTreeItemId, nextTreeOrder, renameTreeItemId, treeFocusAfterCollapse, treeFocusAfterEdit, treeItemIdError, treeParentAllowed, treeViewError, visibleTreeItems, type TreeViewNode } from '../../../src/domain/treeView';
 import { beginExport } from '../../../src/exports/snapshot';
 import { buildBundle } from '../../../src/exports/bundle';
 import { drawTreeView } from '../../../src/render/treeView';
@@ -48,6 +48,43 @@ describe('Tree View data and lifecycle contract', () => {
     expect(treeViewError(badSelected)).toMatch(/可选择/);
     const badExpansion = structuredClone(props); badExpansion.initialExpandedIds.push('item_leaf_a');
     expect(treeViewError(badExpansion)).toMatch(/有子项/);
+  });
+
+  it('renames item IDs transactionally and remaps child, expansion and selection references', () => {
+    const props = baseProps();
+    const renamed = renameTreeItemId(props, 'item_branch', 'terrain');
+    expect(renamed.items.find(item => item.id === 'terrain')?.parentId).toBe('item_root');
+    expect(renamed.items.filter(item => item.parentId === 'terrain').map(item => item.id)).toEqual(['item_leaf_a', 'item_leaf_b']);
+    expect(renamed.initialExpandedIds).toEqual(['item_root', 'terrain']);
+    expect(renamed.initialSelectedItemId).toBe('item_leaf_a');
+    expect(treeViewError(renamed)).toBeNull();
+    // The source document is not mutated.
+    expect(props.items.some(item => item.id === 'item_branch')).toBe(true);
+    // Renaming the root repairs every child parentId, while renaming the selected leaf repairs the selection.
+    const root = renameTreeItemId(props, 'item_root', 'world');
+    expect(root.items.find(item => item.id === 'item_branch')?.parentId).toBe('world');
+    expect(root.initialExpandedIds).toContain('world');
+    expect(renameTreeItemId(props, 'item_leaf_a', 'plains').initialSelectedItemId).toBe('plains');
+  });
+
+  it('rejects illegal or duplicate IDs and derives readable unique defaults', () => {
+    const props = baseProps();
+    expect(treeItemIdError(props.items, 'item_root')).toContain('必须唯一');
+    expect(treeItemIdError(props.items, 'item_root', 'item_root')).toBeNull();
+    expect(treeItemIdError(props.items, '1bad')).toContain('字母开头');
+    expect(treeItemIdError(props.items, 'bad id')).toContain('字母开头');
+    expect(nextTreeItemId(props.items)).toBe('tree_item');
+    expect(nextTreeItemId(props.items, 'item_branch')).toBe('item_branch_item');
+    const occupied = [...props.items, { ...props.items[0], id: 'tree_item', parentId: null, order: 5 }];
+    expect(nextTreeItemId(occupied)).toBe('tree_item_2');
+    // Deleting a middle sibling leaves an order gap; the next add must not collide.
+    const gapped = props.items.map(item => item.id === 'item_leaf_b' ? { ...item, order: 2 } : item);
+    expect(nextTreeOrder(gapped, 'item_branch')).toBe(3);
+    expect(nextTreeOrder(gapped, null)).toBe(2);
+    expect(nextTreeOrder(gapped, null, 'item_other')).toBe(1);
+    expect(nextTreeOrder([], null)).toBe(0);
+    const invalid = structuredClone(props); invalid.items[2].id = '1 bad';
+    expect(treeViewError(invalid)).toMatch(/格式无效/);
   });
 
   it('checks cycle/depth bounds and moves focus away from hidden or disabled rows', () => {

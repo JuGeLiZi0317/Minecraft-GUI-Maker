@@ -27,7 +27,7 @@ const sizeOf = (bytes: Uint8Array | number) => {
   return value >= 1024 ? `${Math.round(value / 1024)} KB` : `${value} B`;
 };
 
-export function ExportPanel({ batch, busy, error, downloadZip, generate, currentJson, resourceRevision, onClose }: ReturnType<typeof useExports> & { currentJson: string; resourceRevision: number; onClose: () => void }) {
+export function ExportPanel({ batch, busy, error, downloadZip, generate, currentJson, resourceRevision, onClose, pageMode, setPageMode }: ReturnType<typeof useExports> & { currentJson: string; resourceRevision: number; onClose: () => void }) {
   const root = useRef<HTMLElement>(null);
   useDismissOutside(root, true, onClose);
   if (!batch && !busy && !error) return null;
@@ -39,6 +39,8 @@ export function ExportPanel({ batch, busy, error, downloadZip, generate, current
   const categories = [...new Set(components.map(component => component.source?.category).filter((value): value is string => !!value))];
   const counts = categories.map(category => `${category} ×${components.filter(component => component.source?.category === category).length}`);
   const visual = batch?.manifest.visualResources;
+  const localization = batch?.manifest.localization;
+  const nativeText = batch?.manifest.nativeTextCapability;
   const unresolved = visual?.diagnostics?.length ?? 0;
   const behavior = batch?.manifest.behavior;
   const behaviorScreens = behavior && 'screens' in behavior ? behavior.screens : undefined;
@@ -63,6 +65,7 @@ export function ExportPanel({ batch, busy, error, downloadZip, generate, current
         <div className="export-actions">
           <button className="primary" disabled={busy} onClick={() => void downloadZip()}>导出 ZIP</button>
           <button aria-label="重新生成导出" disabled={busy} onClick={() => void generate()}>重新生成</button>
+        <label className="check export-page-mode"><input type="checkbox" aria-label="导出全部 Page 组合" checked={pageMode === 'all'} disabled={busy} onChange={event => { const mode = event.target.checked ? 'all' : 'auto'; setPageMode(mode); void generate(undefined, false, mode); }}/>导出全部 Page 组合（多 Page Group；单组始终导出全部 Page）</label>
         </div>
         <p>{counts.length ? `类别汇总：${counts.join(' · ')}。` : ''}可逐项下载，也可打包同一批文件（ZIP 内容上限 64 MiB）。</p>
         <section className="export-section" aria-label="同一快照的派生物">
@@ -83,6 +86,8 @@ export function ExportPanel({ batch, busy, error, downloadZip, generate, current
         {nodes.some(node => node.type === 'minecraft:checkbox') && batch.manifest.panelTexture && <p>Panel 上的复选框深灰文字为浏览器可读性预览；原版固定浅色文字，需要开发者自定义绘制才能复现该颜色。</p>}
         {batch.manifest.panelTexture?.style && isTextureStyle(batch.manifest.panelTexture.style) && <p>本批底板纹理含用户从 Minecraft 发射器纹理裁切拼接的派生成分；携带或分发前请核实适用的资源使用条件。</p>}
         {visual && <p data-testid="export-visual-diagnostics">资源代次 {visual.generation} · {visual.base ? `基础：${visual.base}` : '中性近似预览'}{unresolved ? ` · 预览限制：${visual.diagnostics.join('；')}` : ''}</p>}
+        {localization && <p data-testid="export-localization-summary">语言资源：{localization.modId} · {localization.locales.map(locale => `${locale} 缺失 ${localization.missing[locale]?.length ?? 0}`).join(' · ')}。只包含已填写译文；缺失项不会复制源语言或写入键名。</p>}
+        {nativeText && <p data-testid="export-native-text-diagnostics">原生文字能力：{nativeText.diagnostics.length ? `${nativeText.diagnostics.length} 项显式差异（${nativeText.diagnostics.slice(0, 3).map(item => item.nodeId).join('、')}）` : '未发现显式差异'}。Button/CycleButton/StringWidget/Checkbox/MultiLine/Slider/FittingMultiLine 的原生阴影恒开；仅 EditBox 提供 setTextShadow。Checkbox 颜色固定，Slider 颜色硬编码，Button/CycleButton 颜色走 NeoForge setFGColor 且 alpha 会被覆盖。</p>}
 
         </section>
         <section className="prompt-summary" aria-label="Prompt 摘要">

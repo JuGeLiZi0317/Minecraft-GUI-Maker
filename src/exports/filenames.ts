@@ -16,6 +16,14 @@ export function exportFilename(name: string, kind: ExportKind): string {
 }
 
 /** Screen derivatives are display files only. The stable ID prevents collisions after name sanitizing. */
+/** Page variants are visual references only; the stable Page ID set prevents collisions. */
+export function pageExportFilename(name: string, screenName: string, screenId: string, pageTitle: string, variantId: string, kind: 'design' | 'reference', singleScreen: boolean): string {
+  const trimBytes = (value: string, limit: number) => { const encoder = new TextEncoder(); let result = ''; for (const char of value) { if (encoder.encode(result + char).length > limit) break; result += char; } return result || 'page'; };
+  const base = trimBytes(safeExportStem(name), 72), screen = trimBytes(safeExportStem(screenName), 40), stable = trimBytes(safeExportStem(screenId), 40), page = trimBytes(safeExportStem(pageTitle), 40), variant = trimBytes(safeExportStem(variantId.replaceAll('+', '_')), 64);
+  const prefix = singleScreen ? `${base}.${page}--${variant}` : `${base}.${screen}--${stable}.${page}--${variant}`;
+  return `${prefix}${suffix[kind]}`;
+}
+
 export function screenExportFilename(name: string, screenName: string, screenId: string, kind: 'design' | 'reference' | 'background'): string {
   const trimBytes = (value: string, limit: number) => { const encoder = new TextEncoder(); let result = ''; for (const char of value) { if (encoder.encode(result + char).length > limit) break; result += char; } return result || 'screen'; };
   const base = trimBytes(safeExportStem(name), 72), title = trimBytes(safeExportStem(screenName), 48), stable = safeExportStem(screenId);

@@ -1,6 +1,7 @@
 import { usesControlState } from '../domain/genericBehavior';
-import { memo, useEffect, useRef, useState, type DragEvent, type ReactNode } from 'react';
+import { memo, useEffect, useMemo, useRef, useState, type DragEvent, type ReactNode } from 'react';
 import { SelectionPreview } from './SelectionPreview';
+import { TooltipPreview } from './TooltipPreview';
 import { isSelectionNode, selectionMinimum, type SelectionEvent, type SelectionNode } from '../domain/selection';
 import { drawSelectionWidget } from '../render/selectionWidgets';
 import { NumericPreview } from './NumericPreview';
@@ -8,10 +9,12 @@ import { isNumericNode, drawNumericWidget, type NumericNode } from '../render/nu
 import { isProgressNode } from '../domain/progress';
 import { drawProgressBar } from '../render/progressBar';
 import { isStatusNode } from '../domain/statusIndicator';
-import { containerScrollOffset, contentSize, intersectBounds, isScrollablePanelNode, type ContainerDrop, type ScrollablePanelNode } from '../domain/scrollablePanel';
+import { containerScrollOffset, contentSize, intersectBounds, isScrollablePanelNode, type ContainerDrop } from '../domain/scrollablePanel';
 import { allDescendants, containerAncestorsEnabled, containerLocalViewport, containerScreenViewport, containerChildScreenBounds, designPanelExpansion, designSiblingOrder, isCollapsiblePanelNode, isContainerNode, nodeAbsoluteBounds, nodeVisibleBounds, type ContainerNode } from '../domain/collapsiblePanel';
+import { REPEATABLE_LIST_SCROLLBAR_GAP, REPEATABLE_LIST_SCROLLBAR_WIDTH, isRepeatableListNode, repeatableContentSize, repeatablePreviewRows, repeatableScrollOffset, repeatableStride } from '../domain/repeatableList';
 import { drawStatusIndicator } from '../render/statusIndicator';
 import { isImageNode } from '../domain/image';
+import { decodeBase64 } from '../domain/embeddedImage';
 import { drawImageNode, type RenderedImageAsset } from '../render/imageWidget';
 import { drawScrollText } from '../render/scrollText';
 import { ScrollTextPreview } from './ScrollTextPreview';
@@ -27,9 +30,13 @@ import { CATALOG, NODE_TYPES, type NodeType } from '../domain/catalog';
 import type { Bounds, GuiNode, GuiScreen } from '../domain/schema';
 import { displayText } from '../domain/model';
 import { currentScreen, editorStore } from '../editor/store';
+import { drawPlayerInventory, drawSingleSlot } from '../render/nativeRegion';
 import { editableText, InlineTextEditor } from './InlineTextEditor';
 import type { GuiScalePreview } from '../domain/guiScale';
 import { tabManaged, tabVisibility } from '../domain/tabGroups';
+import { effectiveRuntimeVisibility } from '../domain/runtimeVisibility';
+import { DEFAULT_EDITOR_LAYER_VIEW, editorLayerVisibility, editorPageSelection, type EditorLayerView } from '../domain/editorLayerVisibility';
+import { drawFillStyle } from '../domain/fillStyle';
 import { screenNavigationSelected } from '../domain/screenTabNavigation';
 import { panelBounds, panelRects } from '../domain/panel';
 import { drawNativePanel, getPanelImage, isTextureStyle, panelPreviewRaster } from '../render/panelTexture';
@@ -42,7 +49,7 @@ import { canvasChrome, type CanvasChromeTheme } from './chromeTheme';
 
 export type View = { zoom: number; panX: number; panY: number; tool: 'select' | 'pan' };
 type ResizeEdge = 'left' | 'right' | 'top' | 'bottom' | 'top-left' | 'bottom-right';
-type Props = { onAddNode: (type: NodeType, position?: { x: number; y: number }, containerDrop?: ContainerDrop) => void; onEditError: (message: string) => void; containerScroll: Record<string, number>; setContainerScroll: (update: Record<string, number> | ((previous: Record<string, number>) => Record<string, number>)) => void; numericPreviewEpoch: number; statusValues: Record<string, string>; screenPositions: Record<string, {x: number; y: number}>; setScreenPositions: (update: (previous: Record<string, {x: number; y: number}>) => Record<string, {x: number; y: number}>) => void; onSelectScreen: (id: string) => void; view: View; setView: (view: View) => void; preview?: GuiScalePreview | null; readOnly?: boolean; behaviorPreview?: BehaviorPreview | null; behaviorMode?: boolean; interaction: boolean; onBehaviorTrigger?: (id: string) => void; onBehaviorSliderChange?: (event: SliderChangeEvent) => void; onBehaviorSelectionChange?: (event: SelectionEvent) => void; editTabs?: Record<string, string>; grid: { visible: boolean; spacing: number }; alignment: { guides: boolean; snap: boolean }; resources: LayeredResources; resourceGeneration: number; font: FontChoice; theme: 'dark' | 'light' };
+type Props = { onAddNode: (type: NodeType, position?: { x: number; y: number }, containerDrop?: ContainerDrop) => void; onEditError: (message: string) => void; containerScroll: Record<string, number>; setContainerScroll: (update: Record<string, number> | ((previous: Record<string, number>) => Record<string, number>)) => void; repeatPreviewRows: Record<string, number>; templateEditingId: string | null; numericPreviewEpoch: number; statusValues: Record<string, string>; screenPositions: Record<string, {x: number; y: number}>; setScreenPositions: (update: (previous: Record<string, {x: number; y: number}>) => Record<string, {x: number; y: number}>) => void; onSelectScreen: (id: string) => void; view: View; setView: (view: View) => void; preview?: GuiScalePreview | null; readOnly?: boolean; behaviorPreview?: BehaviorPreview | null; behaviorMode?: boolean; interaction: boolean; onBehaviorTrigger?: (id: string) => void; onBehaviorSliderChange?: (event: SliderChangeEvent) => void; onBehaviorSelectionChange?: (event: SelectionEvent) => void; editTabs?: Record<string, string>; editorLayers?: EditorLayerView; grid: { visible: boolean; spacing: number }; alignment: { guides: boolean; snap: boolean }; resources: LayeredResources; resourceGeneration: number; font: FontChoice; theme: 'dark' | 'light' };
 type PreviewAsset = { sprite?: DecodedSprite; image?: RenderedImageAsset; error?: string };
 
 const MONO = 'Cascadia Mono, Consolas, monospace';
@@ -80,7 +87,8 @@ const NodeDrawing = memo(function NodeDrawing({ node, bounds, onDown, onEdit, as
   return <Group x={bounds.x} y={bounds.y} listening={!(runtimePreview && (isProgressNode(node) || isStatusNode(node) || isImageNode(node)))} opacity={node.state.visible ? ('enabled' in node.state && !node.state.enabled && !raster && node.type !== 'minecraft:checkbox' && !isNumericNode(node) && !isSelectionNode(node) ? 0.45 : 1) : 0.22}
     onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}
     onPointerDown={e => { if (node.type === 'minecraft:collapsible-panel' && runtimePreview) return; onDown(e, node.id, 'move'); }} onDblClick={e => { e.cancelBubble = true; onEdit(node.id); }}>
-    <Rect width={w} height={h} fill={isNumericNode(node) || isProgressNode(node) ? 'rgba(0,0,0,0.001)' : node.type === 'minecraft:checkbox' ? 'rgba(0,0,0,0.001)' : raster || unbordered ? 'rgba(0,0,0,0.001)' : fill} stroke={node.type === 'minecraft:checkbox' || raster || unbordered ? undefined : stroke} strokeWidth={0.6} />
+    <Rect width={w} height={h} fill={isNumericNode(node) || isProgressNode(node) || node.type === 'minecraft:fill' ? 'rgba(0,0,0,0.001)' : node.type === 'minecraft:checkbox' ? 'rgba(0,0,0,0.001)' : raster || unbordered ? 'rgba(0,0,0,0.001)' : fill} stroke={node.type === 'minecraft:checkbox' || node.type === 'minecraft:fill' || raster || unbordered ? undefined : stroke} strokeWidth={0.6} />
+    {node.type === 'minecraft:fill' && <Shape listening={false} sceneFunc={context => drawFillStyle(context._context, node)}/>}
     {node.type === 'minecraft:collapsible-panel' && <>
       <Rect width={w} height={node.props.headerHeight} fill={rgba(node.props.headerColor)} listening={false}/>
       <Shape listening={false} sceneFunc={context => { const ctx = context._context; ctx.save(); ctx.fillStyle = rgba(node.props.textColor); ctx.font = `9px ${font.family}`; ctx.textBaseline = 'middle'; ctx.textAlign = 'left'; ctx.fillText(displayText(node.props.title), 6, node.props.headerHeight / 2); ctx.textAlign = 'center'; ctx.fillText(expanded ? '⌄' : '›', Math.max(8, w - 9), node.props.headerHeight / 2); ctx.restore(); }}/>
@@ -101,6 +109,8 @@ const NodeDrawing = memo(function NodeDrawing({ node, bounds, onDown, onEdit, as
       }
     }}/>}
     {node.type === 'minecraft:creative-tab' && !raster && <Shape listening={false} sceneFunc={context => drawCreativeTabFallback(context._context, node.props.selected)}/>}
+    {node.type === 'native_region' && <Shape listening={false} sceneFunc={context => drawPlayerInventory(context._context)}/>}
+    {node.type === 'minecraft:single_slot' && <Shape listening={false} sceneFunc={context => drawSingleSlot(context._context, node.props.usage, node.props.placeholderItemId)}/>}
     {node.type === 'minecraft:checkbox' && !raster && <Shape listening={false} sceneFunc={context => drawCheckboxFallback(context._context, node.props.selected)}/>}
     {raster && <Shape listening={false} sceneFunc={context => { const ctx = context._context; ctx.save(); ctx.imageSmoothingEnabled = false; ctx.drawImage(raster, 0, 0); ctx.restore(); }} />}
     {!isSelectionNode(node) && !isTreeViewNode(node) && !isProgressNode(node) && !isStatusNode(node) && node.type !== 'minecraft:fill' && node.type !== 'minecraft:creative-tab' && node.type !== 'minecraft:fitting-multi-line-text-widget' && <Shape listening={false} sceneFunc={context => drawPreviewText(context._context, node, w, h, font.family, panel)}/>}
@@ -127,6 +137,20 @@ function OtherScreen({ screen, assets, cache, resources, font, zoom, select, sel
     return <NodeDrawing key={node.id} node={item} bounds={nodeBounds} expanded={expanded} onDown={() => {}} onEdit={() => {}} assets={assets} cache={cache} resourceActive={!!(resources.baseName || resources.overlayName)} focused={false} selected={false} font={font} panel={screen.background.kind === 'panel'} zoom={zoom} chrome={chrome}/>;
   };
   const draw = (node: GuiNode, supplied?: Bounds): ReactNode => {
+    if (isRepeatableListNode(node)) {
+      const rows = 3, viewport = containerScreenViewport(node, screen.nodes, {}, expanded), stride = repeatableStride(node);
+      return <Group key={node.id}>
+        <Rect x={node.bounds.x} y={node.bounds.y} width={node.bounds.w} height={node.bounds.h} fill={rgba(node.props.backgroundColor)} stroke={rgba(node.props.borderColor)} strokeWidth={0.6}/>
+        <Group clipX={viewport.x} clipY={viewport.y} clipWidth={viewport.w} clipHeight={viewport.h}>
+          {Array.from({ length: rows }, (_, rowIndex) => <Group key={`${node.id}:other:${rowIndex}`}>
+            {screen.nodes.filter(child => child.parentContainerId === node.id).map(child => {
+              const b = { ...child.bounds, x: viewport.x + child.bounds.x, y: viewport.y + rowIndex * stride + child.bounds.y };
+              return b.y + b.h <= viewport.y || b.y >= viewport.y + viewport.h ? null : <Group key={`${node.id}:other:${rowIndex}:${child.id}`}>{draw(child, b)}</Group>;
+            })}
+          </Group>)}
+        </Group>
+      </Group>;
+    }
     if (!isContainerNode(node)) return drawPlain(node, supplied ?? nodeAbsoluteBounds(node, screen.nodes, {}, expanded));
     const open = isCollapsiblePanelNode(node) ? expanded[node.id] : true;
     const absolute = supplied ?? nodeAbsoluteBounds(node, screen.nodes, {}, expanded), visibleBounds = isCollapsiblePanelNode(node) && !open ? { ...absolute, h: node.props.headerHeight } : absolute;
@@ -201,7 +225,7 @@ function Rulers({ width, height, origin, zoom, design, chrome }: { width: number
   </Layer>;
 }
 
-export function Canvas({ onAddNode, onEditError, containerScroll, setContainerScroll, numericPreviewEpoch, statusValues, screenPositions, setScreenPositions, onSelectScreen, view, setView, preview = null, readOnly = false, behaviorPreview = null, behaviorMode = false, interaction, onBehaviorTrigger, onBehaviorSliderChange, onBehaviorSelectionChange, editTabs = {}, grid, alignment, resources, resourceGeneration, font, theme }: Props) {
+export function Canvas({ onAddNode, onEditError, containerScroll, setContainerScroll, repeatPreviewRows: repeatRows, templateEditingId, numericPreviewEpoch, statusValues, screenPositions, setScreenPositions, onSelectScreen, view, setView, preview = null, readOnly = false, behaviorPreview = null, behaviorMode = false, interaction, onBehaviorTrigger, onBehaviorSliderChange, onBehaviorSelectionChange, editTabs = {}, editorLayers = DEFAULT_EDITOR_LAYER_VIEW, grid, alignment, resources, resourceGeneration, font, theme }: Props) {
   const runtimePreviewActive = interaction || behaviorPreview !== null;
   const chrome = canvasChrome(theme);
   const host = useRef<HTMLDivElement>(null);
@@ -216,14 +240,28 @@ export function Canvas({ onAddNode, onEditError, containerScroll, setContainerSc
   const [runtimeExpandedPanels, setRuntimeExpandedPanels] = useState<Record<string, boolean>>({});
   const [designExpandedByScreen, setDesignExpandedByScreen] = useState<Record<string, Record<string, boolean>>>({});
   const [interactionFocus, setInteractionFocus] = useState<string | null>(null);
+  const [selectionOverlayOpen, setSelectionOverlayOpen] = useState(false);
   const [alignmentGuides, setAlignmentGuides] = useState<AlignmentGuides>({});
   const [spacingMark, setSpacingMark] = useState<SpacingMark | null>(null);
   const currentScreenId = useStore(editorStore, s => s.currentScreenId);
-  useEffect(() => { setInteractionValues({}); setInteractionFocus(null); setContainerScroll({}); if (interaction || behaviorPreview || behaviorMode) setEditingId(null); }, [interaction, behaviorPreview, behaviorMode, currentScreenId, numericPreviewEpoch]);
+  const runtimeSessionActive = interaction || behaviorPreview !== null || behaviorMode;
+  useEffect(() => { setInteractionValues({}); setInteractionFocus(null); setSelectionOverlayOpen(false); setContainerScroll({}); if (runtimeSessionActive) setEditingId(null); }, [runtimeSessionActive, currentScreenId, numericPreviewEpoch]);
   const screen = useStore(editorStore, s => currentScreen(s));
   const initialExpanded = Object.fromEntries(screen.nodes.filter(isCollapsiblePanelNode).map(node => [node.id, node.props.initialExpanded]));
   const designExpanded = designPanelExpansion(screen.nodes, designExpandedByScreen[screen.id]);
   const runtimePanelMode = runtimePreviewActive || behaviorMode;
+  const editorLayerMode = !runtimePanelMode && !preview && !templateEditingId;
+  const editorMask = useMemo(() => editorLayerVisibility(screen, editTabs, editorLayers), [screen, editTabs, editorLayers]);
+  const templateIds = useMemo(() => {
+    if (!templateEditingId) return null;
+    const root = screen.nodes.find(node => node.id === templateEditingId && isRepeatableListNode(node));
+    if (!root) return null;
+    return new Set([root.id, ...screen.nodes.filter(node => node.parentContainerId === root.id).map(node => node.id)]);
+  }, [screen, templateEditingId]);
+  const designHitNodes = useMemo(() => (templateIds
+    ? screen.nodes.filter(node => templateIds.has(node.id))
+    : screen.nodes.filter(node => editorMask.canHit(node.id)))
+    .map(node => ({ ...node, state: { ...node.state, visible: true } } as GuiNode)), [screen, editorMask, templateIds]);
   const expandedPanels = runtimePanelMode ? { ...initialExpanded, ...runtimeExpandedPanels }
     : preview ? initialExpanded : designExpanded;
   const setExpandedPanels = (update: Record<string, boolean> | ((previous: Record<string, boolean>) => Record<string, boolean>)) => {
@@ -256,14 +294,15 @@ export function Canvas({ onAddNode, onEditError, containerScroll, setContainerSc
   useEffect(() => {
     setContainerScroll(previous => {
       const next: Record<string, number> = {};
-      for (const node of screen.nodes) if (isScrollablePanelNode(node) && previous[node.id] !== undefined) {
-        const offset = containerScrollOffset(node, previous[node.id]);
+      for (const node of screen.nodes) if (previous[node.id] !== undefined) {
+        const offset = isRepeatableListNode(node) ? repeatableScrollOffset(node, previous[node.id], repeatablePreviewRows(repeatRows, node.id))
+          : isScrollablePanelNode(node) ? containerScrollOffset(node, previous[node.id]) : 0;
         if (offset !== 0) next[node.id] = offset;
       }
       const keys = Object.keys(previous), nextKeys = Object.keys(next);
       return keys.length === nextKeys.length && keys.every(key => previous[key] === next[key]) ? previous : next;
     });
-  }, [screen, setContainerScroll]);
+  }, [screen, setContainerScroll, repeatRows]);
   useEffect(() => {
     for (const slider of host.current?.querySelectorAll<HTMLElement>('.numeric-live-slider[data-pointer-id]') ?? []) {
       const pointerId = Number(slider.dataset.pointerId);
@@ -273,19 +312,22 @@ export function Canvas({ onAddNode, onEditError, containerScroll, setContainerSc
   const [numericRuntime, setNumericRuntime] = useState<Record<string, NumericState>>({});
   useEffect(() => { setNumericRuntime({}); }, [numericPreviewEpoch, screen.id, interaction, behaviorMode]);
   useEffect(() => {
-    for (const node of screen.nodes) if (isNumericNode(node) && node.parentContainerId && numericRuntime[node.id]?.focused && !nodeVisibleBounds(node, screen.nodes, containerScroll, expandedPanels)) {
+    const visible = effectiveRuntimeVisibility(screen.nodes, behaviorPreview, expandedPanels);
+    const geometryNodes = runtimePreviewActive ? screen.nodes.map(node => ({ ...node, state: { ...node.state, visible: visible(node) } } as GuiNode)) : screen.nodes;
+    for (const node of geometryNodes) if (isNumericNode(node) && numericRuntime[node.id]?.focused && (!node.state.visible || !nodeVisibleBounds(node, geometryNodes, containerScroll, expandedPanels))) {
       const wrapper = [...(host.current?.querySelectorAll<HTMLElement>('[data-numeric-node-id]') ?? [])].find(item => item.dataset.numericNodeId === node.id);
       wrapper?.querySelector('input')?.blur();
     }
-  }, [containerScroll, numericRuntime, screen]);
+  }, [containerScroll, numericRuntime, screen, behaviorPreview, expandedPanels, runtimePreviewActive]);
   const screens = useStore(editorStore, s => s.doc.screens);
+  const projectAssets = useStore(editorStore, s => s.doc.assets ?? []);
   const screenTabGroupsState = useStore(editorStore, s => s.doc.screenTabGroups);
   const screenTabGroups = screenTabGroupsState ?? NO_SCREEN_TAB_GROUPS;
   const hasCreativeTab = screens.some(item => item.nodes.some(node => node.type === 'minecraft:creative-tab'));
   const hasCheckbox = screens.some(item => item.nodes.some(node => node.type === 'minecraft:checkbox'));
   const hasSlider = screens.some(item => item.nodes.some(node => node.type === 'minecraft:slider'));
   const imageNodes = screens.flatMap(item => item.nodes.filter(isImageNode));
-  const imageRequestKey = imageNodes.map(node => `${node.id}:${node.props.kind}:${node.props.kind === 'texture' ? node.props.resourceId : node.props.spriteId}`).sort().join('|');
+  const imageRequestKey = imageNodes.map(node => `${node.id}:${node.props.kind}:${node.props.kind === 'texture' ? node.props.resourceId : node.props.kind === 'embedded' ? node.props.assetId : node.props.spriteId}`).sort().join('|');
   const cache = useRef(new SpriteRasterCache()).current;
   useEffect(() => {
     let active = true; cache.clear();
@@ -310,17 +352,23 @@ export function Canvas({ onAddNode, onEditError, containerScroll, setContainerSc
   }, [resources, resourceGeneration, cache, hasCheckbox, hasCreativeTab, hasSlider]);
   useEffect(() => {
     let active = true;
-    const imageAssetsWithoutLayer = imageNodes.map(node => [`image:${node.id}`, { error: 'missing：请在资源检查中选择客户端 JAR 或包含贴图的覆盖资源包' }] as const);
+    const resourceNodes = imageNodes.filter(node => node.props.kind !== 'embedded');
+    const embeddedNodes = imageNodes.filter(node => node.props.kind === 'embedded');
+    const imageAssetsWithoutLayer = resourceNodes.map(node => [`image:${node.id}`, { error: 'missing：请在资源检查中选择客户端 JAR 或包含贴图的覆盖资源包' }] as const);
     setAssets(previous => Object.fromEntries(Object.entries(previous).filter(([id]) => !id.startsWith('image:'))));
-    if (!resources.baseName && !resources.overlayName) {
+    if (!resources.baseName && !resources.overlayName && !embeddedNodes.length) {
       setAssets(previous => ({ ...previous, ...Object.fromEntries(imageAssetsWithoutLayer) })); setImageAssetsBusy(false);
       return () => { active = false; };
     }
     setImageAssetsBusy(imageNodes.length > 0);
     const imageRequests = new Map<string, { kind: 'texture' | 'sprite'; id: string; nodes: string[] }>();
-    for (const node of imageNodes) { const kind = node.props.kind, id = kind === 'texture' ? node.props.resourceId : node.props.spriteId, key = `${kind}:${id}`;
-      const entry = imageRequests.get(key) ?? { kind, id, nodes: [] }; entry.nodes.push(node.id); imageRequests.set(key, entry); }
-    const imageLoads = [...imageRequests.values()].flatMap(request => (async () => {
+    for (const node of resourceNodes) {
+      if (node.props.kind === 'embedded') continue;
+      const kind = node.props.kind, id = kind === 'texture' ? node.props.resourceId : node.props.spriteId;
+      const key = `${kind}:${id}`, entry = imageRequests.get(key) ?? { kind, id, nodes: [] };
+      entry.nodes.push(node.id); imageRequests.set(key, entry);
+    }
+    const imageLoads = [...imageRequests.values()].map(request => (async () => {
       const result = request.kind === 'texture' ? await resources.texture(request.id) : await resources.sprite(request.id);
       if (result.status !== 'valid') return request.nodes.map(nodeId => [`image:${nodeId}`, { error: `${result.status}：${result.diagnostic}` }] as const);
       try {
@@ -330,11 +378,26 @@ export function Canvas({ onAddNode, onEditError, containerScroll, setContainerSc
         return request.nodes.map(nodeId => [`image:${nodeId}`, { image }] as const);
       } catch (error) { return request.nodes.map(nodeId => [`image:${nodeId}`, { error: `invalid：PNG 解码失败：${(error as Error).message}` }] as const); }
     })());
-    void Promise.all(imageLoads).then(imageResults => { if (active) setAssets(previous => ({ ...previous, ...Object.fromEntries(imageResults.flat()) })); })
+    const embeddedLoads = embeddedNodes.map(async node => {
+      const props = node.props;
+      if (props.kind !== 'embedded') return [[`image:${node.id}`, { error: 'invalid：嵌入式贴图节点状态无效' }]] as [string, { image?: RenderedImageAsset; error?: string }][];
+      const asset = projectAssets.find(item => item.id === props.assetId);
+      if (!asset) return [[`image:${node.id}`, { error: `missing：嵌入式贴图 ${props.assetId} 不存在` }]] as [string, { image?: RenderedImageAsset; error?: string }][];
+      try {
+        const raster = await decodePreviewRaster(decodeBase64(asset.data), asset.width, asset.height);
+        if (!active) return [[`image:${node.id}`, {}]] as [string, { image?: RenderedImageAsset; error?: string }][];
+        return [[`image:${node.id}`, { image: { kind: 'texture' as const, image: raster, width: asset.width, height: asset.height } }]] as [string, { image?: RenderedImageAsset; error?: string }][];
+      } catch (error) { return [[`image:${node.id}`, { error: `invalid：嵌入式 PNG 解码失败：${(error as Error).message}` }]] as [string, { image?: RenderedImageAsset; error?: string }][]; }
+    });
+    void Promise.all([...imageLoads, ...embeddedLoads]).then(imageResults => {
+      if (!active) return;
+      const entries = imageResults.flat() as [string, { image?: RenderedImageAsset; error?: string }][];
+      setAssets(previous => ({ ...previous, ...Object.fromEntries(entries) }));
+    })
       .catch(error => { if (active) setAssets(previous => ({ ...previous, ...Object.fromEntries(imageNodes.map(node => [`image:${node.id}`, { error: `资源读取失败：${(error as Error).message}` }])) })); })
       .finally(() => { if (active) setImageAssetsBusy(false); });
     return () => { active = false; };
-  }, [resources, resourceGeneration, imageRequestKey]);
+  }, [resources, resourceGeneration, imageRequestKey, projectAssets]);
   const panel = panelBounds(screen);
   const panelStyle = screen.background.kind === 'panel' ? screen.background.style : null;
   useEffect(() => {
@@ -347,7 +410,7 @@ export function Canvas({ onAddNode, onEditError, containerScroll, setContainerSc
   const selectedNode = screen.nodes.find(n => n.id === selected);
   useEffect(() => { setEditingId(id => id === selected ? id : null); }, [selected]);
   useEffect(() => { setEditingId(null); setInteractionValues({}); setInteractionFocus(null); }, [screen.id]);
-  const pointer = useRef<null | { pointerId: number; x: number; y: number; zoom: number; mode: 'move' | 'resize' | 'pan' | 'scrollbar'; resizeEdge?: ResizeEdge; bounds?: Bounds; panX: number; panY: number; screenId?: string; designSize?: { width: number; height: number }; containerId?: string; container?: ScrollablePanelNode; maxScroll?: number; trackTravel?: number; initialOffset?: number; peers?: { id: string; bounds: Bounds }[]; min?: { w: number; h: number }; spacingCandidates?: SpacingCandidate[]; xKey?: string; yKey?: string; spacingKey?: string }>(null);
+  const pointer = useRef<null | { pointerId: number; x: number; y: number; zoom: number; mode: 'move' | 'resize' | 'pan' | 'scrollbar'; resizeEdge?: ResizeEdge; moved?: boolean; bounds?: Bounds; panX: number; panY: number; screenId?: string; designSize?: { width: number; height: number }; containerId?: string; container?: ContainerNode; maxScroll?: number; trackTravel?: number; initialOffset?: number; peers?: { id: string; bounds: Bounds }[]; min?: { w: number; h: number }; spacingCandidates?: SpacingCandidate[]; xKey?: string; yKey?: string; spacingKey?: string }>(null);
   const editError = useRef(onEditError); editError.current = onEditError;
   useEffect(() => { if (pointer.current) { pointer.current = null; editorStore.getState().cancelGesture(); } setAlignmentGuides({}); setSpacingMark(null); }, [screen.id]);
   const fit = preview ? Math.max(0.01, Math.min(Math.max(1, size.width - 48) / preview.framebufferWidth, Math.max(1, size.height - 110) / preview.framebufferHeight)) : 1;
@@ -363,7 +426,7 @@ export function Canvas({ onAddNode, onEditError, containerScroll, setContainerSc
     : runtimePreviewActive ? { x: Math.floor((size.width - screen.designSize.width * view.zoom) / 2), y: Math.floor((size.height - screen.designSize.height * view.zoom) / 2) }
     : { x: Math.floor((size.width - basis.width * view.zoom) / 2) + view.panX + basis.dx * view.zoom,
       y: Math.floor((size.height - basis.height * view.zoom) / 2) + view.panY + basis.dy * view.zoom };
-  const current = useRef({ view, setView, size, screen, editingId, preview, readOnly, interaction, runtimePreviewActive, basis, alignment, origin, containerScroll, expandedPanels }); current.current = { view, setView, size, screen, editingId, preview, readOnly, interaction, runtimePreviewActive, basis, alignment, origin, containerScroll, expandedPanels };
+  const current = useRef({ view, setView, size, screen, editingId, preview, readOnly, interaction, runtimePreviewActive, behaviorPreview, basis, alignment, origin, containerScroll, expandedPanels, designHitNodes, repeatRows, editorLayerMode, editorMask }); current.current = { view, setView, size, screen, editingId, preview, readOnly, interaction, runtimePreviewActive, behaviorPreview, basis, alignment, origin, containerScroll, expandedPanels, designHitNodes, repeatRows, editorLayerMode, editorMask };
   const header = (item: GuiScreen) => <Group y={-22 / renderZoom} draggable={!preview && !readOnly && !behaviorMode && !interaction && !gesture && view.tool !== 'pan'}
     onPointerDown={e => { if (e.evt.button === 0 && view.tool !== 'pan') e.cancelBubble = true; }}
     onDragEnd={e => { e.cancelBubble = true; const dx = e.target.x(), dy = e.target.y() + 22 / renderZoom; e.target.position({ x: 0, y: -22 / renderZoom }); if (Math.abs(dx) + Math.abs(dy) > 0.5) setScreenPositions(previous => ({ ...previous, [item.id]: { x: positions[item.id].x + dx, y: positions[item.id].y + dy } })); }}
@@ -382,9 +445,14 @@ export function Canvas({ onAddNode, onEditError, containerScroll, setContainerSc
     const move = (e: PointerEvent) => {
       const p = pointer.current; if (!p || p.pointerId !== e.pointerId) return;
       const dx = e.clientX - p.x, dy = e.clientY - p.y;
-      if (p.mode === 'scrollbar' && p.containerId && p.container) setContainerScroll(values => ({ ...values, [p.containerId!]: containerScrollOffset(p.container!, (p.initialOffset ?? 0) + dy / p.zoom * (p.maxScroll ?? 0) / Math.max(1, p.trackTravel ?? 1)) }));
+      if (p.mode === 'scrollbar' && p.containerId && p.container) {
+        const container = p.container, next = (p.initialOffset ?? 0) + dy / p.zoom * (p.maxScroll ?? 0) / Math.max(1, p.trackTravel ?? 1);
+        setContainerScroll(values => ({ ...values, [p.containerId!]: isRepeatableListNode(container) ? repeatableScrollOffset(container, next, repeatablePreviewRows(current.current.repeatRows, container.id)) : isScrollablePanelNode(container) ? containerScrollOffset(container, next) : next }));
+      }
       else if (p.mode === 'pan') current.current.setView({ ...current.current.view, panX: p.panX + dx, panY: p.panY + dy });
       else if (p.bounds) {
+        if (!p.moved && Math.hypot(dx, dy) < 3) return;
+        p.moved = true;
         const state = editorStore.getState();
         if (state.currentScreenId !== p.screenId) { cancel(); return; }
         const design = p.designSize ?? currentScreen(state).designSize;
@@ -422,9 +490,9 @@ export function Canvas({ onAddNode, onEditError, containerScroll, setContainerSc
       move(e);
       const c = current.current, state = editorStore.getState(), dragged = state.gesture && c.screen.nodes.find(node => node.id === state.gesture!.id);
       let target: ContainerDrop | undefined;
-      if (p.mode === 'move' && dragged && !dragged.parentContainerId && !isContainerNode(dragged) && host.current) {
+      if (p.mode === 'move' && dragged && dragged.type !== 'native_region' && !dragged.parentContainerId && !isContainerNode(dragged) && host.current) {
         const rect = host.current.getBoundingClientRect();
-        const parent = containerAtPoint(c.screen.nodes, (e.clientX - rect.left - c.origin.x) / c.view.zoom, (e.clientY - rect.top - c.origin.y) / c.view.zoom, c.containerScroll, c.expandedPanels);
+        const parent = containerAtPoint(c.designHitNodes, (e.clientX - rect.left - c.origin.x) / c.view.zoom, (e.clientY - rect.top - c.origin.y) / c.view.zoom, c.containerScroll, c.expandedPanels);
         if (parent) target = { parentContainerId: parent.id, scrollOffsets: c.containerScroll,
           appendAtEnd: isCollapsiblePanelNode(parent) && !(c.expandedPanels[parent.id] ?? parent.props.initialExpanded) };
       }
@@ -439,13 +507,14 @@ export function Canvas({ onAddNode, onEditError, containerScroll, setContainerSc
   }, []);
   const begin = (e: KonvaEventObject<PointerEvent>, id: string, mode: 'move' | 'resize', resizeEdge?: ResizeEdge) => {
     if (preview) return;
+    if (editorLayerMode && !editorMask.canHit(id)) return;
     if (e.evt.button !== 0 && e.evt.button !== 2) return;
     e.cancelBubble = true;
     if (behaviorMode && e.evt.button === 0) onBehaviorTrigger?.(id);
     if (interaction) {
       if (e.evt.button !== 0) return;
       const node = screen.nodes.find(n => n.id === id);
-      if (!node || !('enabled' in node.state) || !node.state.enabled || !node.state.visible || !containerAncestorsEnabled(node, screen.nodes)) return;
+      if (!node || !('enabled' in node.state) || !node.state.enabled || !effectiveRuntimeVisibility(screen.nodes, behaviorPreview, expandedPanels)(node) || !containerAncestorsEnabled(node, screen.nodes)) return;
       setInteractionFocus(id);
       setInteractionValues(values => {
         if (node.type === 'minecraft:checkbox') return { ...values, [id]: !(typeof values[id] === 'boolean' ? values[id] : node.props.selected) };
@@ -469,9 +538,10 @@ export function Canvas({ onAddNode, onEditError, containerScroll, setContainerSc
     const node = currentScreen(state).nodes.find(n => n.id === id); if (!node) { state.cancelGesture(); return; }
     const bounds = node.bounds, visibleInGroup = tabVisibility(currentScreen(state).nodes, editSelection);
     const parent = node.parentContainerId ? currentScreen(state).nodes.find(item => item.id === node.parentContainerId) : undefined;
-    const localSize = parent && isContainerNode(parent) ? { width: containerLocalViewport(parent, true).w, height: isScrollablePanelNode(parent) ? parent.props.contentHeight : parent.bounds.h - parent.props.headerHeight } : currentScreen(state).designSize;
-    const peers = currentScreen(state).nodes.filter(item => item.id !== id && item.parentContainerId === node.parentContainerId && item.state.visible && visibleInGroup(item.id)
-      && !!nodeVisibleBounds(item, currentScreen(state).nodes, containerScroll, expandedPanels)).map(item => ({ id: item.id,
+    const localSize = parent && isContainerNode(parent) ? { width: containerLocalViewport(parent, true).w, height: isRepeatableListNode(parent) ? parent.props.rowHeight : isScrollablePanelNode(parent) ? parent.props.contentHeight : parent.bounds.h - parent.props.headerHeight } : currentScreen(state).designSize;
+    const geometry = editorLayerMode ? designHitNodes : currentScreen(state).nodes;
+    const peers = geometry.filter(item => item.id !== id && item.parentContainerId === node.parentContainerId && item.state.visible && visibleInGroup(item.id) && (!editorLayerMode || editorMask.canHit(item.id))
+      && !!nodeVisibleBounds(item, geometry, containerScroll, expandedPanels)).map(item => ({ id: item.id,
         bounds: isCollapsiblePanelNode(item) && !expandedPanels[item.id] ? { ...item.bounds, h: item.props.headerHeight } : item.bounds }));
     pointer.current = { pointerId, x, y, mode, resizeEdge, bounds: { ...bounds }, zoom: view.zoom, panX: view.panX, panY: view.panY, screenId: state.currentScreenId, designSize: localSize, peers,
       min: isSelectionNode(node) ? selectionMinimum(node) : CATALOG[node.type].min, spacingCandidates: mode === 'move' ? equalSpacingCandidates(bounds, peers, localSize) : undefined };
@@ -504,22 +574,45 @@ export function Canvas({ onAddNode, onEditError, containerScroll, setContainerSc
       const rect = element.getBoundingClientRect();
       const px = e.clientX - rect.left, py = e.clientY - rect.top;
       const old = c.view;
+      const designX = (px - c.origin.x) / old.zoom, designY = (py - c.origin.y) / old.zoom;
+      const designRepeat = [...c.screen.nodes].reverse().find((node): node is Extract<GuiNode, { type: 'minecraft:repeatable-list' }> => {
+        if (!isRepeatableListNode(node) || !node.state.visible || !node.state.enabled) return false;
+        // Hidden, inactive-Page, outline-only or Solo-excluded containers must not consume wheel/zoom.
+        if (c.editorLayerMode && !c.editorMask.canHit(node.id)) return false;
+        const visible = nodeVisibleBounds(node, c.screen.nodes, c.containerScroll, c.expandedPanels), viewport = containerScreenViewport(node, c.screen.nodes, c.containerScroll, c.expandedPanels);
+        return !!visible && designX >= viewport.x && designY >= viewport.y && designX < viewport.x + viewport.w && designY < viewport.y + viewport.h;
+      });
+      if (designRepeat) {
+        const rows = repeatablePreviewRows(c.repeatRows, designRepeat.id), max = repeatableContentSize(designRepeat, rows).maxScroll;
+        if (max > 0) {
+          setContainerScroll(values => ({ ...values, [designRepeat.id]: repeatableScrollOffset(designRepeat, (values[designRepeat.id] ?? 0) + (e.deltaY < 0 ? -24 : 24), rows) }));
+          return;
+        }
+      }
       if (c.runtimePreviewActive) {
+        const visibleNow = effectiveRuntimeVisibility(c.screen.nodes, c.behaviorPreview, c.expandedPanels);
+        const runtimeNodes = c.screen.nodes.map(node => ({ ...node, state: { ...node.state, visible: visibleNow(node) } } as GuiNode));
         const ox = c.origin.x, oy = c.origin.y;
         const x = (px - ox) / old.zoom, y = (py - oy) / old.zoom;
-        const node = [...c.screen.nodes].reverse().find(n => { const b = n.parentContainerId ? nodeVisibleBounds(n, c.screen.nodes, c.containerScroll) : n.bounds; return !!b && x >= b.x && y >= b.y && x < b.x + b.w && y < b.y + b.h; });
+        const node = [...runtimeNodes].reverse().find(n => { const b = n.parentContainerId ? nodeVisibleBounds(n, runtimeNodes, c.containerScroll, c.expandedPanels) : n.bounds; return n.state.visible && !!b && x >= b.x && y >= b.y && x < b.x + b.w && y < b.y + b.h; });
         if (node?.type === 'minecraft:cycle-button' && node.state.enabled && node.state.visible && e.deltaY !== 0) {
           setInteractionValues(values => { const oldValue = typeof values[node.id] === 'string' ? values[node.id] : node.props.initialOptionId;
             const index = node.props.options.findIndex(option => option.id === oldValue), delta = e.deltaY < 0 ? -1 : 1;
             return { ...values, [node.id]: node.props.options[(Math.max(0, index) + delta + node.props.options.length) % node.props.options.length].id }; });
           setInteractionFocus(node.id);
         }
-        const container = [...c.screen.nodes].reverse().find((n): n is ScrollablePanelNode => {
-          if (!isScrollablePanelNode(n) || !n.state.visible || !n.state.enabled) return false;
-          const visible = nodeVisibleBounds(n, c.screen.nodes, c.containerScroll, c.expandedPanels), viewport = containerScreenViewport(n, c.screen.nodes, c.containerScroll, c.expandedPanels);
+        const container = [...runtimeNodes].reverse().find((n): n is ContainerNode => {
+          if (!(isScrollablePanelNode(n) || isRepeatableListNode(n)) || !n.state.visible || !n.state.enabled) return false;
+          const visible = nodeVisibleBounds(n, runtimeNodes, c.containerScroll, c.expandedPanels), viewport = containerScreenViewport(n, runtimeNodes, c.containerScroll, c.expandedPanels);
           return !!visible && x >= visible.x && y >= visible.y && x < visible.x + visible.w && y < visible.y + visible.h && x >= viewport.x && y >= viewport.y && x < viewport.x + viewport.w && y < viewport.y + viewport.h;
         });
-        if (container) { setContainerScroll(values => ({ ...values, [container.id]: containerScrollOffset(container, (values[container.id] ?? 0) + (e.deltaY < 0 ? -24 : 24)) })); return; }
+        if (container) {
+          setContainerScroll(values => {
+            const next = (values[container.id] ?? 0) + (e.deltaY < 0 ? -24 : 24);
+            return { ...values, [container.id]: isRepeatableListNode(container) ? repeatableScrollOffset(container, next, repeatablePreviewRows(c.repeatRows, container.id)) : isScrollablePanelNode(container) ? containerScrollOffset(container, next) : next };
+          });
+          return;
+        }
         return;
       }
       const delta = e.deltaY * (e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? c.size.height : 1);
@@ -541,7 +634,7 @@ export function Canvas({ onAddNode, onEditError, containerScroll, setContainerSc
     if (!NODE_TYPES.includes(type)) return;
     const rect = host.current!.getBoundingClientRect();
     const position = { x: Math.round((e.clientX - rect.left - origin.x) / view.zoom), y: Math.round((e.clientY - rect.top - origin.y) / view.zoom) };
-  const parent = containerAtPoint(screen.nodes, position.x, position.y, containerScroll, expandedPanels);
+  const parent = type === 'native_region' || type === 'minecraft:single_slot' ? undefined : containerAtPoint(designHitNodes, position.x, position.y, containerScroll, expandedPanels);
   onAddNode(type, position, parent ? { parentContainerId: parent.id, scrollOffsets: containerScroll,
     appendAtEnd: isCollapsiblePanelNode(parent) && !(expandedPanels[parent.id] ?? parent.props.initialExpanded) } : undefined);
   };
@@ -552,7 +645,7 @@ export function Canvas({ onAddNode, onEditError, containerScroll, setContainerSc
   const selectedBounds = selectedBoundsRaw && selectedNode && isCollapsiblePanelNode(selectedNode) && !(expandedGeometry[selectedNode.id] ?? selectedNode.props.initialExpanded)
     ? { ...selectedBoundsRaw, h: selectedNode.props.headerHeight } : selectedBoundsRaw;
   const gestureBounds = gesture?.id === selected ? selectedNode?.parentContainerId ? (() => { const changed = { ...selectedNode, bounds: gesture.draft }; return selectedParent && isContainerNode(selectedParent) ? containerChildScreenBounds(selectedParent, changed, screen.nodes, preview ? {} : containerScroll, expandedGeometry) : gesture.draft; })() : gesture.draft : selectedBounds;
-  const b = gestureBounds && selectedNode && isCollapsiblePanelNode(selectedNode) && !(expandedGeometry[selectedNode.id] ?? selectedNode.props.initialExpanded)
+  const b = editorLayerMode && !editorMask.canHit(selected ?? '') ? undefined : gestureBounds && selectedNode && isCollapsiblePanelNode(selectedNode) && !(expandedGeometry[selectedNode.id] ?? selectedNode.props.initialExpanded)
     ? { ...gestureBounds, h: selectedNode.props.headerHeight } : gestureBounds;
   const parentViewport = selectedContainer ? containerScreenViewport(selectedContainer, screen.nodes, preview ? {} : containerScroll, expandedGeometry) : undefined;
   const selectedViewport = parentViewport && selectedContainer ? (() => {
@@ -565,34 +658,32 @@ export function Canvas({ onAddNode, onEditError, containerScroll, setContainerSc
     }
     return clip;
   })() : undefined;
-  const parentScroll = selectedContainer && isScrollablePanelNode(selectedContainer) && !preview ? containerScrollOffset(selectedContainer, containerScroll[selectedContainer.id] ?? 0) : 0;
+  const parentScroll = selectedContainer && !preview ? isScrollablePanelNode(selectedContainer) ? containerScrollOffset(selectedContainer, containerScroll[selectedContainer.id] ?? 0) : isRepeatableListNode(selectedContainer) ? repeatableScrollOffset(selectedContainer, containerScroll[selectedContainer.id] ?? 0, repeatablePreviewRows(repeatRows, selectedContainer.id)) : 0 : 0;
   const guideOrigin = parentViewport ? { x: origin.x + parentViewport.x * renderZoom, y: origin.y + (parentViewport.y - parentScroll) * renderZoom } : origin;
   const guideClip = selectedViewport ? { x: origin.x + selectedViewport.x * renderZoom, y: origin.y + selectedViewport.y * renderZoom, w: selectedViewport.w * renderZoom, h: selectedViewport.h * renderZoom }
     : { x: origin.x, y: origin.y, w: screen.designSize.width * renderZoom, h: screen.designSize.height * renderZoom };
   // Editing selection is session-only; behavior testing always starts from the document initial state.
-  const validEditGroups = new Set(screen.nodes.filter(n => n.type === 'minecraft:creative-tab' && n.props.groupId && editTabs[n.props.groupId] === n.id).map(n => n.type === 'minecraft:creative-tab' ? n.props.groupId! : ''));
-  const editSelection = Object.fromEntries(screen.nodes.filter(n => n.type === 'minecraft:creative-tab' && n.props.groupId && validEditGroups.has(n.props.groupId)).map(n => [n.id, { tabSelected: n.type === 'minecraft:creative-tab' && editTabs[n.props.groupId!] === n.id }]));
+  const editSelection = editorPageSelection(screen.nodes, editTabs);
   const visualSelection = behaviorPreview ?? (preview ? null : editSelection);
   const visibleInGroup = tabVisibility(screen.nodes, visualSelection), managed = tabManaged(screen.nodes);
-  const runtimeNodeVisible = (node: GuiNode) => (behaviorPreview?.[node.id]?.visible ?? (managed.has(node.id) ? true : node.state.visible)) && visibleInGroup(node.id);
-  const runtimeAncestorsVisible = (node: GuiNode) => {
-    let parentId = node.parentContainerId; const visited = new Set<string>();
-    while (parentId) {
-      if (visited.has(parentId)) return false;
-      visited.add(parentId);
-      const parent = screen.nodes.find(candidate => candidate.id === parentId);
-      if (!parent || !isContainerNode(parent) || !runtimeNodeVisible(parent) || (isCollapsiblePanelNode(parent) && !(expandedPanels[parent.id] ?? parent.props.initialExpanded))) return false;
-      parentId = parent.parentContainerId;
-    }
-    return true;
-  };
+  const groupVisible = (id: string) => !!templateIds || visibleInGroup(id);
+  const runtimeNodeVisible = (node: GuiNode) => (behaviorPreview?.[node.id]?.visible ?? (managed.has(node.id) ? true : node.state.visible)) && groupVisible(node.id);
+  const runtimeAncestorsVisible = effectiveRuntimeVisibility(screen.nodes, behaviorPreview, expandedPanels);
+  useEffect(() => {
+    if (!editorLayerMode) return;
+    pointer.current = null;
+    const currentGesture = editorStore.getState().gesture;
+    if (currentGesture && !editorMask.canHit(currentGesture.id)) editorStore.getState().cancelGesture();
+    setAlignmentGuides({}); setSpacingMark(null);
+  }, [editorLayers, editTabs, currentScreenId, editorLayerMode]);
   useEffect(() => {
     const capture = pointer.current;
     if (capture?.mode !== 'scrollbar' || !capture.containerId) return;
     const container = screen.nodes.find(node => node.id === capture.containerId);
-    if (!container || !isScrollablePanelNode(container) || container !== capture.container || !runtimeNodeVisible(container) || !runtimeAncestorsVisible(container) || !container.state.enabled) pointer.current = null;
+    if (!container || !(isScrollablePanelNode(container) || isRepeatableListNode(container)) || !capture.container || container.bounds !== capture.container.bounds || container.props !== capture.container.props || !runtimeNodeVisible(container) || !runtimeAncestorsVisible(container) || !container.state.enabled) pointer.current = null;
   }, [screen, behaviorPreview, interaction, containerScroll, expandedPanels]);
-  const renderNodes = screen.nodes.map(node => {
+  const renderNodes = screen.nodes.filter(original => !templateIds || templateIds.has(original.id)).map(original => {
+    const node = templateEditingId ? { ...original, state: { ...original.state, visible: true } } as GuiNode : behaviorPreview ? { ...original, state: { ...original.state, visible: runtimeNodeVisible(original) } } as GuiNode : editorLayerMode ? { ...original, state: { ...original.state, visible: true } } as GuiNode : original;
     if (node.type !== 'minecraft:creative-tab') return node;
     const navigationSelected = screenNavigationSelected(node, screen.id, screenTabGroups);
     if (navigationSelected !== null) return { ...node, props: { ...node.props, selected: navigationSelected } };
@@ -607,12 +698,14 @@ export function Canvas({ onAddNode, onEditError, containerScroll, setContainerSc
   const designPaintNodes: GuiNode[] = [];
   const collectDesignPaint = (parentId?: string) => {
     for (const node of designSiblingOrder(drawingNodes.filter(item => item.parentContainerId === parentId), expandedGeometry)) {
+      if (editorLayerMode && !editorMask.canHit(node.id) && editorMask.display(node).reason !== 'locked') continue;
       designPaintNodes.push(node);
       if (isContainerNode(node) && (!isCollapsiblePanelNode(node) || expandedGeometry[node.id])) collectDesignPaint(node.id);
     }
   };
   if (!runtimePanelMode && !preview) collectDesignPaint();
   const designVisualBounds = (node: GuiNode) => {
+    if (editorLayerMode && !editorMask.canHit(node.id) && editorMask.display(node).reason !== 'locked') return null;
     const visible = nodeVisibleBounds(node, drawingNodes, containerScroll, expandedGeometry);
     if (!visible || !isCollapsiblePanelNode(node) || expandedGeometry[node.id]) return visible;
     return intersectBounds(visible, { ...nodeAbsoluteBounds(node, drawingNodes, containerScroll, expandedGeometry), h: node.props.headerHeight });
@@ -630,17 +723,21 @@ export function Canvas({ onAddNode, onEditError, containerScroll, setContainerSc
     const b = projectRuntimeNode(node).bounds;
     return [[node.id, { top: Math.max(0, (visible.y - b.y) * renderZoom), right: Math.max(0, (b.x + b.w - visible.x - visible.w) * renderZoom), bottom: Math.max(0, (b.y + b.h - visible.y - visible.h) * renderZoom), left: Math.max(0, (visible.x - b.x) * renderZoom) }]];
   }));
-  const selectionRuntimeNodes = overlayNodes(renderNodes.filter(isSelectionNode).filter(node => (behaviorPreview?.[node.id]?.visible ?? (managed.has(node.id) ? true : node.state.visible)) && visibleInGroup(node.id)));
-  const treeRuntimeNodes = overlayNodes(renderNodes.filter(isTreeViewNode).filter(node => (behaviorPreview?.[node.id]?.visible ?? (managed.has(node.id) ? true : node.state.visible)) && visibleInGroup(node.id))) as Extract<GuiNode, { type: 'minecraft:tree-view' }>[];
-  const numericRuntimeNodes = overlayNodes(renderNodes.filter(isNumericNode).filter(node => (behaviorPreview?.[node.id]?.visible ?? (managed.has(node.id) ? true : node.state.visible)) && visibleInGroup(node.id))) as NumericNode[];
+  const selectionRuntimeNodes = overlayNodes(renderNodes.filter(isSelectionNode).filter(node => (behaviorPreview?.[node.id]?.visible ?? (managed.has(node.id) ? true : node.state.visible)) && groupVisible(node.id)));
+  const treeRuntimeNodes = overlayNodes(renderNodes.filter(isTreeViewNode).filter(node => (behaviorPreview?.[node.id]?.visible ?? (managed.has(node.id) ? true : node.state.visible)) && groupVisible(node.id))) as Extract<GuiNode, { type: 'minecraft:tree-view' }>[];
+  const numericRuntimeNodes = overlayNodes(renderNodes.filter(isNumericNode).filter(node => (behaviorPreview?.[node.id]?.visible ?? (managed.has(node.id) ? true : node.state.visible)) && groupVisible(node.id))) as NumericNode[];
   const treeOverlayNodes = renderNodes.filter(isTreeViewNode).map(node => projectRuntimeNode(node)) as Extract<GuiNode, { type: 'minecraft:tree-view' }>[];
   const numericOverlayNodes = renderNodes.filter(isNumericNode).map(node => projectRuntimeNode(node)) as NumericNode[];
   const selectionClipInsets = overlayClips(selectionRuntimeNodes), numericClipInsets = overlayClips(numericRuntimeNodes), treeClipInsets = overlayClips(treeRuntimeNodes);
-  const editingNode = editingId === selected ? screen.nodes.find(n => n.id === editingId) : undefined;
+  const editingNode = editingId === selected && (!editorLayerMode || editorMask.canHit(editingId ?? '')) ? screen.nodes.find(n => n.id === editingId) : undefined;
   const drawPlainNode = (original: GuiNode, bounds = original.bounds) => { const override = behaviorPreview?.[original.id];
-          if (behaviorPreview && (!(override?.visible ?? (managed.has(original.id) ? true : original.state.visible)) || !visibleInGroup(original.id))) return null;
+          const display = editorLayerMode ? editorMask.display(original) : null;
+          if (display?.paint === 'none') return null;
+          if (display?.paint === 'outline') return <Rect key={original.id} x={bounds.x} y={bounds.y} width={bounds.w} height={bounds.h} stroke={chrome.selectionOutline} strokeWidth={1 / renderZoom} dash={[4 / renderZoom, 3 / renderZoom]} opacity={0.35} listening={false}/>;
+          if (behaviorPreview && (!(override?.visible ?? (managed.has(original.id) ? true : original.state.visible)) || !groupVisible(original.id))) return null;
           let node: GuiNode = managed.has(original.id) ? { ...original, state: { ...original.state, visible: override?.visible ?? true } } as GuiNode : override?.visible === undefined ? original : { ...original, state: { ...original.state, visible: override.visible } } as GuiNode;
-          if (!behaviorPreview && !visibleInGroup(node.id)) node = { ...node, state: { ...node.state, visible: false } } as GuiNode;
+          if (!behaviorPreview && !groupVisible(node.id)) node = { ...node, state: { ...node.state, visible: false } } as GuiNode;
+          if (editorLayerMode) node = { ...node, state: { ...node.state, visible: screen.nodes.find(item => item.id === node.id)?.state.visible ?? true } } as GuiNode;
           if (behaviorPreview && node.type === 'minecraft:string-widget' && override?.text !== undefined) node = { ...node, props: { ...node.props, text: { kind: 'literal', value: override.text } } };
           if (behaviorPreview && node.type === 'minecraft:checkbox' && override?.checked !== undefined) node = { ...node, props: { ...node.props, selected: override.checked } };
           if (behaviorPreview && node.type === 'minecraft:progress-bar' && override?.progressValue !== undefined) node = { ...node, props: { ...node.props, initialValue: override.progressValue } };
@@ -649,12 +746,14 @@ export function Canvas({ onAddNode, onEditError, containerScroll, setContainerSc
           const shown = interaction && node.type === 'minecraft:checkbox' && checkedValue !== undefined ? { ...node, props: { ...node.props, selected: checkedValue } }
             : interaction && node.type === 'minecraft:cycle-button' && typeof value === 'string' && node.props.options.some(o => o.id === value) ? { ...node, props: { ...node.props, initialOptionId: value } } : node;
           const gestureBounds = gesture?.id === node.id && !isContainerNode(node) ? node.parentContainerId ? (() => { const parent = screen.nodes.find(item => item.id === node.parentContainerId); return parent && isContainerNode(parent) ? containerChildScreenBounds(parent, { ...node, bounds: gesture.draft }, screen.nodes, preview ? {} : containerScroll, expandedGeometry) : gesture.draft; })() : gesture.draft : bounds;
-          return <NodeDrawing key={node.id} node={shown} numericState={numericRuntime[node.id]} numericOverlay={runtimePreviewActive} runtimePreview={runtimePreviewActive} statusId={isStatusNode(node) ? behaviorPreview?.[node.id]?.statusId ?? statusValues[node.id] : undefined} progressValue={behaviorPreview?.[node.id]?.progressValue} expanded={node.type === 'minecraft:collapsible-panel' ? (expandedGeometry[node.id] ?? node.props.initialExpanded) : true} bounds={gestureBounds} onDown={stableDown} onEdit={interaction ? () => {} : stableEdit} assets={assets} cache={cache} resourceActive={!!(resources.baseName || resources.overlayName)} focused={interaction ? interactionFocus === node.id : editingId === node.id} selected={node.id === selected} font={font} panel={screen.background.kind === 'panel'} zoom={renderZoom} chrome={chrome}/>; };
+          return <Group key={node.id} listening={display?.hit ?? true} opacity={display?.reason === 'page' ? 0.28 : 1}><NodeDrawing node={shown} numericState={numericRuntime[node.id]} numericOverlay={runtimePreviewActive} runtimePreview={runtimePreviewActive} statusId={isStatusNode(node) ? behaviorPreview?.[node.id]?.statusId ?? statusValues[node.id] : undefined} progressValue={behaviorPreview?.[node.id]?.progressValue} expanded={node.type === 'minecraft:collapsible-panel' ? (expandedGeometry[node.id] ?? node.props.initialExpanded) : true} bounds={gestureBounds} onDown={stableDown} onEdit={interaction ? () => {} : stableEdit} assets={assets} cache={cache} resourceActive={!!(resources.baseName || resources.overlayName)} focused={interaction ? interactionFocus === node.id : editingId === node.id} selected={node.id === selected} font={font} panel={screen.background.kind === 'panel'} zoom={renderZoom} chrome={chrome}/></Group>; };
   const drawNode = (original: GuiNode, suppliedBounds?: Bounds): ReactNode => {
     original = drawingNodes.find(node => node.id === original.id) ?? original;
+    if (editorLayerMode && editorMask.display(original).paint === 'none') return null;
+    if (isRepeatableListNode(original)) return drawRepeatable(original, suppliedBounds);
     const geometryNodes = drawingNodes;
     if (!isContainerNode(original)) return drawPlainNode(original, suppliedBounds ?? (original.parentContainerId ? nodeAbsoluteBounds(original, renderNodes, runtimePreviewActive ? containerScroll : {}, expandedGeometry) : original.bounds));
-    const visible = behaviorPreview ? (behaviorPreview[original.id]?.visible ?? (managed.has(original.id) ? true : original.state.visible)) && visibleInGroup(original.id) : original.state.visible && visibleInGroup(original.id);
+    const visible = behaviorPreview ? (behaviorPreview[original.id]?.visible ?? (managed.has(original.id) ? true : original.state.visible)) && groupVisible(original.id) : original.state.visible && groupVisible(original.id);
     if (runtimePreviewActive && !visible) return null;
     const expanded = isCollapsiblePanelNode(original) ? (expandedGeometry[original.id] ?? original.props.initialExpanded) : true;
     const abs = suppliedBounds ?? (original.parentContainerId ? nodeAbsoluteBounds(original, geometryNodes, preview ? {} : containerScroll, expandedGeometry) : original.bounds);
@@ -671,12 +770,58 @@ export function Canvas({ onAddNode, onEditError, containerScroll, setContainerSc
       {children.length > 0 && viewport.w > 0 && viewport.h > 0 && <Group clipX={viewport.x} clipY={viewport.y} clipWidth={viewport.w} clipHeight={viewport.h}>
         {children.map(child => drawNode(child, containerChildScreenBounds(original, child, geometryNodes, preview ? {} : containerScroll, expandedGeometry)))}
       </Group>}
-      {isScrollablePanelNode(original) && dims.maxScroll > 0 && <Group listening={runtimePreviewActive || (!preview && !readOnly && !behaviorMode && view.tool === 'select')}>
+      {isScrollablePanelNode(original) && dims.maxScroll > 0 && (!editorLayerMode || editorMask.canHit(original.id)) && <Group listening={runtimePreviewActive || (!preview && !readOnly && !behaviorMode && view.tool === 'select')}>
         <Rect x={viewport.x + viewport.w + 2} y={viewport.y} width={6} height={viewport.h} fill={chrome.scrollTrack}/>
         <Rect x={viewport.x + viewport.w + 2} y={thumbY} width={6} height={thumbHeight} fill={chrome.scrollThumb} cornerRadius={3} onPointerDown={e => {
           if ((!runtimePreviewActive && (preview || readOnly || behaviorMode || view.tool !== 'select' || !!gesture)) || e.evt.button !== 0) return;
           e.cancelBubble = true; e.evt.preventDefault(); const { clientX, clientY, pointerId } = e.evt;
           pointer.current = { pointerId, x: clientX, y: clientY, mode: 'scrollbar', zoom: renderZoom, panX: view.panX, panY: view.panY, containerId: original.id, container: original, maxScroll: dims.maxScroll, trackTravel: Math.max(1, viewport.h - thumbHeight), initialOffset: offset };
+        }}/>
+      </Group>}
+    </Group>;
+  };
+  const drawRepeatable = (node: Extract<GuiNode, { type: 'minecraft:repeatable-list' }>, suppliedBounds?: Bounds): ReactNode => {
+    const visible = behaviorPreview ? (behaviorPreview[node.id]?.visible ?? (managed.has(node.id) ? true : node.state.visible)) && groupVisible(node.id) : node.state.visible && groupVisible(node.id);
+    if (runtimePreviewActive && !visible) return null;
+    const templateMode = templateEditingId === node.id;
+    const rows = templateMode ? 1 : repeatablePreviewRows(repeatRows, node.id);
+    const editingTemplate = templateMode || (!preview && !runtimePreviewActive && !readOnly && rows === 0);
+    const renderRows = templateMode ? 1 : editingTemplate ? 1 : rows;
+    const abs = suppliedBounds ?? (node.parentContainerId ? nodeAbsoluteBounds(node, drawingNodes, preview ? {} : containerScroll, expandedGeometry) : node.bounds);
+    const baseViewport = containerScreenViewport(node, drawingNodes, preview ? {} : containerScroll, expandedGeometry);
+    const viewport = { ...baseViewport, x: baseViewport.x + abs.x - node.bounds.x, y: baseViewport.y + abs.y - node.bounds.y };
+    const content = repeatableContentSize(node, rows);
+    const offset = templateMode ? 0 : runtimePreviewActive || !preview ? repeatableScrollOffset(node, containerScroll[node.id] ?? 0, rows) : 0;
+    const children = drawingNodes.filter(child => child.parentContainerId === node.id), stride = repeatableStride(node);
+    const thumbHeight = content.maxScroll > 0 ? Math.max(8, viewport.h * viewport.h / Math.max(1, content.height)) : viewport.h;
+    const thumbY = viewport.y + (content.maxScroll ? (viewport.h - thumbHeight) * offset / content.maxScroll : 0);
+    return <Group key={node.id}>
+      <Rect x={abs.x} y={abs.y} width={abs.w} height={abs.h} fill={rgba(node.props.backgroundColor)} stroke={rgba(node.props.borderColor)} strokeWidth={0.6}
+        onPointerDown={e => { if (runtimePreviewActive || behaviorMode) return; stableDown(e, node.id, 'move'); }}/>
+      {viewport.w > 0 && viewport.h > 0 && <Group clipX={viewport.x} clipY={viewport.y} clipWidth={viewport.w} clipHeight={viewport.h}>
+        {!templateMode && renderRows === 0 && node.props.emptyText && <Text x={viewport.x} y={viewport.y + Math.max(0, viewport.h / 2 - 5)} width={viewport.w} height={18}
+          text={displayText(node.props.emptyText)} fontSize={9} fontFamily={font.family} fill="#FFB8C4D2" align="center" verticalAlign="middle" listening={false}/>}
+        {Array.from({ length: renderRows }, (_, rowIndex) => {
+          const rowTop = viewport.y + rowIndex * stride - offset;
+          if (rowTop >= viewport.y + viewport.h || rowTop + node.props.rowHeight <= viewport.y) return null;
+          return <Group key={`${node.id}:row:${rowIndex}`}>
+            {editingTemplate && <Rect x={viewport.x} y={rowTop} width={viewport.w} height={node.props.rowHeight} stroke={chrome.selectionOutline} strokeWidth={1 / renderZoom} dash={[4 / renderZoom, 3 / renderZoom]} opacity={0.55} listening={false}/>}
+            {children.map(child => {
+              const b = { ...child.bounds, x: viewport.x + child.bounds.x, y: rowTop + child.bounds.y };
+              if (b.y + b.h <= viewport.y || b.y >= viewport.y + viewport.h) return null;
+              const editable = rowIndex === 0 && !preview && !runtimePreviewActive && !readOnly && (!editorLayerMode || editorMask.canHit(child.id));
+              return editable ? drawNode(child, b) : <Group key={`${node.id}:${rowIndex}:${child.id}`} listening={false}>{drawNode(child, b)}</Group>;
+            })}
+          </Group>;
+        })}
+      </Group>}
+      {templateMode && <Text x={viewport.x} y={Math.max(4, viewport.y - 14)} text={`ROW TEMPLATE · ${node.props.templateId} · ${viewport.w}×${node.props.rowHeight}`} fontSize={9} fontFamily={MONO} fill={chrome.accent} listening={false}/>} 
+      {!templateMode && content.maxScroll > 0 && (!editorLayerMode || editorMask.canHit(node.id)) && <Group listening={runtimePreviewActive || (!preview && !readOnly && !behaviorMode && view.tool === 'select')}>
+        <Rect x={viewport.x + viewport.w + REPEATABLE_LIST_SCROLLBAR_GAP} y={viewport.y} width={REPEATABLE_LIST_SCROLLBAR_WIDTH} height={viewport.h} fill={chrome.scrollTrack}/>
+        <Rect x={viewport.x + viewport.w + REPEATABLE_LIST_SCROLLBAR_GAP} y={thumbY} width={REPEATABLE_LIST_SCROLLBAR_WIDTH} height={thumbHeight} fill={chrome.scrollThumb} cornerRadius={3} onPointerDown={e => {
+          if ((!runtimePreviewActive && (preview || readOnly || behaviorMode || view.tool !== 'select' || !!gesture)) || e.evt.button !== 0) return;
+          e.cancelBubble = true; e.evt.preventDefault();
+          pointer.current = { pointerId: e.evt.pointerId, x: e.evt.clientX, y: e.evt.clientY, mode: 'scrollbar', zoom: renderZoom, panX: view.panX, panY: view.panY, containerId: node.id, container: node, maxScroll: content.maxScroll, trackTravel: Math.max(1, viewport.h - thumbHeight), initialOffset: offset };
         }}/>
       </Group>}
     </Group>;
@@ -707,7 +852,7 @@ export function Canvas({ onAddNode, onEditError, containerScroll, setContainerSc
       if (insidePanel) {
         // Back-layer tabs must also occlude the guide at transparent Panel
         // corners. Keep their existing draw order and mask their footprint.
-        for (const node of drawingNodes.filter(node => !node.parentContainerId && beforePanel(node) && runtimeNodeVisible(node))) {
+        for (const node of drawingNodes.filter(node => !node.parentContainerId && beforePanel(node) && runtimeNodeVisible(node) && (!editorLayerMode || editorMask.canHit(node.id)))) {
           const bounds = node.bounds;
           if (!intersectBounds(bounds, { x: left, y: top, w: right - left, h: bottom - top })) continue;
           ctx.beginPath(); ctx.rect(0, 0, width, height); ctx.rect(bounds.x, bounds.y, bounds.w, bounds.h); ctx.clip('evenodd');
@@ -732,6 +877,8 @@ export function Canvas({ onAddNode, onEditError, containerScroll, setContainerSc
   return <div ref={host} className={`canvas-host ${view.tool}`} data-testid="canvas-host" role="application" aria-label="GUI 设计画布"
     data-origin-x={origin.x} data-origin-y={origin.y} data-zoom={renderZoom} data-preview={!!preview} data-runtime-preview-active={runtimePreviewActive}
     data-scroll-offsets={JSON.stringify(containerScroll)}
+    data-template-editing={templateEditingId ?? ''}
+    data-repeat-rows={JSON.stringify(Object.fromEntries(screen.nodes.filter(isRepeatableListNode).map(node => [node.id, repeatablePreviewRows(repeatRows, node.id)])))}
     data-grid-visible={grid.visible && !preview} data-grid-spacing={grid.spacing}
     data-smart-guides={alignment.guides} data-smart-snap={alignment.snap}
     data-alignment-x={alignmentGuides.x ?? ''} data-alignment-y={alignmentGuides.y ?? ''}
@@ -748,7 +895,7 @@ export function Canvas({ onAddNode, onEditError, containerScroll, setContainerSc
     }}>
       <Layer><Group clipX={frame?.x} clipY={frame?.y} clipWidth={frame?.w} clipHeight={frame?.h}>
         {frame && <Rect x={frame.x} y={frame.y} width={frame.w} height={frame.h} fill={chrome.previewFrame} stroke={chrome.previewFrameLine} strokeWidth={1}/>}
-        {!preview && !interaction && !behaviorMode && screens.filter(item => item.id !== screen.id).map(item => <Group key={item.id} x={origin.x + (positions[item.id].x - activePosition.x) * renderZoom} y={origin.y + (positions[item.id].y - activePosition.y) * renderZoom} scaleX={renderZoom} scaleY={renderZoom}>
+        {!preview && !interaction && !behaviorMode && !templateEditingId && screens.filter(item => item.id !== screen.id).map(item => <Group key={item.id} x={origin.x + (positions[item.id].x - activePosition.x) * renderZoom} y={origin.y + (positions[item.id].y - activePosition.y) * renderZoom} scaleX={renderZoom} scaleY={renderZoom}>
           <OtherScreen screen={item} assets={assets} cache={cache} resources={resources} font={font} zoom={renderZoom} select={() => onSelectScreen(item.id)} selectOnLeft={view.tool === 'select'} expanded={designPanelExpansion(item.nodes, designExpandedByScreen[item.id])} screenTabGroups={screenTabGroups} chrome={chrome}/>
           {header(item)}
         </Group>)}
@@ -778,7 +925,7 @@ export function Canvas({ onAddNode, onEditError, containerScroll, setContainerSc
         {b && !preview && !interaction && !behaviorPreview && <Group clipX={selectedViewport?.x} clipY={selectedViewport?.y} clipWidth={selectedViewport?.w} clipHeight={selectedViewport?.h}>
           <Rect x={b.x} y={b.y} width={b.w} height={b.h} stroke={chrome.selectionOutline} opacity={0.9} strokeWidth={3 / renderZoom} listening={false}/>
           <Rect x={b.x} y={b.y} width={b.w} height={b.h} stroke={chrome.accent} strokeWidth={1.5 / renderZoom} listening={false}/>
-          {!readOnly && selectedNode?.type !== 'minecraft:creative-tab' && !(selectedNode && isCollapsiblePanelNode(selectedNode) && !(expandedGeometry[selectedNode.id] ?? selectedNode.props.initialExpanded)) && <Group>
+          {!readOnly && selectedNode?.type !== 'native_region' && selectedNode?.type !== 'minecraft:creative-tab' && !(selectedNode && isCollapsiblePanelNode(selectedNode) && !(expandedGeometry[selectedNode.id] ?? selectedNode.props.initialExpanded)) && <Group>
             {([
               { edge: 'left', x: b.x - 4 / renderZoom, y: b.y + b.h / 2 - 4 / renderZoom, cursor: 'ew-resize' },
               { edge: 'right', x: b.x + b.w - 4 / renderZoom, y: b.y + b.h / 2 - 4 / renderZoom, cursor: 'ew-resize' },
@@ -821,9 +968,9 @@ export function Canvas({ onAddNode, onEditError, containerScroll, setContainerSc
       {!preview && <Rulers width={size.width} height={size.height} origin={origin} zoom={renderZoom} design={screen.designSize} chrome={chrome}/>}
     </Stage>
     {runtimePreviewActive && !preview && <div className="runtime-preview-overlays" key={`runtime:${screen.id}:${numericPreviewEpoch}`}>
-      <SelectionPreview screenId={screen.id} design={screen.designSize} nodes={selectionRuntimeNodes as SelectionNode[]} clipInsets={selectionClipInsets} origin={origin} zoom={renderZoom} family={font.family} runtimeValues={behaviorMode && behaviorPreview && usesControlState(screen) ? Object.fromEntries(Object.entries(behaviorPreview).flatMap(([id, state]) => state.optionId !== undefined ? [[id,state.optionId]] : [])) : undefined} onSelectionChange={behaviorMode ? onBehaviorSelectionChange : undefined}/>
+      <SelectionPreview screenId={screen.id} design={screen.designSize} nodes={selectionRuntimeNodes as SelectionNode[]} clipInsets={selectionClipInsets} origin={origin} zoom={renderZoom} family={font.family} runtimeValues={behaviorMode && behaviorPreview && usesControlState(screen) ? Object.fromEntries(Object.entries(behaviorPreview).flatMap(([id, state]) => state.optionId !== undefined ? [[id,state.optionId]] : [])) : undefined} onSelectionChange={behaviorMode ? onBehaviorSelectionChange : undefined} onOverlayChange={open => setSelectionOverlayOpen(!!open)}/>
       <TreeViewPreview key={`tree:${screen.id}:${numericPreviewEpoch}`} nodes={treeOverlayNodes} activeNodeIds={treeRuntimeNodes.map(node => node.id)} clipInsets={treeClipInsets} screenId={screen.id} resetKey={numericPreviewEpoch} origin={origin} zoom={renderZoom}/>
-      <ScrollTextPreview resetKey={numericPreviewEpoch} nodes={renderNodes.filter((node): node is Extract<GuiNode, { type: 'minecraft:fitting-multi-line-text-widget' }> => node.type === 'minecraft:fitting-multi-line-text-widget' && (behaviorPreview?.[node.id]?.visible ?? (managed.has(node.id) ? true : node.state.visible)) && visibleInGroup(node.id)).map(node => projectRuntimeNode(node) as typeof node)} origin={origin} zoom={renderZoom} family={font.family}/>
+      <ScrollTextPreview resetKey={numericPreviewEpoch} nodes={renderNodes.filter((node): node is Extract<GuiNode, { type: 'minecraft:fitting-multi-line-text-widget' }> => node.type === 'minecraft:fitting-multi-line-text-widget' && runtimeAncestorsVisible(node)).map(node => projectRuntimeNode(node) as typeof node)} origin={origin} zoom={renderZoom} family={font.family}/>
       <NumericPreview key={`${screen.id}:${numericPreviewEpoch}`} screenId={screen.id} nodes={numericOverlayNodes} activeNodeIds={numericRuntimeNodes.map(node => node.id)} clipInsets={numericClipInsets} origin={origin} zoom={renderZoom} family={font.family} runtimeValues={behaviorMode && behaviorPreview && usesControlState(screen) ? Object.fromEntries(Object.entries(behaviorPreview).flatMap(([id, state]) => state.sliderValue !== undefined ? [[id,state.sliderValue]] : [])) : undefined} onSliderValueChange={behaviorMode ? onBehaviorSliderChange : undefined} onVisualChange={setNumericRuntime}/>
       {renderNodes.filter(isCollapsiblePanelNode).filter(node => runtimeNodeVisible(node) && runtimeAncestorsVisible(node) && (!node.parentContainerId || !!nodeVisibleBounds(node, renderNodes, containerScroll, expandedPanels))).map(node => {
         const bounds = nodeAbsoluteBounds(node, renderNodes, containerScroll, expandedPanels), open = expandedPanels[node.id] ?? node.props.initialExpanded;
@@ -831,6 +978,9 @@ export function Canvas({ onAddNode, onEditError, containerScroll, setContainerSc
           onClick={() => togglePanel(node.id)} style={{ position: 'absolute', left: origin.x + bounds.x * renderZoom, top: origin.y + bounds.y * renderZoom, width: bounds.w * renderZoom, height: node.props.headerHeight * renderZoom, padding: 0, border: 0, background: 'transparent', color: 'transparent', cursor: 'pointer', zIndex: 40 }}/ >;
       })}
     </div>}
+    {(runtimePreviewActive || preview) && <TooltipPreview enabled nodes={screen.nodes} expanded={expandedPanels} scroll={runtimePreviewActive ? containerScroll : {}}
+      isVisible={node => runtimeNodeVisible(node) && runtimeAncestorsVisible(node) && (!('enabled' in node.state) || node.state.enabled) && containerAncestorsEnabled(node, renderNodes)}
+      overlayOpen={selectionOverlayOpen} origin={origin} zoom={renderZoom} designSize={screen.designSize} font={font.family}/>}
     {!runtimePreviewActive && !preview && !readOnly && !behaviorMode && <div className="design-panel-overlays">
       {renderNodes.filter(isCollapsiblePanelNode).filter(node => node.state.visible && (!node.parentContainerId || !!nodeVisibleBounds(node, renderNodes, containerScroll, expandedGeometry))).map(node => {
         const bounds = nodeAbsoluteBounds(node, renderNodes, containerScroll, expandedGeometry), open = expandedGeometry[node.id] ?? node.props.initialExpanded;
@@ -868,9 +1018,9 @@ export function Canvas({ onAddNode, onEditError, containerScroll, setContainerSc
       {preview ? `只读预览 · GUI Scale ${preview.effectiveScale}×` : resources.baseName ? '纹理参考 · 浏览器近似' : '中性近似预览'}
     </span>
     <div className="canvas-zoom" aria-hidden="true"><b>{preview ? `游戏缩放 ${preview.effectiveScale}×` : `编辑缩放 ${Math.round(renderZoom * 100)}%`}</b><span className="zoom-sep">·</span><span>{preview ? `GUI ${preview.logicalWidth} × ${preview.logicalHeight}` : '逻辑坐标不变'}</span></div>
-    {!!(resources.baseName || resources.overlayName || imageNodes.length) && (spriteAssetsBusy || imageAssetsBusy || Object.values(assets).some(a => a.error)) && <div className="sprite-diagnostics" role="status">
+    {!!(resources.baseName || resources.overlayName || imageNodes.length) && (spriteAssetsBusy || imageAssetsBusy || Object.values(assets).some(a => a?.error)) && <div className="sprite-diagnostics" role="status">
       <strong>资源诊断</strong>
-      {spriteAssetsBusy || imageAssetsBusy ? '正在解码纹理资源…' : Object.entries(assets).filter(([, a]) => a.error).map(([id, a]) => <div key={id}>{id}：{a.error}</div>)}
+      {spriteAssetsBusy || imageAssetsBusy ? '正在解码纹理资源…' : Object.entries(assets).filter(([, a]) => a?.error).map(([id, a]) => <div key={id}>{id}：{a?.error}</div>)}
     </div>}
     {hasCreativeTab && !resources.baseName && <div className="canvas-note" role="status">CreativeTab 未使用客户端资源，当前为中性回退。</div>}
     {panelError && <div className="panel-load-error">Panel 纹理加载失败：{panelError}</div>}

@@ -21,7 +21,8 @@ export async function buildZip(files: readonly ExportFile[], verify: () => void 
   const names = new Set<string>(), parts: BlobPart[] = [], central: Uint8Array[] = []; let offset = 0, centralSize = 0;
   for (const file of files) {
     verify();
-    if (!file.name || /[\\/\u0000-\u001f]/.test(file.name) || file.name === '.' || file.name === '..' || names.has(file.name.toLowerCase())) throw new Error('ZIP 文件名无效或重复');
+    const segments = file.name.split('/');
+    if (!file.name || file.name.includes('\\') || /[\u0000-\u001f]/.test(file.name) || segments.some(segment => !segment || segment === '.' || segment === '..') || names.has(file.name.toLowerCase())) throw new Error('ZIP 文件名无效或重复');
     names.add(file.name.toLowerCase()); const name = encode.encode(file.name), crc = await crc32(file.bytes, verify);
     if (name.length > 65535) throw new Error('ZIP 文件名过长');
     const local = header(30 + name.length); local.view.setUint32(0, 0x04034b50, true); local.view.setUint16(4, 20, true); local.view.setUint16(6, 0x800, true);

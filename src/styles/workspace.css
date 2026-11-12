@@ -152,6 +152,19 @@
   font-size: var(--fs-10);
 }
 .layer:disabled { opacity: .55; }
+.layer-row { display: flex; align-items: center; gap: 2px; min-width: 0; }
+.layer-row > .layer { flex: 1 1 auto; width: 0; min-width: 0; }
+.layer-row.editor-layer-muted > .layer { color: var(--text-3); }
+.layer .editor-layer-note { color: var(--accent); }
+.layer-view-action { flex: 0 0 23px; width: 23px; min-width: 23px; height: 25px; padding: 3px; border: 0; background: transparent; color: var(--text-3); }
+.layer-view-action[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); }
+.layer-view-action svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.5; }
+.editor-layer-tools { position: sticky; top: 0; z-index: 3; padding: 6px; border-bottom: 1px solid var(--line-subtle); background: var(--bg-panel); font-size: var(--fs-10); }
+.editor-layer-tools label, .editor-layer-tools > div { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
+.editor-layer-tools label { margin-bottom: 4px; }
+.editor-layer-tools select { flex: 1 1 110px; min-width: 0; max-width: 100%; font-size: var(--fs-10); }
+.editor-layer-tools span { flex: 1 1 auto; color: var(--text-3); overflow-wrap: anywhere; }
+.editor-layer-tools button { padding: 3px 5px; min-height: 24px; font-size: var(--fs-10); }
 
 .library-split {
   order: 1;
@@ -429,3 +442,14 @@
 .hover-peek-marker button { pointer-events: auto; width: 28px; min-height: 28px; height: 28px; padding: 0; border-radius: 50%; border-color: var(--accent-line); background: color-mix(in srgb, var(--bg-bento) 88%, transparent); color: var(--accent); font-size: 20px; line-height: 1; }
 .hover-peek-marker button:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
 @media (prefers-reduced-motion: reduce) { .hybrid-sidebar.is-floating .hybrid-panels { transition-duration: 0s; transition-delay: 0s; } }
+
+.layer-collapse, .layer-collapse-spacer { flex: 0 0 18px; width: 18px; min-width: 18px; height: 25px; padding: 0; border: 0; background: transparent; color: var(--text-2); }
+.layer-collapse { cursor: pointer; font-size: 11px; line-height: 1; }
+.layer-collapse:hover { color: var(--text-1); background: var(--bg-hover); border-radius: 3px; }
+.layer-collapse:disabled { cursor: default; opacity: .45; }
+.layer-collapse-spacer { pointer-events: none; }
+
+.layer-lock-action { flex: 0 0 23px; width: 23px; min-width: 23px; height: 25px; padding: 3px; border: 0; background: transparent; color: var(--text-3); }
+.layer-lock-action svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.5; }
+.layer-lock-action[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); }
+.layer-lock-action:disabled { cursor: default; opacity: .55; }

@@ -1,6 +1,20 @@
 .workspace-mode-switch { display: flex; align-items: center; gap: 3px; flex: 0 0 auto; padding: 3px; border: 1px solid var(--line-subtle); border-radius: 7px; background: var(--bg-panel); }
 .workspace-mode-switch button { padding: 6px 11px; border: 0; background: transparent; color: var(--text-3); font-size: 11px; }
 .workspace-mode-switch button[aria-pressed="true"] { background: var(--bg-raised); color: var(--text-1); box-shadow: inset 0 0 0 1px var(--line-subtle); }
+.workspace-mode-switch button { white-space: nowrap; }
+.context-right[hidden] { display: none; }
+.bake-workspace { grid-column: 1 / -1; grid-row: 1; min-width: 0; min-height: 0; overflow: auto; padding: clamp(10px, 2vw, 24px); color: var(--text-1); }
+.bake-workspace[hidden] { display: none; }
+.bake-workspace > header { max-width: 1100px; margin: 0 auto 10px; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.bake-workspace > header h2 { margin: 0; font-size: var(--fs-16); }
+.bake-workspace > header p { margin: 3px 0 0; color: var(--text-3); font-size: var(--fs-11); }
+.bake-workspace > header > span { color: var(--text-3); font-size: var(--fs-11); white-space: nowrap; }
+.bake-workspace > header > label { display: flex; align-items: center; gap: 7px; color: var(--text-3); font-size: var(--fs-11); }
+.bake-workspace > header select { max-width: min(340px, 55vw); }
+.bake-panel-workspace { display: block; max-width: 1100px; margin: 0 auto; padding: 10px 14px; border: 1px solid var(--line-subtle); border-radius: var(--radius-card); background: var(--bg-panel); }
+.bake-panel-workspace > summary { cursor: pointer; }
+.bake-panel-workspace > .section-body { max-width: 900px; }
+@media (max-width: 620px) { .workspace-mode-switch { flex-wrap: wrap; } .workspace-mode-switch button { padding: 5px 7px; font-size: 10px; } .bake-workspace > header { align-items: flex-start; flex-direction: column; } }
 .blockly-context-bar { justify-content: flex-start; }
 .workspace.blockly-mode { grid-template-columns: minmax(0, 1fr); }
 .workspace.blockly-mode > /* BLK-2: context, editor and shared definitions are sibling Bento surfaces. */
@@ -140,3 +154,38 @@
   .blockly-context-heading select[aria-label="Blockly 规则"] { width: 100px; }
   .blockly-context-heading .blockly-rule-event { font-size: var(--fs-10); }
 }
+
+/* B1.13: named text mappings live beside shared status maps, reusing their row grammar. */
+.blockly-text-mappings { display: flex; flex-direction: column; gap: 10px; min-width: 0; min-height: 96px; flex: 0 0 auto; padding-top: 10px; border-top: 1px solid var(--line-subtle); }
+.blockly-text-mappings > div:first-child { display: grid; gap: 5px; }
+.blockly-text-mappings strong { font-size: var(--fs-12); }
+.blockly-text-mappings small, .blockly-text-mappings .blockly-map-empty { color: var(--text-2); font-size: var(--fs-11); line-height: 1.6; overflow-wrap: anywhere; }
+.blockly-text-mappings code { color: var(--text-3); font-size: var(--fs-11); overflow-wrap: anywhere; }
+.blockly-text-map-editor { display: grid; gap: 8px; padding: 10px 0; border-top: 1px solid var(--line); }
+.blockly-text-map-editor label { display: grid; gap: 4px; }
+.blockly-text-map-editor input, .blockly-text-map-editor select { min-width: 0; width: 100%; font-size: var(--fs-12); }
+.blockly-text-map-editor .blockly-map-pair { grid-template-columns: minmax(0,1fr) auto minmax(0,0.7fr) minmax(0,1.3fr); }
+.blockly-text-map-fallback { display: grid; gap: 6px; margin: 0; padding: 8px; border: 1px solid var(--line-subtle); border-radius: var(--radius-2); }
+.blockly-text-map-fallback legend { padding: 0 4px; color: var(--text-2); font-size: var(--fs-11); }
+
+/* Q4-E: project-level localization resources in the Bake / Assets workspace. */
+.localization-panel { display: block; max-width: 1100px; margin: 12px auto 0; padding: 10px 14px; border: 1px solid var(--line-subtle); border-radius: var(--radius-card); background: var(--bg-panel); }
+.localization-panel > summary { display: flex; align-items: center; justify-content: space-between; gap: 10px; cursor: pointer; }
+.localization-panel > summary > span:last-child { color: var(--text-3); font-size: var(--fs-11); }
+.localization-body { display: grid; gap: 9px; padding-top: 10px; }
+.localization-settings-row { display: flex; flex-wrap: wrap; align-items: end; gap: 10px; }
+.localization-settings-row .field { flex: 1 1 180px; }
+.localization-actions { display: flex; flex-wrap: wrap; gap: 6px; }
+.localization-languages { display: flex; flex-wrap: wrap; gap: 6px; }
+.localization-language { display: inline-flex; align-items: center; gap: 5px; padding: 3px 6px; border: 1px solid var(--line-subtle); border-radius: var(--radius-2); font-size: var(--fs-11); }
+.localization-language button { min-height: 24px; padding: 2px 6px; font-size: var(--fs-10); }
+.localization-filters { display: flex; flex-wrap: wrap; align-items: end; gap: 10px; }
+.localization-filters .field { flex: 1 1 260px; }
+.localization-rows { display: grid; gap: 8px; max-height: 460px; overflow: auto; padding-right: 4px; }
+.localization-row { display: grid; gap: 6px; padding: 8px; border: 1px solid var(--line-subtle); border-radius: var(--radius-2); background: var(--bg-panel); }
+.localization-key { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; overflow-wrap: anywhere; }
+.localization-key code { color: var(--accent); font: 11px var(--font-mono); }
+.localization-source { display: flex; flex-wrap: wrap; gap: 5px; }
+.localization-source button { min-height: 26px; padding: 3px 6px; font-size: var(--fs-10); }
+.localization-translations { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 7px; }
+.localization-translations .field-error { font-style: normal; }

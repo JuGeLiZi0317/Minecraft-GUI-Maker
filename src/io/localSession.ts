@@ -178,6 +178,57 @@ export class LocalSession {
       this.enqueue(this.status.getState().localId!, this.store.getState().doc);
     } finally { this.suppress = false; this.store.getState().setBlocked(null); }
   }
+  async removeCopy(localId: string) {
+    if (this.store.getState().blocked) throw new Error(this.store.getState().blocked!);
+    const initial = this.status.getState();
+    if (!initial.copies.some(copy => copy.localId === localId) && initial.localId !== localId) throw new Error('本地副本不存在');
+    this.store.getState().setBlocked('正在删除本地副本');
+    try {
+      await this.flush();
+      if (this.status.getState().dirty) throw new Error('当前修改尚未保存，请先导出JSON备份并重试');
+      const active = this.status.getState().localId === localId;
+      await this.repo.remove(localId);
+      this.workspaceRevision = (await this.repo.active()).workspace.revision;
+      this.revisions.delete(localId); this.pending.delete(localId);
+      await this.refreshCopies();
+      if (!active) { this.status.setState({ phase: 'saved', dirty: false, message: '本地副本已删除' }); return; }
+      const next = this.status.getState().copies[0];
+      if (next) {
+        const row = decodeRecord(await this.repo.read(next.localId), next.localId);
+        this.revisions.set(next.localId, row.storageRevision);
+        this.suppress = true; this.store.getState().restoreLocal(row.document); this.suppress = false;
+        this.status.setState({ localId: next.localId, phase: 'saved', dirty: false, message: '已删除当前副本，正在打开最近的本地副本' });
+        this.enqueue(next.localId, row.document); await this.flush();
+        this.status.setState({ message: '已删除当前副本并打开最近的本地副本' });
+      } else {
+        const id = crypto.randomUUID();
+        this.status.setState({ localId: id, phase: 'saved', dirty: false, message: '已删除全部本地副本，正在新建空白项目' });
+        this.suppress = true; this.store.getState().restoreLocal(emptyProject()); this.suppress = false;
+        this.enqueue(id, this.store.getState().doc); await this.flush();
+        this.status.setState({ message: '已删除本地副本并新建空白项目' });
+      }
+    } finally {
+      if (this.status.getState().phase !== 'conflict') this.store.getState().setBlocked(null);
+    }
+  }
+  async clearCache() {
+    if (this.store.getState().blocked) throw new Error(this.store.getState().blocked!);
+    this.store.getState().setBlocked('正在清除本地缓存');
+    try {
+      await this.flush();
+      if (this.status.getState().dirty) throw new Error('当前修改尚未保存，请先导出JSON备份并重试');
+      await this.repo.clearAll();
+      this.workspaceRevision = (await this.repo.active()).workspace.revision;
+      this.revisions.clear(); this.pending.clear();
+      const id = crypto.randomUUID();
+      this.status.setState({ localId: id, copies: [], phase: 'saved', dirty: false, rawRecovery: null, message: '本地缓存已清除，正在新建空白项目' });
+      this.suppress = true; this.store.getState().restoreLocal(emptyProject()); this.suppress = false;
+      this.enqueue(id, this.store.getState().doc); await this.flush();
+      this.status.setState({ message: '本地缓存已清除 · 已新建空白项目' });
+    } finally {
+      if (this.status.getState().phase !== 'conflict') this.store.getState().setBlocked(null);
+    }
+  }
   createNewCopy() {
     if (this.status.getState().phase !== 'recovery' || !this.lease?.acquired) return;
     this.pending.clear(); this.status.setState({ localId: crypto.randomUUID(), rawRecovery: null });

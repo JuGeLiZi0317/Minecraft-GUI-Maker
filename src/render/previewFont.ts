@@ -3,6 +3,7 @@ import type { GuiNode } from '../domain/schema';
 import { checkboxLayout, cycleLabel } from './h1Layout';
 import { multiLineLayout } from './multiLineText';
 import { previewAssets } from '../io/previewAssets';
+import { effectiveButtonColorMode } from '../domain/nativeTextCapability';
 
 type Checkbox = Extract<GuiNode, { type: 'minecraft:checkbox' }>;
 const layoutCache = new Map<string, ReturnType<typeof checkboxLayout>>();
@@ -126,7 +127,8 @@ function shadowText(ctx: CanvasRenderingContext2D, text: string, x: number, y: n
   ctx.fillText(text, x, y);
 }
 export function drawPreviewText(ctx: CanvasRenderingContext2D, node: GuiNode, w: number, h: number, family: string, panel = false) {
-  if (node.type === 'minecraft:scrollable-panel' || node.type === 'minecraft:collapsible-panel' || node.type === 'minecraft:fill' || node.type === 'minecraft:image' || node.type === 'minecraft:creative-tab') return;
+  if (node.type === 'native_region' || node.type === 'minecraft:single_slot') return;
+  if (node.type === 'minecraft:scrollable-panel' || node.type === 'minecraft:collapsible-panel' || node.type === 'minecraft:repeatable-list' || node.type === 'minecraft:fill' || node.type === 'minecraft:image' || node.type === 'minecraft:creative-tab') return;
   if (node.type === 'minecraft:progress-bar') return;
   if (node.type === 'minecraft:fitting-multi-line-text-widget') return;
   if (node.type === 'minecraft:numeric-input' || node.type === 'minecraft:slider') return; // Shared numeric renderer owns these nodes.
@@ -158,7 +160,10 @@ export function drawPreviewText(ctx: CanvasRenderingContext2D, node: GuiNode, w:
   const padding = node.type === 'minecraft:edit-box' ? 4 : 0;
   ctx.save(); ctx.beginPath(); ctx.rect(0, 0, w, h); ctx.clip();
   ctx.font = `9px ${family}`; ctx.textBaseline = 'middle'; ctx.textAlign = align;
-  ctx.fillStyle = rgba(node.props.color ?? '#FFE0E8F1');
+  const nativeButton = (node.type === 'minecraft:button' || node.type === 'minecraft:cycle-button') && effectiveButtonColorMode(node) === 'native';
+  ctx.fillStyle = nativeButton
+    ? (('enabled' in node.state && !node.state.enabled) ? '#FFA0A0A0' : '#FFFFFFFF')
+    : rgba(node.props.color ?? '#FFE0E8F1');
   shadowText(ctx, fitPreviewText(ctx, text, Math.max(0, w - 2 * padding)), align === 'center' ? w / 2 : align === 'right' ? w : padding, h / 2, node.props.textShadow ?? false, node.type === 'minecraft:string-widget' ? rgba('#' + node.props.color.slice(1, 3) + [3, 5, 7].map(i => Math.floor(parseInt(node.props.color.slice(i, i + 2), 16) / 4).toString(16).padStart(2, '0')).join('')) : '#383a3c');
   ctx.restore();
 }

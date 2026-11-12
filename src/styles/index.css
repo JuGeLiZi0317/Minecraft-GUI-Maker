@@ -6,3 +6,199 @@
 @import "./inspector.css";
 @import "./overlays.css";
 @import "./responsive.css";
+
+@import "./blockly.css";
+
+.template-edit-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 24px;
+  padding: 2px 8px;
+  border: 1px solid var(--accent);
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  color: var(--text);
+  font-size: 11px;
+  white-space: nowrap;
+}
+.template-edit-banner code { font-family: var(--mono); color: var(--accent); }
+.template-edit-banner button {
+  min-height: 20px;
+  border: 1px solid var(--accent);
+  border-radius: 3px;
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+  font-size: 11px;
+}
+.template-edit-banner button:hover { background: color-mix(in srgb, var(--accent) 18%, transparent); }
+
+.layer-order-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 4px 0 8px;
+  color: var(--muted);
+  font-size: 11px;
+}
+.layer-order-actions button {
+  min-height: 20px;
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+  font-size: 11px;
+}
+.layer-order-actions button:disabled { opacity: .45; cursor: default; }
+.inspector-template-banner { margin: 0 0 8px; white-space: normal; }
+
+.implementation-notes summary { cursor: pointer; }
+.notes-badge, .notes-muted {
+  float: right;
+  margin-left: 8px;
+  padding: 0 5px;
+  border-radius: 8px;
+  font-size: 10px;
+}
+.notes-badge { background: color-mix(in srgb, var(--accent) 20%, transparent); color: var(--accent); }
+.notes-muted { color: var(--muted); }
+.implementation-notes-editor textarea {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 92px;
+  resize: vertical;
+  padding: 5px 6px;
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  background: var(--surface);
+  color: var(--text);
+  font: 11px/1.45 var(--mono);
+}
+.implementation-notes-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 5px 0;
+}
+.implementation-notes-actions button {
+  min-height: 20px;
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+  font-size: 11px;
+}
+.implementation-notes-actions small { margin-left: auto; color: var(--muted); font-size: 10px; }
+
+.edge-border-fields { margin: 6px 0; }
+.edge-border-fields summary { cursor: pointer; color: var(--text); font-weight: 600; }
+.edge-border-row {
+  display: grid;
+  grid-template-columns: 38px 1fr 70px;
+  gap: 4px;
+  align-items: end;
+  margin-top: 5px;
+}
+.edge-border-row strong { padding-bottom: 4px; font-size: 11px; color: var(--muted); }
+.edge-border-row .field { min-width: 0; }
+
+.templates-panel {
+  position: fixed;
+  z-index: 80;
+  top: 72px;
+  right: 16px;
+  bottom: 44px;
+  width: min(460px, calc(100vw - 32px));
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--line-strong);
+  border-radius: 8px;
+  background: var(--bg-panel);
+  color: var(--text-1);
+  box-shadow: 0 18px 60px #0008;
+}
+.templates-panel > header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--line);
+  background: var(--bg-raised);
+}
+.templates-panel h2 { margin: 0; font-size: 15px; }
+.templates-panel h3 { margin: 0 0 6px; font-size: 12px; }
+.templates-panel header p { margin: 4px 0 0; color: var(--text-2); font-size: 10px; }
+.templates-panel header button { border: 0; background: transparent; color: var(--text-1); font-size: 22px; cursor: pointer; }
+.template-save, .template-list { padding: 12px 14px; overflow: auto; }
+.template-save { border-bottom: 1px solid var(--line); }
+.template-save textarea { min-height: 52px; resize: vertical; }
+.template-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.template-actions button, .template-row-edit button {
+  min-height: 24px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--bg-raised);
+  color: var(--text-1);
+  cursor: pointer;
+  font-size: 11px;
+}
+.template-actions button.primary { border-color: var(--accent); color: var(--accent); }
+.template-actions button.danger { border-color: #7a3c3c; color: #e99; }
+.template-list { flex: 1; }
+.template-list article {
+  margin-bottom: 8px;
+  padding: 8px;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  background: var(--bg-raised);
+}
+.template-list article.selected { border-color: var(--accent); }
+.template-row-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.template-row-head small { color: var(--text-2); font-size: 10px; white-space: nowrap; }
+.template-name { border: 0; padding: 0; background: transparent; color: var(--text-1); font-weight: 600; text-align: left; cursor: pointer; }
+.template-description { margin: 4px 0; color: var(--text-2); font-size: 10px; }
+.template-preview { width: 100%; max-height: 120px; margin: 6px 0; border: 1px solid var(--line); background: #141a22; }
+.template-resources { margin: 5px 0; font-size: 10px; }
+.template-resources ul { margin: 3px 0; padding-left: 16px; }
+.template-row-edit { display: flex; gap: 5px; margin-top: 6px; }
+.template-row-edit input { min-width: 0; flex: 1; }
+
+.template-save .field {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 3px;
+  margin: 6px 0;
+}
+.template-save .field > span { color: var(--text-2); font-size: 10px; }
+.template-save input,
+.template-save textarea {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 26px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--bg-input);
+  color: var(--text-1);
+  padding: 4px 6px;
+  font: 11px/1.4 var(--font-ui);
+}
+.template-save textarea { min-height: 54px; resize: vertical; }
+.template-save .template-actions button,
+.template-list .template-actions button { color: var(--text-1); }
+.template-save .template-actions button.primary,
+.template-list .template-actions button.primary { color: var(--accent); }
+
+/* Last-resort render failure: keep diagnostics visible instead of a blank root. */
+.app-crash { min-height: 100vh; display: grid; place-items: center; padding: 24px; background: var(--bg-app); color: var(--text-1); }
+.app-crash-card { width: min(680px, 100%); border: 1px solid var(--line); border-radius: 12px; background: var(--bg-panel); padding: 24px; box-shadow: var(--shadow-panel); }
+.app-crash-card small { color: var(--text-2); letter-spacing: .06em; text-transform: uppercase; }
+.app-crash-card h1 { margin: 8px 0 10px; font-size: 22px; }
+.app-crash-card p { color: var(--text-2); line-height: 1.6; }
+.app-crash-card pre { max-height: 220px; overflow: auto; white-space: pre-wrap; border: 1px solid var(--line); border-radius: 6px; padding: 10px; background: var(--bg-input); color: var(--danger, #ff8a80); font: 11px/1.5 var(--font-mono); }
+.app-crash-actions { display: flex; gap: 8px; margin-top: 14px; }

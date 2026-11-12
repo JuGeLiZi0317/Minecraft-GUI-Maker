@@ -1,6 +1,7 @@
 import { CATALOG, CATALOG_VERSION, TARGET, type NodeType } from './catalog';
-import type { Bounds, GuiNode, GuiProject, TextSpec } from './schema';
+import { PROJECT_SCHEMA_VERSIONS, type Bounds, type GuiNode, type GuiProject, type TextSpec } from './schema';
 import { PANEL_MIN_SIZE } from './panel';
+import { supportsTooltip } from './tooltip';
 
 export const literal = (value: string): TextSpec => ({ kind: 'literal', value });
 export const displayText = (text: TextSpec): string => text.kind === 'literal' ? text.value : text.fallback;
@@ -41,8 +42,15 @@ export function createNode(type: NodeType, id: string, position = { x: 16, y: 16
   const bounds = { ...position, ...CATALOG[type].size };
   const visible = { visible: true };
   switch (type) {
+    case 'native_region': return { id, type, bounds, source: { ...CATALOG[type].source }, state: { visible: true }, props: { kind: 'minecraft:player_inventory' }, events: {} };
+    case 'minecraft:single_slot': return { id, type, bounds, source: { ...CATALOG[type].source }, state: { visible: true }, props: { usage: 'inventory' }, events: {} };
     case 'minecraft:scrollable-panel': return { id, type, bounds, source: { ...CATALOG[type].source }, state: { ...visible, enabled: true }, props: { padding: 4, contentHeight: 180, initialScroll: 'top', backgroundColor: '#B020252D', borderColor: '#FF8795A5' }, events: {} };
     case 'minecraft:collapsible-panel': return { id, type, bounds, source: { ...CATALOG[type].source }, state: { ...visible, enabled: true }, props: { title: literal('Collapsible Panel'), headerHeight: 20, initialExpanded: true, headerColor: '#FF303D4B', backgroundColor: '#B020252D', textColor: '#FFFFFFFF', border: true, borderColor: '#FF8795A5' }, events: {} };
+    case 'minecraft:repeatable-list': return { id, type, bounds, source: { ...CATALOG[type].source }, state: { ...visible, enabled: true }, props: {
+      rowHeight: 34, rowGap: 0, padding: 4, templateId: `template_${id}`.slice(0, 64),
+      dataSource: { mode: 'external', bindingKey: 'external.items' }, initialScroll: 'top',
+      backgroundColor: '#B020252D', borderColor: '#FF8795A5',
+    }, events: {} };
     case 'minecraft:tree-view': return { id, type, bounds, source: { ...CATALOG[type].source }, state: { ...visible, enabled: true }, props: {
       name: literal('Tree View'),
       items: [
@@ -63,25 +71,115 @@ export function createNode(type: NodeType, id: string, position = { x: 16, y: 16
     case 'minecraft:slider': return { id, type, bounds, source: { ...CATALOG[type].source }, state: { ...visible, enabled: true }, props: { color: '#FF404040', name: literal('Value'), min: 0, max: 100, step: 1, initialValue: 50, numericType: 'integer', format: { decimals: 0, unit: '' }, textShadow: false, showValue: true }, events: { change: 'slider-change' } };
     case 'minecraft:multi-line-text-widget': return { id, type, bounds, source: { ...CATALOG[type].source }, state: visible, props: { text: literal('Multi-line text\n说明文字'), color: '#FF404040', maxWidth: 150, maxRows: 4, align: 'center', textShadow: false }, events: {} };
     case 'minecraft:creative-tab': return { id, type, bounds, source: { ...CATALOG[type].source }, state: visible, props: { name: 'CreativeTab', column: 1, selected: false }, events: {} };
-    case 'minecraft:button': return { id, type, bounds, source: { ...CATALOG[type].source }, state: { ...visible, enabled: true }, props: { color: '#FF404040', message: literal('Button') }, events: {} };
+    case 'minecraft:button': return { id, type, bounds, source: { ...CATALOG[type].source }, state: { ...visible, enabled: true }, props: { message: literal('Button') }, events: {} };
     case 'minecraft:edit-box': return { id, type, bounds, source: { ...CATALOG[type].source }, state: { ...visible, enabled: true }, props: { color: '#FF404040', narration: literal('Input'), value: '', hint: literal('Enter text…'), maxLength: 32, bordered: true, editable: true }, events: {} };
     case 'minecraft:string-widget': return { id, type, bounds, source: { ...CATALOG[type].source }, state: visible, props: { text: literal('Text label'), color: '#FF404040', align: 'center' }, events: {} };
     case 'minecraft:fill': return { id, type, bounds, source: { ...CATALOG[type].source }, state: visible, props: { color: '#FF48546B' }, events: {} };
     case 'minecraft:checkbox': return { id, type, bounds, source: { ...CATALOG[type].source }, state: { ...visible, enabled: true }, props: { color: '#FF404040', message: literal('Checkbox'), selected: false, maxWidth: 120 }, events: {} };
-    case 'minecraft:cycle-button': return { id, type, bounds, source: { ...CATALOG[type].source }, state: { ...visible, enabled: true }, props: { color: '#FF404040', name: literal('Option'), options: [{ id: 'option_1', text: literal('One') }, { id: 'option_2', text: literal('Two') }], initialOptionId: 'option_1', displayFormat: 'name-and-value' }, events: {} };
+    case 'minecraft:cycle-button': return { id, type, bounds, source: { ...CATALOG[type].source }, state: { ...visible, enabled: true }, props: { name: literal('Option'), options: [{ id: 'option_1', text: literal('One') }, { id: 'option_2', text: literal('Two') }], initialOptionId: 'option_1', displayFormat: 'name-and-value' }, events: {} };
   }
 }
 export function constrainBounds(bounds: Bounds, type: NodeType, screen: { width: number; height: number }): Bounds {
   const min = CATALOG[type].min;
-  const w = type === 'minecraft:creative-tab' ? 26 : Math.max(min.w, Math.min(screen.width, type === 'minecraft:multi-line-text-widget' ? 8192 : Infinity, Math.round(bounds.w)));
+  const w = type === 'native_region' ? 162 : type === 'minecraft:single_slot' ? 18 : type === 'minecraft:creative-tab' ? 26 : Math.max(min.w, Math.min(screen.width, type === 'minecraft:multi-line-text-widget' ? 8192 : Infinity, Math.round(bounds.w)));
   const rawHeight = Math.max(min.h, Math.min(screen.height, Math.round(bounds.h)));
-  const h = type === 'minecraft:creative-tab' ? 32 : type === 'minecraft:multi-line-text-widget' ? Math.min(256, Math.max(1, Math.floor(rawHeight / 9))) * 9 : rawHeight;
+  const h = type === 'native_region' ? 76 : type === 'minecraft:single_slot' ? 18 : type === 'minecraft:creative-tab' ? 32 : type === 'minecraft:multi-line-text-widget' ? Math.min(256, Math.max(1, Math.floor(rawHeight / 9))) * 9 : rawHeight;
   return { x: Math.max(0, Math.min(screen.width - w, Math.round(bounds.x))),
     y: Math.max(0, Math.min(screen.height - h, Math.round(bounds.y))), w, h };
 }
 
+/** Explicit Button/CycleButton color-mode choice is a 0.52.0 capability; absence preserves legacy rendering. */
+/** Implementation notes are optional 0.53.0 design intent; absence never injects a field. */
+/** Plain Rectangle per-edge borders are an explicit 0.54.0 capability. */
+export function upgradeFillEdgeEdit(doc: GuiProject) {
+  const hasEdges = doc.screens.some(screen => screen.nodes.some(node => node.type === 'minecraft:fill' &&
+    ['edgeTopColor', 'edgeRightColor', 'edgeBottomColor', 'edgeLeftColor', 'edgeTopWidth', 'edgeRightWidth', 'edgeBottomWidth', 'edgeLeftWidth'].some(key => key in node.props)));
+  if (!hasEdges) return;
+  if (PROJECT_SCHEMA_VERSIONS.indexOf(doc.schemaVersion) < PROJECT_SCHEMA_VERSIONS.indexOf('0.54.0')) doc.schemaVersion = '0.54.0';
+  doc.entryScreenId ??= doc.screens[0].id;
+  doc.screenTabGroups ??= [];
+}
+
+export function upgradeImplementationNotesEdit(doc: GuiProject) {
+  if (!doc.screens.some(screen => screen.implementationNotes !== undefined || screen.nodes.some(node => node.implementationNotes !== undefined))) return;
+  if (PROJECT_SCHEMA_VERSIONS.indexOf(doc.schemaVersion) < PROJECT_SCHEMA_VERSIONS.indexOf('0.53.0')) doc.schemaVersion = '0.53.0';
+  doc.entryScreenId ??= doc.screens[0].id;
+  doc.screenTabGroups ??= [];
+}
+
+export function upgradeColorModeEdit(doc: GuiProject) {
+  const hasMode = doc.screens.some(screen => screen.nodes.some(node =>
+    (node.type === 'minecraft:button' || node.type === 'minecraft:cycle-button') && node.props.colorMode !== undefined));
+  if (!hasMode) return;
+  if (PROJECT_SCHEMA_VERSIONS.indexOf(doc.schemaVersion) < PROJECT_SCHEMA_VERSIONS.indexOf('0.52.0')) doc.schemaVersion = '0.52.0';
+  doc.entryScreenId ??= doc.screens[0].id;
+  doc.screenTabGroups ??= [];
+}
+
 export function upgradeTextStyleEdit(doc: GuiProject) {
   if (doc.runtimePolicy || doc.screens.some(s => s.nodes.some(n => n.type !== 'minecraft:creative-tab' && n.type !== 'minecraft:fill' && n.type !== 'minecraft:image' && n.type !== 'minecraft:scrollable-panel' && n.type !== 'minecraft:collapsible-panel' && ((n.type !== 'minecraft:string-widget' && n.type !== 'minecraft:multi-line-text-widget' && 'color' in n.props && n.props.color !== undefined) || ((n.type === 'minecraft:multi-line-text-widget' || n.type === 'minecraft:slider') && !n.props.textShadow))))) {
-    if (!['0.18.0', '0.19.0', '0.20.0', '0.21.0', '0.22.0', '0.23.0', '0.24.0', '0.25.0', '0.26.0', '0.27.0', '0.28.0', '0.29.0', '0.30.0', '0.31.0', '0.32.0', '0.33.0', '0.34.0', '0.35.0', '0.36.0', '0.37.0', '0.38.0'].includes(doc.schemaVersion)) doc.schemaVersion = '0.17.0'; doc.entryScreenId ??= doc.screens[0].id; doc.screenTabGroups ??= [];
+    if (!['0.18.0', '0.19.0', '0.20.0', '0.21.0', '0.22.0', '0.23.0', '0.24.0', '0.25.0', '0.26.0', '0.27.0', '0.28.0', '0.29.0', '0.30.0', '0.31.0', '0.32.0', '0.33.0', '0.34.0', '0.35.0', '0.36.0', '0.37.0', '0.38.0', '0.39.0', '0.40.0', '0.41.0', '0.42.0', '0.43.0', '0.44.0', '0.45.0', '0.46.0', '0.47.0', '0.48.0', '0.49.0', '0.50.0', '0.51.0', '0.52.0', '0.53.0', '0.54.0', '0.55.0', '0.56.0', '0.57.0'].includes(doc.schemaVersion)) doc.schemaVersion = '0.17.0'; doc.entryScreenId ??= doc.screens[0].id; doc.screenTabGroups ??= [];
   }
+}
+
+/** Editor naming metadata; never used as runtime identity or rendered text. */
+export function upgradeNodeAliasEdit(doc: GuiProject) {
+  if (!doc.screens.some(screen => screen.nodes.some(node => node.alias !== undefined))) return;
+  if (PROJECT_SCHEMA_VERSIONS.indexOf(doc.schemaVersion) < PROJECT_SCHEMA_VERSIONS.indexOf('0.39.0')) doc.schemaVersion = '0.39.0';
+  doc.entryScreenId ??= doc.screens[0].id;
+  doc.screenTabGroups ??= [];
+}
+
+/** Newly exposed widget tooltips are an explicit 0.49.0 capability; Button already had the field. */
+export function upgradeTooltipEdit(doc: GuiProject) {
+  const hasImageTooltip = doc.screens.some(screen => screen.nodes.some(node => node.type === 'minecraft:image' && node.props.tooltip !== undefined));
+  if (hasImageTooltip) {
+    if (PROJECT_SCHEMA_VERSIONS.indexOf(doc.schemaVersion) < PROJECT_SCHEMA_VERSIONS.indexOf('0.57.0')) doc.schemaVersion = '0.57.0';
+    doc.entryScreenId ??= doc.screens[0].id;
+    doc.screenTabGroups ??= [];
+    return;
+  }
+  const hasTooltip = doc.screens.some(screen => screen.nodes.some(node => node.type !== 'minecraft:button' && supportsTooltip(node) && node.props.tooltip !== undefined));
+  if (!hasTooltip) return;
+  if (PROJECT_SCHEMA_VERSIONS.indexOf(doc.schemaVersion) < PROJECT_SCHEMA_VERSIONS.indexOf('0.49.0')) doc.schemaVersion = '0.49.0';
+  doc.entryScreenId ??= doc.screens[0].id;
+  doc.screenTabGroups ??= [];
+}
+
+/** Repeatable List / Row Template is an explicit 0.51.0 capability. */
+export function upgradeRepeatableListEdit(doc: GuiProject) {
+  if (!doc.screens.some(screen => screen.nodes.some(node => node.type === 'minecraft:repeatable-list'))) return;
+  if (PROJECT_SCHEMA_VERSIONS.indexOf(doc.schemaVersion) < PROJECT_SCHEMA_VERSIONS.indexOf('0.51.0')) doc.schemaVersion = '0.51.0';
+  doc.entryScreenId ??= doc.screens[0].id;
+  doc.screenTabGroups ??= [];
+}
+
+/** Project-level language resources are an explicit 0.50.0 capability; editing them never rewrites TextSpec. */
+export function upgradeLocalizationResourceEdit(doc: GuiProject) {
+  if (!doc.localization && doc.project.modId === undefined) return;
+  if (PROJECT_SCHEMA_VERSIONS.indexOf(doc.schemaVersion) < PROJECT_SCHEMA_VERSIONS.indexOf('0.50.0')) doc.schemaVersion = '0.50.0';
+  doc.entryScreenId ??= doc.screens[0].id;
+  doc.screenTabGroups ??= [];
+}
+
+/** New optional Fill paint fields are added only when a designer explicitly edits a Rectangle style. */
+export function upgradeFillStyleEdit(doc: GuiProject) {
+  const hasStyle = doc.screens.some(screen => screen.nodes.some(node => node.type === 'minecraft:fill' &&
+    (node.props.stylePreset !== undefined || node.props.borderColor !== undefined || node.props.highlightColor !== undefined || node.props.shadowColor !== undefined)));
+  if (!hasStyle) return;
+  if (PROJECT_SCHEMA_VERSIONS.indexOf(doc.schemaVersion) < PROJECT_SCHEMA_VERSIONS.indexOf('0.42.0')) doc.schemaVersion = '0.42.0';
+  doc.entryScreenId ??= doc.screens[0].id;
+  doc.screenTabGroups ??= [];
+}
+
+/** Persist localization naming/reversible translation-mode metadata only after an explicit edit. */
+export function upgradeLocalizationEdit(doc: GuiProject) {
+  const hasDraftKey = doc.screens.some(screen => screen.nodes.some(node => {
+    const scan = (value: unknown): boolean => !!value && typeof value === 'object' && (Array.isArray(value) ? value.some(scan) : Object.entries(value).some(([key, child]) => key === 'disabledKey' || scan(child)));
+    return scan(node.props);
+  }));
+  if (doc.project.localizationNamespace === undefined && !hasDraftKey) return;
+  if (PROJECT_SCHEMA_VERSIONS.indexOf(doc.schemaVersion) < PROJECT_SCHEMA_VERSIONS.indexOf('0.43.0')) doc.schemaVersion = '0.43.0';
+  doc.entryScreenId ??= doc.screens[0].id;
+  doc.screenTabGroups ??= [];
 }

@@ -3,6 +3,7 @@ import { editorStore } from '../editor/store';
 import { commitExportDrafts } from './draftBarrier';
 import { beginExport } from './snapshot';
 import { buildBundle } from './bundle';
+import { planPageExports, type PageExportMode } from './pageExport';
 import { captureVisual } from './visualSnapshot';
 import { renderDesignPng } from './designPng';
 import type { LayeredResources } from '../resources/layered';
@@ -22,25 +23,26 @@ function downloadBlob(blob: Blob, filename: string) {
   try { const a = document.createElement('a'); a.href = url; a.download = filename; a.click(); }
   finally { setTimeout(() => URL.revokeObjectURL(url), 1000); }
 }
-export function useExports(notify: (text: string, error?: boolean) => void, resources: LayeredResources) {
-  const [batch, setBatch] = useState<Published | null>(null), [busy, setBusy] = useState(false), [error, setError] = useState<string | null>(null);
+export function useExports(notify: (text: string, error?: boolean) => void, resources: LayeredResources, pageSelections: Record<string, string> = {}) {
+  const [batch, setBatch] = useState<Published | null>(null), [busy, setBusy] = useState(false), [error, setError] = useState<string | null>(null), [pageMode, setPageMode] = useState<PageExportMode>('auto');
   const active = useRef(false), alive = useRef(true), urls = useRef<string[]>([]);
   const release = () => { urls.current.forEach(url => URL.revokeObjectURL(url)); urls.current = []; };
   useEffect(() => { alive.current = true; return () => { alive.current = false; release(); }; }, []);
-  const generate = async (onCaptured?: () => void, zipNow = false) => {
+  const generate = async (onCaptured?: () => void, zipNow = false, mode: PageExportMode = pageMode) => {
     if (active.current) return;
     active.current = true; setBusy(true); setError(null); release(); setBatch(null);
     let visual: Awaited<ReturnType<typeof captureVisual>> | undefined;
     try {
       // Capture before the first await. Async work never reads the live document.
       const snapshot = captureExport();
+      const pagePlan = planPageExports(snapshot.document, mode, { [snapshot.selectedScreenId]: pageSelections });
       const resourceGeneration = resources.revision;
       const fontPromise = fontSession.capture();
       onCaptured?.();
       const font = await fontPromise;
       if (resources.revision !== resourceGeneration) throw new Error('资源会话已改变，请重新导出');
-      visual = await captureVisual(resources, snapshot);
-      const result = await buildBundle(snapshot, (doc, ref, scale, screenId) => renderDesignPng(doc, ref, scale, visual, font, screenId), undefined, visual.manifest, { generation: font.generation, name: font.family });
+      visual = await captureVisual(resources, snapshot, pagePlan);
+      const result = await buildBundle(snapshot, (doc, ref, scale, screenId, bakedLayers, pageSelection) => renderDesignPng(doc, ref, scale, visual, font, screenId, bakedLayers, pageSelection), undefined, visual.manifest, { generation: font.generation, name: font.family }, { pagePlan, imageAssets: visual.images, imageCache: visual.cache });
       const verify = () => {
         if (!alive.current) throw new Error('导出页面已关闭');
         if (resources.revision !== visual!.generation) throw new Error('资源会话已改变，请重新导出');
@@ -72,5 +74,5 @@ export function useExports(notify: (text: string, error?: boolean) => void, reso
     } catch (error) { if (alive.current) { setError((error as Error).message); notify(`ZIP 未生成：${(error as Error).message}`, true); } }
     finally { active.current = false; if (alive.current) setBusy(false); }
   };
-  return { batch, busy, error, generate, downloadZip };
+  return { batch, busy, error, generate, downloadZip, pageMode, setPageMode };
 }

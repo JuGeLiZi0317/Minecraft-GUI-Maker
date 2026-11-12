@@ -67,7 +67,7 @@ describe('B1 real Blockly graph and shared F2 authority', () => {
     expect(saved.schemaVersion).toBe('0.33.0'); expect(saved.screens[0].behaviors[0]).toEqual(old.screens[0].behaviors[0]); expect(saved.screens[0].behaviors[1]).toEqual(rule);
     expect(parseProject(JSON.stringify(saved))).toEqual(saved);
     const snapshot = beginExport(saved), spec = buildSpecification(snapshot, await referenceFor(snapshot), 'project.json');
-    expect(spec.version).toBe(IMPLEMENTATION_SPEC_VERSION); expect(spec.designIntent.conditionalBehaviorContract).toMatchObject({ condition: { validEvents: ['selection-change'] }, branches: { nesting: false, leafActions: ['set-status', 'set-progress-value'] } });
+    expect(spec.version).toBe(IMPLEMENTATION_SPEC_VERSION); expect(spec.designIntent.conditionalBehaviorContract).toMatchObject({ condition: { validEvents: ['selection-change'] }, branches: { nesting: false, leafActions: ['set-status', 'set-progress-value', 'set-visible', 'set-text'] } });
     expect(spec.designIntent.conditionalBehaviors).toMatchObject([{ ruleId: 'rule_if', sourceIds: ['node_22'], condition: { operator: 'equals', optionId: 'option_1' }, thenActions: [{ targetId: 'node_26', optionMappings: [{ optionId: 'option_1', statusId: 'status_running' }] }], elseActions: [] }]);
     const bundle = await buildBundle(snapshot, async () => new Uint8Array([137, 80, 78, 71]));
     expect(bundle.manifest.version).toBe(EXPORT_MANIFEST_VERSION); expect(bundle.manifest.screens[0].conditionalBehaviors).toHaveLength(1);

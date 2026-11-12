@@ -7,7 +7,7 @@ import { currentScreen, editorStore } from '../editor/store';
 import { actionsOf, behaviorLeafActions, eventBindingsOf, sourcesOf, matchesBehaviorEvent, F2_ACTION_TYPES, F2_EVENT_TYPES, CURRENT_PROJECT_SCHEMA_VERSION, projectSchema, PROJECT_SCHEMA_VERSIONS, type Behavior, type BehaviorAction, type GuiNode, type ScreenTarget } from '../domain/schema';
 import { displayText } from '../domain/model';
 import { CATALOG } from '../domain/catalog';
-import { tabManaged, tabVisibility } from '../domain/tabGroups';
+import { tabVisibility } from '../domain/tabGroups';
 import { isScreenNavigationTab, navigationTarget } from '../domain/screenTabNavigation';
 import { fontSession } from '../render/previewFont';
 import { type ProgressMapping } from '../domain/progressBinding';
@@ -16,17 +16,22 @@ import type { SelectionEvent } from '../domain/selection';
 import { isSelectionNode } from '../domain/selection';
 import { isStatusNode } from '../domain/statusIndicator';
 import { reduceTypedBehaviorEvent } from '../domain/genericBehavior';
+import { effectiveRuntimeVisibility } from '../domain/runtimeVisibility';
 import { behaviorNodeLabel } from '../domain/behaviorLabels';
 
 export type BehaviorPreview = Record<string, { text?: string; visible?: boolean; checked?: boolean; tabSelected?: boolean; progressValue?: number; statusId?: string; sliderValue?: number; optionId?: string }>;
 type BehaviorTrace = { id: number; sourceId: string; eventType: EventType; value?: number; optionId?: string; matchedRuleIds: string[]; outcomes: string[] };
 type EventType = Behavior['event']['type'];
 type ActionType = BehaviorAction['type'];
-type ActionDraft = { actionType: Exclude<ActionType, 'if'>; targetId: string; text: string; visible: boolean; mapping: ProgressMapping; optionMappings: { optionId: string; statusId: string }[] };
+type ActionDraft = { actionType: Exclude<ActionType, 'if' | 'switch'>; targetId: string; text: string; visible: boolean; mapping: ProgressMapping; optionMappings: { optionId: string; statusId: string }[] };
 type Draft = { id: string; eventType: EventType; sourceId: string; actions: ActionDraft[]; ordered: boolean };
 const sources = (nodes: GuiNode[], type: EventType) => nodes.filter(n => type === 'button-click' ? n.type === 'minecraft:button' : type === 'checkbox-change' ? n.type === 'minecraft:checkbox' : type === 'slider-change' ? n.type === 'minecraft:slider' : type === 'selection-change' ? isSelectionNode(n) : n.type === 'minecraft:fill');
-const targets = (nodes: GuiNode[], type: ActionType) => nodes.filter(n => type === 'set-visible' || (type === 'set-text' && n.type === 'minecraft:string-widget') || (type === 'set-progress-value' && n.type === 'minecraft:progress-bar') || (type === 'set-status' && isStatusNode(n)));
-const fromRule = (r: Behavior): Draft => ({ id: r.id, eventType: r.event.type, sourceId: r.event.sourceId, ordered: 'actions' in r, actions: actionsOf(r).map(a => ({ actionType: a.type === 'if' ? 'set-status' : a.type, targetId: a.type === 'open_screen' ? a.targetScreenId : a.type === 'if' ? '' : a.targetId, text: a.type === 'set-text' ? a.text : '', visible: a.type === 'set-visible' ? a.visible : true, mapping: a.type === 'set-progress-value' ? a.mapping : 'direct', optionMappings: a.type === 'set-status' && 'optionMappings' in a ? structuredClone(a.optionMappings) : [] })) });
+const targets = (nodes: GuiNode[], type: ActionType) => nodes.filter(n => n.type !== 'native_region' && (type === 'set-visible' || (type === 'set-text' && n.type === 'minecraft:string-widget') || (type === 'set-progress-value' && n.type === 'minecraft:progress-bar') || (type === 'set-status' && isStatusNode(n))));
+const draftAction = (a: BehaviorAction): ActionDraft => {
+  if (a.type === 'if' || a.type === 'switch' || a.type === 'set-exclusive-visible') return { actionType: 'set-visible', targetId: '', text: '', visible: true, mapping: 'direct', optionMappings: [] };
+  return { actionType: a.type, targetId: a.type === 'open_screen' ? a.targetScreenId : a.targetId, text: a.type === 'set-text' && 'text' in a ? a.text : '', visible: a.type === 'set-visible' ? a.visible : true, mapping: a.type === 'set-progress-value' ? a.mapping : 'direct', optionMappings: a.type === 'set-status' && 'optionMappings' in a ? structuredClone(a.optionMappings) : [] };
+};
+const fromRule = (r: Behavior): Draft => ({ id: r.id, eventType: r.event.type, sourceId: r.event.sourceId, ordered: 'actions' in r, actions: actionsOf(r).map(draftAction) });
 function TextWidthHint({ text, node }: { text: string; node: GuiNode | undefined }) {
   const font = useSyncExternalStore(fontSession.subscribe, fontSession.get);
   if (!node || node.type !== 'minecraft:string-widget') return null;
@@ -89,7 +94,7 @@ export function BehaviorPanel({ preview, setPreview, mode, setMode, canClick, tr
       setSessionPreview(next); setNavigation(null); notify('已切换标签预览；设计初态不变'); return;
     }
     if (!['minecraft:button', 'minecraft:checkbox', 'minecraft:fill'].includes(source.type)) return;
-    const state = preview ?? {}, visible = state[source.id]?.visible ?? (tabManaged(nodes).has(source.id) ? true : source.state.visible);
+    const state = preview ?? {}, visible = effectiveRuntimeVisibility(nodes, preview, null)(source);
     const type = source.type === 'minecraft:button' ? 'button-click' : source.type === 'minecraft:checkbox' ? 'checkbox-change' : 'rectangle-click';
     if (!visible || !tabVisibility(nodes, preview)(source.id) || ('enabled' in source.state && !source.state.enabled)) {
       recordTrace({ sourceId: source.id, eventType: type, matchedRuleIds: [], outcomes: ['事件未执行：来源当前不可见、未启用或不属于活动标签内容'] }); notify('触发组件当前不可见或未启用', true); return;
@@ -101,7 +106,7 @@ export function BehaviorPanel({ preview, setPreview, mode, setMode, canClick, tr
     let destination: string | null = null;
     navigationActions: for (const rule of matched) {
       for (const a of actionsOf(rule)) {
-        if (a.type === 'if') { outcomes.push(`规则 ${rule.id}：条件动作仅由 selection-change 携带 optionId 的事件执行`); continue; }
+        if (a.type === 'if' || a.type === 'switch' || a.type === 'set-exclusive-visible') { outcomes.push(`规则 ${rule.id}：${a.type} 仅由受支持的类型化选择事件执行`); continue; }
         if (a.type === 'open_screen') {
           const target = screens.find(item => item.id === a.targetScreenId);
           if (!target?.boundScreenId) { outcomes.push(`规则 ${rule.id}：open_screen ${a.targetScreenId} 未执行：${target ? '尚未绑定真实 Screen' : 'Screen 声明不存在'}`); continue; }
@@ -111,7 +116,7 @@ export function BehaviorPanel({ preview, setPreview, mode, setMode, canClick, tr
         else {
           const target = nodes.find(node => node.id === a.targetId);
           if (!target) outcomes.push(`规则 ${rule.id}：${a.type} 目标 ${a.targetId} 不存在，未执行`);
-          else { next[a.targetId] = { ...next[a.targetId], ...(a.type === 'set-text' ? { text: a.text } : { visible: a.visible }) }; outcomes.push(`规则 ${rule.id}：${a.type} → ${a.targetId} 已模拟执行`); }
+          else { next[a.targetId] = { ...next[a.targetId], ...(a.type === 'set-text' && 'text' in a ? { text: a.text } : { visible: a.type === 'set-visible' ? a.visible : undefined }) }; outcomes.push(`规则 ${rule.id}：${a.type} → ${a.targetId} 已模拟执行`); }
         }
       }
     }
@@ -131,7 +136,7 @@ export function BehaviorPanel({ preview, setPreview, mode, setMode, canClick, tr
     if (!mode || event.screenId !== screenId || editorStore.getState().currentScreenId !== screenId) return;
     const source = nodes.find(node => node.id === event.nodeId);
     if (!source || source.type !== 'minecraft:slider') return;
-    const sourceVisible = preview?.[source.id]?.visible ?? (tabManaged(nodes).has(source.id) ? true : source.state.visible);
+    const sourceVisible = effectiveRuntimeVisibility(nodes, preview, null)(source);
     const eventType: EventType = 'slider-change';
     if (!Number.isFinite(event.value) || !sourceVisible || !tabVisibility(nodes, preview)(source.id) || !source.state.enabled) {
       recordTrace({ sourceId: source.id, eventType, value: event.value, matchedRuleIds: [], outcomes: [!Number.isFinite(event.value) ? 'Slider 事件未执行：事件载荷无效' : 'Slider 事件未执行：来源隐藏、未启用或不属于活动标签内容'] }); return;
@@ -148,7 +153,7 @@ export function BehaviorPanel({ preview, setPreview, mode, setMode, canClick, tr
     if (!source || !isSelectionNode(source)) return;
     const eventType: EventType = 'selection-change';
     const option = source.props.options.find(item => item.id === event.optionId);
-    const sourceVisible = preview?.[source.id]?.visible ?? (tabManaged(nodes).has(source.id) ? true : source.state.visible);
+    const sourceVisible = effectiveRuntimeVisibility(nodes, preview, null)(source);
     if (!option || option.disabled || !source.state.enabled || !sourceVisible || !tabVisibility(nodes, preview)(source.id)) {
       recordTrace({ sourceId: source.id, eventType, optionId: event.optionId, matchedRuleIds: [], outcomes: [!option ? 'selection-change 未执行：事件载荷无效' : option.disabled ? 'selection-change：禁用选项正常跳过' : 'selection-change 未执行：来源隐藏、未启用或不属于活动标签内容'] }); return;
     }
@@ -177,7 +182,7 @@ export function BehaviorPanel({ preview, setPreview, mode, setMode, canClick, tr
     const reasons = [] as string[];
     if (!source || eventBindingsOf(rule).some(binding => !sources(nodes, binding.type).some(node => node.id === binding.sourceId))) reasons.push('事件来源类型或 ID 不可用');
     for (const action of actionsOf(rule)) {
-      if (action.type === 'if') continue;
+      if (action.type === 'if' || action.type === 'switch' || action.type === 'set-exclusive-visible') continue;
       if (action.type === 'open_screen') { const target = screens.find(item => item.id === action.targetScreenId); if (!target) reasons.push(`目标 ${action.targetScreenId} 未声明`); else if (!target.boundScreenId) reasons.push(`导航 ${action.targetScreenId} 未绑定`); }
       else if (!nodes.some(node => node.id === action.targetId && (action.type === 'set-progress-value' ? node.type === 'minecraft:progress-bar' : action.type === 'set-status' ? isStatusNode(node) : action.type !== 'set-text' || node.type === 'minecraft:string-widget'))) reasons.push(`动作目标 ${action.targetId} 不可用`);
     }
@@ -188,7 +193,7 @@ export function BehaviorPanel({ preview, setPreview, mode, setMode, canClick, tr
     <div className="export-panel-heading"><strong>行为 · F2 原型</strong>{hasDraft && <span className="behavior-draft-status" role="status">有未保存草稿</span>}<button onClick={() => setCollapsed(!collapsed)}>{collapsed ? '展开行为面板' : '收起行为面板'}</button><button aria-label="关闭行为" onClick={close}>✕</button></div>
     <div hidden={collapsed}>
     <p>Slider 只有显式添加 slider-change → set-progress-value 规则时才会驱动 Progress Bar。其余 F2 事件/动作按已保存规则顺序执行。</p>
-    <div className="behavior-capability" data-testid="behavior-capability"><strong>当前 Screen：{screen.behaviors.length} 条 F2 规则</strong><details className="behavior-capability-details"><summary>能力与实现约束</summary><div><p>F2 事件 ID：{F2_EVENT_TYPES.join('、')}。动作 ID：{F2_ACTION_TYPES.join('、')}。</p><p>Slider 在有效数值变化时即时触发；同值、焦点和重绘不会触发。Radio Group / Dropdown 只在确认改变选中 optionId 时触发；Dropdown active 候选移动不触发。</p><p>选择和 Slider 均可通过规则使用同 Screen 的常量 statusId 赋值；选项映射仅用于选择事件。条件可读取同 Screen 控件的当前值，读取不自动触发规则。未映射选项保持目标状态不变并记录；不按 label 推断。状态仅存于 PreviewSession。</p><p>Numeric Input、Tree 等节点事件仍是未绑定意图；Progress Bar、Status Indicator、Image / Sprite 是显示控件。目标类型分别受 set-progress-value / set-status 限制。</p><p>映射 direct 会把 Slider 值 clamp 到目标范围；normalize 按两端范围线性插值。Slider 常量范围按 normalize 映射到目标最小值。目标没有步进。</p><p>其他动作限制：set-text 目标为 StringWidget；set-visible 目标为当前 Screen 节点；open_screen 仅在目标声明显式绑定真实 Screen 后导航，不按名称推断。</p>
+    <div className="behavior-capability" data-testid="behavior-capability"><strong>当前 Screen：{screen.behaviors.length} 条 F2 规则</strong><details className="behavior-capability-details"><summary>能力与实现约束</summary><div><p>F2 事件 ID：{F2_EVENT_TYPES.join('、')}。动作 ID：{F2_ACTION_TYPES.join('、')}。</p><p>Slider 在有效数值变化时即时触发；同值、焦点和重绘不会触发。Radio Group / Dropdown 只在确认改变选中 optionId 时触发；Dropdown active 候选移动不触发。</p><p>选择和 Slider 可设置同 Screen 普通节点或容器可见性、StringWidget 字符串常量和合法 statusId。选项映射仅用于选择事件。条件可读取同 Screen 控件的当前值，读取不自动触发规则。未映射选项保持目标状态不变并记录；不按 label 推断。状态仅存于 PreviewSession。</p><p>Numeric Input、Tree 等节点事件仍是未绑定意图；Progress Bar、Status Indicator、Image / Sprite 是显示控件。目标类型分别受 set-progress-value / set-status 限制。</p><p>映射 direct 会把 Slider 值 clamp 到目标范围；normalize 按两端范围线性插值。Slider 常量范围按 normalize 映射到目标最小值。目标没有步进。</p><p>其他动作限制：set-text 目标为 StringWidget；set-visible 目标为当前 Screen 节点；open_screen 仅在目标声明显式绑定真实 Screen 后导航，不按名称推断。</p>
       </div></details>
       {invalidRules.length > 0 && <div role="status" className="behavior-validation"><strong>规则诊断</strong>{invalidRules.map(item => <p key={item.id}>{item.id}：{item.reasons.join('；')}</p>)}</div>}
       {unboundIntents.length > 0 && <p>未绑定控件事件：{unboundIntents.map(node => `${node.id}（${CATALOG[node.type].label}：${Object.values(node.events).filter(Boolean).join('、')}）`).join('；')}</p>}
@@ -200,7 +205,7 @@ export function BehaviorPanel({ preview, setPreview, mode, setMode, canClick, tr
       <button onClick={() => { const used = ids(); let i = 1; while (used.has(`screen_${i}`)) i++; setTargetDraft({ id: `screen_${i}`, name: '' }); }}>新增 Screen 目标</button>
       {targetDraft && <div className="behavior-editor"><strong>目标 ID：{targetDraft.id}</strong><label>显示名称<input aria-label="Screen 目标名称" maxLength={128} value={targetDraft.name} onChange={e => setTargetDraft({ ...targetDraft, name: e.target.value })}/></label>{screenBindingSupported && <label>绑定真实 Screen<select aria-label="绑定真实 Screen" value={targetDraft.boundScreenId ?? ''} onChange={e => setTargetDraft({ ...targetDraft, ...(e.target.value ? { boundScreenId: e.target.value } : { boundScreenId: undefined }) })}><option value="">保持未绑定</option>{doc.screens.map(item => <option key={item.id} value={item.id}>{displayText(item.title)} · {item.id}</option>)}</select></label>}<button disabled={!targetDraft.name.trim()} onClick={() => { try { editorStore.getState().saveScreenTarget({ ...targetDraft, name: targetDraft.name.trim() }); setTargetDraft(null); notify('Screen 目标已保存'); } catch (e) { notify((e as Error).message, true); } }}>保存 Screen 目标</button><button onClick={() => setTargetDraft(null)}>取消目标编辑</button></div>}
       <button onClick={create}>新增规则</button>
-      {screen.behaviors.map(rule => { const sharedMap = actionsOf(rule).some(action => action.type === 'set-status' && 'mapRef' in action); const conditional = actionsOf(rule).some(action => action.type === 'if'); const constant = actionsOf(rule).flatMap(behaviorLeafActions).some(action => action.type === 'set-status' && 'statusId' in action); const blockOnly = !!rule.eventBindings || sourcesOf(rule).length > 1 || sharedMap || conditional || constant; return <div className="behavior-rule" key={rule.id} data-behavior-rule-id={rule.id} tabIndex={-1}><span>{rule.id}：{eventBindingsOf(rule).map(binding => { const item = nodes.find(node => node.id === binding.sourceId); return `${item ? label(item) : `${binding.sourceId} · 来源不可用`} / ${binding.type}`; }).join('；')} → {actionsOf(rule).map(a => a.type === 'if' ? `if ${a.condition.type === 'event-option' ? `${a.condition.operator} ${a.condition.optionId}` : a.condition.type === 'compare' ? `${a.condition.operator} ${a.condition.valueType}` : a.condition.type.toUpperCase()}` : `${a.type === 'open_screen' ? a.targetScreenId : a.targetId} / ${a.type}`).join(' → ')}{invalidRules.some(item => item.id === rule.id) ? ' · 有待处理诊断' : ' · 来源与目标有效'}</span><button disabled={blockOnly} title={blockOnly ? '该规则含 Blockly 条件或共享行为，请在 Blockly 中编辑' : undefined} onClick={() => setDraft(fromRule(rule))}>编辑 {rule.id}</button>{blockOnly && <button type="button" onClick={() => onOpenBlocklyRule(rule.id)}>在 Blockly 中编辑</button>}<button onClick={() => editorStore.getState().deleteBehavior(rule.id)}>删除 {rule.id}</button></div>; })}
+      {screen.behaviors.map(rule => { const sharedMap = actionsOf(rule).some(action => action.type === 'set-status' && 'mapRef' in action); const conditional = actionsOf(rule).some(action => action.type === 'if' || action.type === 'switch'); const constant = actionsOf(rule).flatMap(behaviorLeafActions).some(action => action.type === 'set-status' && 'statusId' in action); const exclusive = actionsOf(rule).some(action => action.type === 'set-exclusive-visible'); const blockOnly = !!rule.eventBindings || sourcesOf(rule).length > 1 || sharedMap || conditional || constant || exclusive; return <div className="behavior-rule" key={rule.id} data-behavior-rule-id={rule.id} tabIndex={-1}><span>{rule.id}：{eventBindingsOf(rule).map(binding => { const item = nodes.find(node => node.id === binding.sourceId); return `${item ? label(item) : `${binding.sourceId} · 来源不可用`} / ${binding.type}`; }).join('；')} → {actionsOf(rule).map(a => a.type === 'switch' ? `switch ${a.valueType} / ${a.cases.length} cases` : a.type === 'if' ? `if ${a.condition.type === 'event-option' ? `${a.condition.operator} ${a.condition.optionId}` : a.condition.type === 'compare' ? `${a.condition.operator} ${a.condition.valueType}` : a.condition.type.toUpperCase()}` : a.type === 'set-exclusive-visible' ? `exclusive ${a.mapping.length} 项 / ${a.fallback}` : `${a.type === 'open_screen' ? a.targetScreenId : a.targetId} / ${a.type}`).join(' → ')}{invalidRules.some(item => item.id === rule.id) ? ' · 有待处理诊断' : ' · 来源与目标有效'}</span><button disabled={blockOnly} title={blockOnly ? '该规则含 Blockly 条件或共享行为，请在 Blockly 中编辑' : undefined} onClick={() => setDraft(fromRule(rule))}>编辑 {rule.id}</button>{blockOnly && <button type="button" onClick={() => onOpenBlocklyRule(rule.id)}>在 Blockly 中编辑</button>}<button onClick={() => editorStore.getState().deleteBehavior(rule.id)}>删除 {rule.id}</button></div>; })}
       {draft && <div className="behavior-editor">
         <strong>规则 {draft.id}</strong>
         <label>事件<select aria-label="行为事件" value={draft.eventType} onChange={e => { const eventType = e.target.value as EventType, progressId = nodes.find(node => node.type === 'minecraft:progress-bar')?.id ?? '', statusId = nodes.find(isStatusNode)?.id ?? '', fallbackId = targets(nodes, 'set-visible')[0]?.id ?? ''; const actions = draft.actions.map(action => eventType === 'slider-change' ? { ...action, actionType: 'set-progress-value' as const, targetId: nodes.some(node => node.id === action.targetId && node.type === 'minecraft:progress-bar') ? action.targetId : progressId, optionMappings: [] } : eventType === 'selection-change' ? { ...action, actionType: 'set-status' as const, targetId: nodes.some(node => node.id === action.targetId && isStatusNode(node)) ? action.targetId : statusId, optionMappings: [] } : action.actionType === 'set-progress-value' || action.actionType === 'set-status' ? { ...action, actionType: 'set-visible' as const, targetId: fallbackId, optionMappings: [] } : action); setDraft({ ...draft, eventType, sourceId: sources(nodes, eventType)[0]?.id ?? '', actions }); }}><option value="button-click">Button 点击</option><option value="checkbox-change">Checkbox 值变化</option><option value="rectangle-click">Rectangle 点击</option><option value="slider-change">Slider 有效数值变化</option><option value="selection-change">Radio Group / Dropdown 选择确认</option></select></label>
@@ -210,7 +215,7 @@ export function BehaviorPanel({ preview, setPreview, mode, setMode, canClick, tr
           const change = (patch: Partial<ActionDraft>) => setDraft({ ...draft, actions: draft.actions.map((a, i) => i === index ? { ...a, ...patch } : a) });
           const move = (step: number) => { const list = [...draft.actions], to = index + step; [list[index], list[to]] = [list[to], list[index]]; setDraft({ ...draft, actions: list, ordered: true }); };
           return <div className="behavior-action" key={index}><strong>动作 {index + 1}</strong>
-            <label>动作<select aria-label={`行为动作${suffix}`} value={action.actionType} onChange={e => { const actionType = e.target.value as Exclude<ActionType, 'if'>; change({ actionType, targetId: actionType === 'open_screen' ? screens[0]?.id ?? '' : targets(nodes, actionType)[0]?.id ?? '', optionMappings: [] }); }}>
+            <label>动作<select aria-label={`行为动作${suffix}`} value={action.actionType} onChange={e => { const actionType = e.target.value as Exclude<ActionType, 'if' | 'switch'>; change({ actionType, targetId: actionType === 'open_screen' ? screens[0]?.id ?? '' : targets(nodes, actionType)[0]?.id ?? '', optionMappings: [] }); }}>
               {draft.eventType === 'slider-change' ? <option value="set-progress-value">设置 Progress Bar 数值</option> : draft.eventType === 'selection-change' ? <option value="set-status">设置 Status Indicator 状态</option> : <><option value="set-text">设置 StringWidget 文本</option><option value="set-visible">设置组件可见性</option><option value="open_screen">打开目标 Screen（声明）</option></>}
             </select></label>
             <label>{action.actionType === 'open_screen' ? '目标 Screen' : '目标组件'}<select aria-label={`${action.actionType === 'open_screen' ? '目标 Screen' : '目标组件'}${suffix}`} value={action.targetId} onChange={e => { const targetId = e.target.value, target = nodes.find(node => node.id === targetId); change({ targetId, optionMappings: action.actionType === 'set-status' && target && isStatusNode(target) ? action.optionMappings.filter(mapping => target.props.statuses.some(status => status.statusId === mapping.statusId)) : action.optionMappings }); }}><option value="">请选择</option>{action.actionType === 'open_screen' ? screens.map(t => <option key={t.id} value={t.id}>{t.id} · {t.name}</option>) : targets(nodes, action.actionType).map(n => <option key={n.id} value={n.id}>{label(n)}</option>)}</select></label>

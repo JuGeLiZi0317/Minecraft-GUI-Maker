@@ -1,3 +1,4 @@
+import { registerBranchBlocks } from './branchBlocks';
 import { TYPED_EVENTS, RUNTIME_PROPERTIES, isTypedEventSource, isRuntimePropertyTarget } from '../domain/genericBehavior';
 import * as Blockly from 'blockly/core';
 import { behaviorNodeLabel } from '../domain/behaviorLabels';
@@ -9,7 +10,7 @@ import type { GuiProject } from '../domain/schema';
 type Screen = GuiProject['screens'][number];
 const contexts = new WeakMap<Blockly.Workspace, Screen>();
 export const setBlockContext = (workspace: Blockly.Workspace, screen: Screen) => { contexts.set(workspace, screen); };
-type Kind = 'source' | 'target' | 'option' | 'condition-option' | 'status' | 'map' | 'event-source' | 'property-target' | 'read-target';
+type Kind = 'source' | 'target' | 'option' | 'condition-option' | 'status' | 'map' | 'event-source' | 'property-target' | 'read-target' | 'visible-target' | 'text-target' | 'exclusive-target' | 'text-map';
 /** Preserve an invalid/stale stable value so conversion can diagnose it, rather than silently replacing it. */
 class StableDropdown extends Blockly.FieldDropdown {
   protected doClassValidation_(value?: string): string | null { return typeof value === 'string' ? value : null; }
@@ -23,6 +24,7 @@ function selector(kind: Kind) {
     const targetId = action?.getFieldValue('TARGET');
     const values = new Map<string, string>();
     for (const node of screen?.nodes ?? []) {
+      if ((kind === 'visible-target' && node.type !== 'native_region') || (kind === 'exclusive-target' && node.type !== 'native_region' && node.type !== 'minecraft:creative-tab') || (kind === 'text-target' && node.type === 'minecraft:string-widget')) values.set(node.id, blockNodeLabel(node, screen));
       if (kind === 'event-source') { const event = owner?.getFieldValue('EVENT'); if ((event === 'selection-change' || event === 'slider-change') && isTypedEventSource(node, event)) values.set(node.id, blockNodeLabel(node, screen)); }
       if (kind === 'read-target') { const type = owner?.getFieldValue('TYPE'); if ((type === 'Number' && node.type === 'minecraft:slider') || (type === 'OptionId' && isSelectionNode(node))) values.set(node.id, blockNodeLabel(node, screen)); }
       if (kind === 'property-target') { const property = owner?.getFieldValue('PROPERTY'); if ((property === 'currentStatusId' || property === 'currentValue') && isRuntimePropertyTarget(node, property)) values.set(node.id, blockNodeLabel(node, screen)); }
@@ -32,8 +34,8 @@ function selector(kind: Kind) {
         const root = owner?.workspace.getAllBlocks(false).find(block => block.type === 'gui_on_selection' || block.type === 'gui_on_selection_single' || block.type === 'gui_on_event');
         const sourceIds: string[] = (root?.type === 'gui_on_selection_single' || root?.type === 'gui_on_event') && root.getFieldValue('SOURCE') ? [root.getFieldValue('SOURCE')] : [];
         for (let source = root?.getInputTargetBlock('SOURCES') ?? null; source; source = source.getNextBlock()) if (source.type === 'gui_selection_source') { const sourceId = source.getFieldValue('SOURCE'); if (sourceId) sourceIds.push(sourceId); }
-        let comparison = owner?.getParent(); while (comparison && comparison.type !== 'gui_compare') comparison = comparison.getParent();
-        const reads = ['LEFT','RIGHT'].flatMap(name => { const child = comparison?.getInputTargetBlock(name); return child?.type === 'gui_read_control' && child.getFieldValue('TARGET') ? [child.getFieldValue('TARGET') as string] : []; });
+        let comparison = owner?.getParent(); while (comparison && comparison.type !== 'gui_compare' && comparison.type !== 'gui_switch') comparison = comparison.getParent();
+        const reads = (comparison?.type === 'gui_switch' ? ['VALUE'] : ['LEFT','RIGHT']).flatMap(name => { const child = comparison?.getInputTargetBlock(name); return child?.type === 'gui_read_control' && child.getFieldValue('TARGET') ? [child.getFieldValue('TARGET') as string] : []; });
         if (reads.length) sourceIds.splice(0, sourceIds.length, ...reads);
         const selectedSources = sourceIds.map(id => screen.nodes.find(candidate => candidate.id === id)).filter((node): node is SelectionNode => !!node && isSelectionNode(node));
         for (const option of node.props.options) if (selectedSources.some(source => source.id === node.id) && selectedSources.every(source => source.props.options.some(item => item.id === option.id))) values.set(option.id, displayText(option.label));
@@ -41,6 +43,7 @@ function selector(kind: Kind) {
       if (kind === 'status' && isStatusNode(node) && (!targetId || node.id === targetId)) for (const status of node.props.statuses) values.set(status.statusId, displayText(status.label));
     }
     if (kind === 'map') for (const map of screen?.behaviorMaps ?? []) values.set(map.id, `${map.name} · ${map.id}`);
+    if (kind === 'text-map') for (const map of screen?.textMappings ?? []) values.set(map.id, `${map.name} · ${map.id} · Text`);
     if (kind === 'option' || kind === 'condition-option' || kind === 'status') {
       const counts = new Map<string, number>(); for (const text of values.values()) counts.set(text, (counts.get(text) ?? 0) + 1);
       for (const [id, text] of values) if ((counts.get(text) ?? 0) > 1) values.set(id, `${text} · ${id}`);
@@ -50,8 +53,8 @@ function selector(kind: Kind) {
   });
 }
 function blockNodeLabel(node: Screen['nodes'][number], screen: Screen) {
-  const full = behaviorNodeLabel(node, screen), name = full.split(' · ')[0];
-  const duplicate = screen.nodes.filter(candidate => behaviorNodeLabel(candidate, screen).split(' · ')[0] === name).length > 1;
+  const full = behaviorNodeLabel(node, screen), name = node.alias ?? full.split(' · ')[0];
+  const duplicate = screen.nodes.filter(candidate => (candidate.alias ?? behaviorNodeLabel(candidate, screen).split(' · ')[0]) === name).length > 1;
   return duplicate ? full : name;
 }
 function referenceTooltip(block: Blockly.Block) {
@@ -77,8 +80,35 @@ function updateProperty(block: Blockly.Block, property: string) {
   else if (property !== 'currentValue' && block.getInput('MAPPING_ROW')) block.removeInput('MAPPING_ROW');
 }
 let registered = false;
+/** Editor-only diagnostics; never writes authority. Duplicate options/targets and stale IDs stay visible. */
+function validateExclusiveBlock(block: Blockly.Block) {
+  const screen = contexts.get(block.workspace);
+  if (!screen) return;
+  const options = new Set<string>(), targets = new Set<string>(), problems: string[] = [];
+  let count = 0;
+  for (let pair = block.getInputTargetBlock('MAPPING'); pair; pair = pair.getNextBlock()) {
+    if (pair.type !== 'gui_exclusive_pair') { problems.push('映射条目必须是「选项 → 显示目标」积木'); break; }
+    count++;
+    if (count > 32) { problems.push('映射最多 32 条'); break; }
+    const option = pair.getFieldValue('OPTION'), targetId = pair.getFieldValue('TARGET');
+    if (!option) problems.push(`第 ${count} 条缺少选项`);
+    else if (options.has(option)) problems.push(`选项 ${option} 重复`);
+    if (option) options.add(option);
+    const target = targetId ? screen.nodes.find(node => node.id === targetId) : undefined;
+    if (!targetId) problems.push(`第 ${count} 条缺少目标`);
+    else if (targets.has(targetId)) problems.push(`目标 ${targetId} 重复；一个目标只能对应一个选项`);
+    else if (!target) problems.push(`目标 ${targetId} 不存在`);
+    else if (target.type === 'native_region' || target.type === 'minecraft:creative-tab') problems.push(`目标 ${targetId} 不支持运行时可见性映射`);
+    if (targetId) targets.add(targetId);
+  }
+  if (!count) problems.push('至少需要一条「选项 → 显示目标」映射');
+  const fallback = block.getFieldValue('FALLBACK');
+  if (fallback !== 'hide-all' && fallback !== 'keep-current') problems.push('未匹配策略无效');
+  block.setWarningText(problems.length ? problems.join('；') : null);
+}
 export function registerBehaviorBlocks() {
   if (registered) return; registered = true;
+  registerBranchBlocks();
   Blockly.Blocks.gui_on_event = { init(this: Blockly.Block) {
     this.appendDummyInput().appendField('当').appendField(new Blockly.FieldDropdown(Object.entries(TYPED_EVENTS).map(([id, spec]) => [spec.label, id])), 'EVENT').appendField('来源').appendField<string>(selector('event-source'), 'SOURCE');
     this.appendStatementInput('DO').setCheck('GuiAction').appendField('依次执行'); this.setColour(210); this.setTooltip(() => referenceTooltip(this));
@@ -206,9 +236,52 @@ export function registerBehaviorBlocks() {
     this.appendValueInput('VALUE').setCheck('StatusId').appendField('设置指示器').appendField<string>(selector('target'), 'TARGET').appendField('的状态'); this.setTooltip(() => referenceTooltip(this));
     this.setPreviousStatement(true, 'GuiAction'); this.setNextStatement(true, 'GuiAction'); this.setColour(150);
   } };
+  Blockly.Blocks.gui_set_visible = { init(this: Blockly.Block) {
+    this.appendDummyInput().appendField('设置可见性').appendField<string>(selector('visible-target'), 'TARGET').appendField(new Blockly.FieldDropdown([['显示', 'true'], ['隐藏', 'false']]), 'VISIBLE');
+    this.setPreviousStatement(true, 'GuiAction'); this.setNextStatement(true, 'GuiAction'); this.setColour(150);
+    this.setTooltip('修改当前 Screen 会话可见性。隐藏容器会隐藏子控件，保留输入值。活动 Page 和祖先可见性仍共同约束显示。');
+  } };
+  Blockly.Blocks.gui_set_text = { init(this: Blockly.Block) {
+    this.appendDummyInput().appendField('设置显示文本').appendField<string>(selector('text-target'), 'TARGET');
+    this.appendValueInput('VALUE').setCheck('Text').appendField('为').appendField(new Blockly.FieldTextInput(''), 'TEXT');
+    this.setPreviousStatement(true, 'GuiAction'); this.setNextStatement(true, 'GuiAction'); this.setColour(150);
+    this.setTooltip('更新 StringWidget 当前会话的显示文本。可直接填写静态文本，或连接 Lookup / Text 常量；程序化赋值不派发新事件。');
+  } };
+  Blockly.Blocks.gui_lookup = { init(this: Blockly.Block) {
+    this.appendDummyInput().appendField('Lookup').appendField<string>(selector('text-map'), 'MAPPING');
+    this.appendValueInput('INPUT').setCheck('OptionId').appendField('using');
+    this.setOutput(true, 'Text'); this.setColour(200);
+    this.setTooltip('按映射定义把 OptionId 输入转换为 Literal / Translatable 文本。纯值计算：不修改状态、不触发事件、不自动订阅输入控件。');
+  } };
+  Blockly.Blocks.gui_text_constant = { init(this: Blockly.Block) {
+    this.appendDummyInput().appendField('Translatable 文本').appendField(new Blockly.FieldTextInput(''), 'KEY').appendField('fallback').appendField(new Blockly.FieldTextInput(''), 'FALLBACK');
+    this.setOutput(true, 'Text'); this.setColour(270);
+    this.setTooltip('翻译键由 Minecraft 本地化系统解析；浏览器预览显示 fallback 并标注 ⟦key⟧。');
+  } };
+  Blockly.Blocks.gui_exclusive_visible = {
+    onchange(this: Blockly.Block) { validateExclusiveBlock(this); },
+    init(this: Blockly.Block) {
+      this.appendValueInput('VALUE').setCheck('OptionId').appendField('互斥显示：读取');
+      this.appendStatementInput('MAPPING').setCheck('GuiExclusiveMapping').appendField('映射 选项 → 目标');
+      this.appendDummyInput().appendField('未匹配时').appendField(new Blockly.FieldDropdown([['隐藏全部映射目标', 'hide-all'], ['保持现状', 'keep-current']]), 'FALLBACK');
+      this.setPreviousStatement(true, 'GuiAction'); this.setNextStatement(true, 'GuiAction'); this.setColour(150);
+      this.setTooltip('按读取到的 optionId 匹配一条映射：只显示该目标，并隐藏映射表内其余目标。映射表外的节点不受影响；活动 Page 与祖先可见性仍共同约束显示。');
+    },
+  };
+  Blockly.Blocks.gui_exclusive_pair = {
+    onchange(this: Blockly.Block) { const parent = this.getParent(); if (parent?.type === 'gui_exclusive_visible') validateExclusiveBlock(parent); },
+    init(this: Blockly.Block) {
+      this.appendDummyInput().appendField('选项').appendField<string>(selector('option'), 'OPTION').appendField('→ 显示目标').appendField<string>(selector('exclusive-target'), 'TARGET');
+      this.setPreviousStatement(true, 'GuiExclusiveMapping'); this.setNextStatement(true, 'GuiExclusiveMapping'); this.setColour(270);
+      this.setTooltip(() => referenceTooltip(this));
+    },
+  };
 }
 export const behaviorToolbox = { kind: 'flyoutToolbox', contents: [
-  { kind: 'label', text: '通用类型化行为' }, ...['gui_on_event', 'gui_event_value', 'gui_constant', 'gui_read_control', 'gui_compare', 'gui_and', 'gui_or', 'gui_not', 'gui_if', 'gui_action'].map(type => ({ kind: 'block', type })),
+  { kind: 'label', text: '属性组显示与文本' }, { kind: 'block', type: 'gui_set_visible' }, { kind: 'block', type: 'gui_set_text' },
+  { kind: 'label', text: '命名映射 Lookup' }, { kind: 'block', type: 'gui_lookup' }, { kind: 'block', type: 'gui_text_constant' },
+  { kind: 'label', text: '互斥可见性映射' }, { kind: 'block', type: 'gui_exclusive_visible' }, { kind: 'block', type: 'gui_exclusive_pair' },
+  { kind: 'label', text: '通用类型化行为' }, ...['gui_on_event', 'gui_event_value', 'gui_constant', 'gui_read_control', 'gui_compare', 'gui_and', 'gui_or', 'gui_not', 'gui_if', 'gui_if_chain', 'gui_switch', 'gui_action'].map(type => ({ kind: 'block', type })),
   { kind: 'label', text: '快捷条件行为' }, { kind: 'block', type: 'gui_on_selection_single' }, { kind: 'block', type: 'gui_if_selection' }, { kind: 'block', type: 'gui_set_status_direct' },
   { kind: 'label', text: '完整事件与来源' }, { kind: 'block', type: 'gui_on_selection' }, { kind: 'block', type: 'gui_selection_source' },
   { kind: 'label', text: '有限条件与状态动作' }, { kind: 'block', type: 'gui_if' }, { kind: 'block', type: 'gui_if_option' }, { kind: 'block', type: 'gui_set_status' }, { kind: 'block', type: 'gui_status_map' },

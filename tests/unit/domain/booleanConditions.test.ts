@@ -57,7 +57,7 @@ describe('B1.8 boolean trees', () => {
  it('keeps recursive diagnostics and structured export', async () => {
   const doc=genericBehaviorProject(), rule=ruleWith({type:'or',conditions:[cmp(5),{type:'not',condition:cmp(2)}]});doc.schemaVersion='0.36.0';doc.screens[0].behaviors[2]=rule;
   expect(buildBehaviorIndex(doc)[0].rules.find(r=>r.ruleId===rule.id)!.conditions.map(c=>c.type)).toEqual(['or','compare','not','compare']);
-  const store=createEditorStore(doc);store.getState().addScreen();const snapshot=beginExport(store.getState().doc), spec=buildSpecification(snapshot,await referenceFor(snapshot),'authority.json');const action = actionsOf(rule)[0]; if(action.type !== 'if') throw Error(); expect(spec.designIntent.conditionalBehaviors.find(c=>c.ruleId===rule.id)?.condition).toEqual(action.condition);
+  const store=createEditorStore(doc);store.getState().addScreen();const snapshot=beginExport(store.getState().doc), spec=buildSpecification(snapshot,await referenceFor(snapshot),'authority.json');const action = actionsOf(rule)[0]; if(action.type !== 'if') throw Error(); const projection = spec.designIntent.conditionalBehaviors.find(c=>c.ruleId===rule.id); expect(projection?.type === 'if' ? projection.condition : undefined).toEqual(action.condition);
   const bundle=await buildBundle(snapshot,async()=>new Uint8Array([137,80,78,71]));expect(bundle.manifest.genericBehaviorContract.boolean.maxNodes).toBe(32);expect(bundle.manifest.screens).toHaveLength(2);const file=bundle.files.find(f=>f.name.endsWith('.behavior-diagnostics.json'))!;const diagnostics=JSON.parse(new TextDecoder().decode(file.bytes));expect(JSON.stringify(diagnostics)).toContain('conditions[1].condition');
  });
 });

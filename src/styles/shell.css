@@ -139,6 +139,14 @@
   color: var(--danger);
   white-space: nowrap;
 }
+.project-field .localization-settings { position: relative; margin-top: 2px; font-size: var(--fs-10); color: var(--text-3); }
+.project-field .localization-settings > summary { cursor: pointer; width: max-content; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.project-field .localization-settings[open] { padding: 8px; border: 1px solid var(--line-subtle); border-radius: 6px; background: var(--bg-panel); }
+.project-field .localization-settings[open] > summary { margin-bottom: 6px; color: var(--text-1); }
+.project-field .localization-settings .field > span { display: block; font-size: var(--fs-10); font-weight: 400; }
+.project-field .localization-settings .field input { height: 26px; font-size: var(--fs-11); font-weight: 400; }
+.project-field .localization-settings .field-error { position: static; display: block; max-width: none; margin: 4px 0; }
+.project-field .localization-settings > small { display: block; line-height: 1.4; }
 .revision-chip {
   flex: 0 0 auto;
   padding: 2px 5px;

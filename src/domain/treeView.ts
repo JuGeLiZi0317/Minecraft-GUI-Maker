@@ -17,14 +17,63 @@ export const TREE_VIEW_COLORS = {
   disclosure: '#c4cbd3', disabledDisclosure: '#78818c',
   scrollbarTrack: '#111821', scrollbarThumb: '#8795a5',
 } as const;
+/** Same identifier grammar as the authoritative Schema `id` field. */
+export const TREE_ITEM_ID = /^[A-Za-z][A-Za-z0-9_-]{0,63}$/;
 export const isTreeViewNode = (node: GuiNode): node is TreeViewNode => node.type === 'minecraft:tree-view';
 export const treeItemText = (text: TextSpec) => text.kind === 'literal' ? text.value : (text.fallback ?? text.key);
+
+/** Reject illegal or duplicate item IDs before a rename transaction touches authority JSON. */
+export function treeItemIdError(items: readonly TreeItem[], nextId: string, previousId?: string): string | null {
+  if (!TREE_ITEM_ID.test(nextId)) return '树项 ID 必须以字母开头，只能包含字母、数字、下划线或连字符（1–64 字符）';
+  if (items.some(item => item.id === nextId && item.id !== previousId)) return `树项 ID 必须唯一：${nextId}`;
+  return null;
+}
+
+/**
+ * Rename one item and remap every internal reference in the same transaction: child parentId,
+ * initialExpandedIds and initialSelectedItemId. F2 has no Tree View dataflow, so no rule IDs are rewritten.
+ */
+export function renameTreeItemId<T extends { items: TreeItem[]; initialExpandedIds: string[]; initialSelectedItemId: string }>(props: T, previousId: string, nextId: string): T {
+  return {
+    ...props,
+    items: props.items.map(item => ({ ...item, id: item.id === previousId ? nextId : item.id, parentId: item.parentId === previousId ? nextId : item.parentId })),
+    initialExpandedIds: props.initialExpandedIds.map(id => id === previousId ? nextId : id),
+    initialSelectedItemId: props.initialSelectedItemId === previousId ? nextId : props.initialSelectedItemId,
+  };
+}
+
+/** Internal (non-rule) references that a rename remaps automatically. */
+export function treeItemInternalReferences(props: { items: TreeItem[]; initialExpandedIds: string[]; initialSelectedItemId: string }, itemId: string): string[] {
+  const result: string[] = [];
+  if (props.initialExpandedIds.includes(itemId)) result.push('初始展开');
+  if (props.initialSelectedItemId === itemId) result.push('初始选中');
+  const children = props.items.filter(item => item.parentId === itemId);
+  if (children.length) result.push(`子项 parentId（${children.length}）`);
+  return result;
+}
+
+/** Generate a readable, unique default ID. Explicit IDs stay available through the add form. */
+export function nextTreeItemId(items: readonly TreeItem[], parentId: string | null = null): string {
+  const safe = (value: string) => (value.replace(/[^A-Za-z0-9_-]/g, '_').replace(/^[^A-Za-z]+/, '') || 'item').slice(0, 48);
+  const base = parentId ? `${safe(parentId)}_item` : 'tree_item';
+  if (!items.some(item => item.id === base)) return base;
+  let index = 2;
+  while (items.some(item => item.id === `${base}_${index}`)) index++;
+  return `${base}_${index}`;
+}
+
+/** Next free sibling order, tolerating gaps left by deleting a middle sibling. */
+export function nextTreeOrder(items: readonly TreeItem[], parentId: string | null, excludeId?: string): number {
+  const siblings = items.filter(item => item.parentId === parentId && item.id !== excludeId);
+  return siblings.length ? Math.max(...siblings.map(item => item.order)) + 1 : 0;
+}
 
 export function treeViewError(props: { items: TreeItem[]; initialExpandedIds: string[]; initialSelectedItemId: string }): string | null {
   const { items, initialExpandedIds, initialSelectedItemId } = props;
   if (items.length < 1 || items.length > TREE_VIEW_MAX_ITEMS) return `Tree View 需要 1～${TREE_VIEW_MAX_ITEMS} 个树项`;
   const byId = new Map<string, TreeItem>();
   for (const item of items) {
+    if (!TREE_ITEM_ID.test(item.id)) return `树项 ID 格式无效：${item.id}`;
     if (byId.has(item.id)) return `树项 ID 必须唯一：${item.id}`;
     if (treeItemText(item.label).length > 128) return `树项名称最多 128 个字符：${item.id}`;
     byId.set(item.id, item);

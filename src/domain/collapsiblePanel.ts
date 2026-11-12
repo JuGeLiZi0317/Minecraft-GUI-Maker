@@ -1,10 +1,11 @@
 import type { Bounds, GuiNode } from './schema';
 import { containerScrollOffset, contentSize, intersectBounds, isScrollablePanelNode, type ScrollOffsets } from './scrollablePanel';
+import { isRepeatableListNode, repeatableContentSize, repeatableViewport } from './repeatableList';
 
 export type CollapsiblePanelNode = Extract<GuiNode, { type: 'minecraft:collapsible-panel' }>;
-export type ContainerNode = Extract<GuiNode, { type: 'minecraft:scrollable-panel' | 'minecraft:collapsible-panel' }>;
+export type ContainerNode = Extract<GuiNode, { type: 'minecraft:scrollable-panel' | 'minecraft:collapsible-panel' | 'minecraft:repeatable-list' }>;
 export const isCollapsiblePanelNode = (node: GuiNode): node is CollapsiblePanelNode => node.type === 'minecraft:collapsible-panel';
-export const isContainerNode = (node: GuiNode): node is ContainerNode => isScrollablePanelNode(node) || isCollapsiblePanelNode(node);
+export const isContainerNode = (node: GuiNode): node is ContainerNode => isScrollablePanelNode(node) || isCollapsiblePanelNode(node) || isRepeatableListNode(node);
 
 export const COLLAPSIBLE_PANEL_RUNTIME_CONTRACT = {
   version: '1.1.0',
@@ -26,6 +27,7 @@ export function designSiblingOrder(nodes: readonly GuiNode[], expanded: Readonly
 }
 
 export function containerLocalViewport(container: ContainerNode, expanded = true): Bounds {
+  if (isRepeatableListNode(container)) return { ...repeatableViewport(container), x: container.props.padding, y: container.props.padding };
   if (isScrollablePanelNode(container)) return { x: container.props.padding, y: container.props.padding, w: container.bounds.w - container.props.padding * 2 - 8, h: container.bounds.h - container.props.padding * 2 };
   return { x: 0, y: container.props.headerHeight, w: container.bounds.w, h: Math.max(0, (expanded ? container.bounds.h : container.props.headerHeight) - container.props.headerHeight) };
 }
@@ -38,6 +40,7 @@ export function containerScreenViewport(container: ContainerNode, nodes: readonl
 }
 
 export function containerContentSize(container: ContainerNode, expanded: Readonly<Record<string, boolean>> = {}) {
+  if (isRepeatableListNode(container)) return repeatableContentSize(container, 0);
   if (isScrollablePanelNode(container)) return contentSize(container);
   const open = expanded[container.id] ?? container.props.initialExpanded;
   const viewport = containerLocalViewport(container, open);
@@ -48,7 +51,7 @@ export function containerChildScreenBounds(container: ContainerNode, child: GuiN
   const origin = nodeAbsoluteBounds(container, nodes, scrollOffsets, expanded);
   const open = isCollapsiblePanelNode(container) ? (expanded[container.id] ?? container.props.initialExpanded) : true;
   const viewport = containerLocalViewport(container, open);
-  const scroll = isScrollablePanelNode(container) ? containerScrollOffset(container, scrollOffsets[container.id] ?? 0) : 0;
+  const scroll = isScrollablePanelNode(container) ? containerScrollOffset(container, scrollOffsets[container.id] ?? 0) : isRepeatableListNode(container) ? Math.max(0, Math.round(scrollOffsets[container.id] ?? 0)) : 0;
   return { x: origin.x + viewport.x + child.bounds.x, y: origin.y + viewport.y + child.bounds.y - scroll, w: child.bounds.w, h: child.bounds.h };
 }
 
@@ -65,7 +68,7 @@ function nodeAbsoluteBoundsSafe(node: GuiNode, nodes: readonly GuiNode[], scroll
   const parentBounds = nodeAbsoluteBoundsSafe(parent, nodes, scrollOffsets, expanded, seen);
   const open = isCollapsiblePanelNode(parent) ? (expanded[parent.id] ?? parent.props.initialExpanded) : true;
   const viewport = containerLocalViewport(parent, open);
-  const scroll = isScrollablePanelNode(parent) ? containerScrollOffset(parent, scrollOffsets[parent.id] ?? 0) : 0;
+  const scroll = isScrollablePanelNode(parent) ? containerScrollOffset(parent, scrollOffsets[parent.id] ?? 0) : isRepeatableListNode(parent) ? Math.max(0, Math.round(scrollOffsets[parent.id] ?? 0)) : 0;
   return { x: parentBounds.x + viewport.x + node.bounds.x, y: parentBounds.y + viewport.y + node.bounds.y - scroll, w: node.bounds.w, h: node.bounds.h };
 }
 

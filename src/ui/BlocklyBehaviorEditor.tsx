@@ -6,7 +6,8 @@ import { createPortal } from 'react-dom';
 import * as Blockly from 'blockly/core';
 import * as Zh from 'blockly/msg/zh-hans';
 import { currentScreen, editorStore } from '../editor/store';
-import { actionsOf, behaviorLeafActions, conditionLeaves, eventBindingsOf, legacySourcesOf, CURRENT_PROJECT_SCHEMA_VERSION, parseProject, type Behavior, type BehaviorMap, type GuiProject } from '../domain/schema';
+import { actionsOf, behaviorLeafActions, behaviorReadDependencies, eventBindingsOf, legacySourcesOf, isLookupExpression, CURRENT_PROJECT_SCHEMA_VERSION, parseProject, type Behavior, type BehaviorMap, type NamedTextMappingSpec, type GuiProject } from '../domain/schema';
+import { previewText } from '../domain/textMapping';
 import { displayText } from '../domain/model';
 import { isSelectionNode } from '../domain/selection';
 import { isStatusNode } from '../domain/statusIndicator';
@@ -17,7 +18,6 @@ import { canonical, readLayout, semanticFingerprint, validSnapshot, writeLayout 
 import { localSession } from '../io/localSession';
 import { useExportDraft } from '../exports/useExportDraft';
 import { BLOCKLY_THEMES, bindBlocklyTheme, type BlocklyThemeMode } from './blocklyTheme';
-import '../styles/blockly.css';
 
 const blocklyMessages: Record<string, string> = {};
 for (const [key, value] of Object.entries(Zh)) if (typeof value === 'string') blocklyMessages[key] = value;
@@ -41,6 +41,7 @@ export default function BlocklyBehaviorEditor({ active, openRuleId, setMode, not
   const [selected, setSelected] = useState(screen.behaviors.find(canEditWithBlocks)?.id ?? ''), [ready, setReady] = useState(false);
   const [genericEvent, setGenericEvent] = useState<TypedEventType>('selection-change');
   const [candidate, setCandidate] = useState<Behavior | null>(null), [mapDraft, setMapDraft] = useState<BehaviorMap | null>(null);
+  const [textMapDraft, setTextMapDraft] = useState<NamedTextMappingSpec | null>(null);
   const [draftRule, setDraftRule] = useState<Behavior | null>(null);
   const [multiTrigger, setMultiTrigger] = useState(false), [extraBindings, setExtraBindings] = useState<ExplicitBinding[]>([]);
   const triggerDraft = useRef<{ multi: boolean; extras: ExplicitBinding[] }>({ multi: false, extras: [] });
@@ -118,7 +119,7 @@ export default function BlocklyBehaviorEditor({ active, openRuleId, setMode, not
     baseDoc.current = current.doc; mapBaseDoc.current = current.doc; original.current = existing ? structuredClone(existing) : undefined; ruleId.current = rule.id; setSelected(existing?.id ?? ''); setConflict(false);
     const triggerState = { multi: !!existing?.eventBindings, extras: structuredClone(existing?.eventBindings?.slice(1) ?? []) };
     triggerDraft.current = triggerState; triggerBaseline.current = JSON.stringify(triggerState); setMultiTrigger(triggerState.multi); setExtraBindings(triggerState.extras);
-    setMapDraft(null); markMapDirty(false); setSelectedBlockId(null); setSelectedMapId(null);
+    setMapDraft(null); setTextMapDraft(null); markMapDirty(false); setSelectedBlockId(null); setSelectedMapId(null);
     setBlockContext(workspace.current!, owner);
     Blockly.Events.disable();
     try { Blockly.serialization.workspaces.load(behaviorToWorkspace(rule), workspace.current!); workspace.current!.clearUndo(); }
@@ -211,10 +212,18 @@ export default function BlocklyBehaviorEditor({ active, openRuleId, setMode, not
     return leaf.type === 'set-status' && 'mapRef' in leaf && leaf.mapRef === mapId ? [{ ruleId: rule.id, actionIndex, targetId: leaf.targetId, targetLabel: target ? behaviorNodeLabel(target, draftScreen) : leaf.targetId }] : [];
   })));
   const beginNewMap = (copy?: BehaviorMap) => {
-    const used = new Set(draftScreen.behaviorMaps?.map(map => map.id) ?? []); let index = 1; while (used.has(`behavior_map_${index}`)) index++;
+    const used = new Set([...(draftScreen.behaviorMaps?.map(map => map.id) ?? []), ...(draftScreen.textMappings?.map(map => map.id) ?? [])]); let index = 1; while (used.has(`behavior_map_${index}`)) index++;
     mapBaseDoc.current = editorStore.getState().doc; markMapDirty(true);
     setMapDraft(copy ? { ...structuredClone(copy), id: `behavior_map_${index}`, name: `${copy.name} 副本` } : { id: `behavior_map_${index}`, name: `状态映射 ${index}`, mappings: [] });
   };
+  const textMappingReferences = (mappingId: string) => draftScreen.behaviors.flatMap(rule => actionsOf(rule).flatMap((action, actionIndex) => behaviorLeafActions(action).flatMap(leaf => leaf.type === 'set-text' && 'value' in leaf && isLookupExpression(leaf.value) && leaf.value.mappingId === mappingId ? [{ ruleId: rule.id, actionIndex, targetId: leaf.targetId }] : [])));
+  const beginNewTextMapping = () => {
+    const used = new Set([...(draftScreen.behaviorMaps?.map(map => map.id) ?? []), ...(draftScreen.textMappings?.map(map => map.id) ?? [])]); let index = 1; while (used.has(`text_map_${index}`)) index++;
+    const firstOption = allOptions[0]?.[0] ?? '';
+    mapBaseDoc.current = editorStore.getState().doc; markMapDirty(true);
+    setTextMapDraft({ id: `text_map_${index}`, name: `命名映射 ${index}`, inputType: 'OptionId', outputType: 'Text', entries: firstOption ? [{ key: firstOption, value: { kind: 'literal', value: firstOption } }] : [], fallback: { kind: 'literal', value: '—' } });
+  };
+  const textMappingValueLabel = (value: NamedTextMappingSpec['fallback']) => previewText(value);
   const allOptions = [...new Map(draftScreen.nodes.filter(isSelectionNode).flatMap(node => node.props.options.map(option => [option.id, `${displayText(option.label)} · ${option.id}`] as const))).entries()];
   const allStatuses = [...new Map(draftScreen.nodes.filter(isStatusNode).flatMap(node => node.props.statuses.map(status => [status.statusId, `${displayText(status.label)} · ${status.statusId}`] as const))).entries()];
   const locateReference = (reference: MapReference, mapId: string) => {
@@ -244,10 +253,10 @@ export default function BlocklyBehaviorEditor({ active, openRuleId, setMode, not
   let graphRule: Behavior | undefined;
   try { if (workspace.current) graphRule = workspaceToBehavior(Blockly.serialization.workspaces.save(workspace.current) as BehaviorWorkspaceState, ruleId.current, original.current); } catch { /* Incomplete graphs are diagnosed separately. */ }
   const graphSources = graphRule ? legacySourcesOf(graphRule) : [];
-  const reads = draftRule ? actionsOf(draftRule).flatMap(action => action.type === 'if' ? conditionLeaves(action.condition).flatMap(condition => condition.type === 'compare' ? [condition.left, condition.right].flatMap(value => value.type === 'read-control-value' ? [value.nodeId] : []) : []) : []) : [];
+  const reads = draftRule ? actionsOf(draftRule).flatMap(action => behaviorReadDependencies(action).map(read => read.nodeId)) : [];
   const targets = draftRule ? actionsOf(draftRule).flatMap(behaviorLeafActions).flatMap(action => 'targetId' in action ? [action.targetId] : []) : [];
   const updateTriggers = (multi: boolean, extras: ExplicitBinding[]) => { triggerDraft.current = { multi, extras }; setMultiTrigger(multi); setExtraBindings(extras); ++loadGeneration.current; refreshRef.current(); };
-  const blockNames: Record<string, string> = { gui_on_event: '类型化事件入口', gui_event_value: '当前事件载荷', gui_constant: '类型化常量', gui_compare: '类型化比较', gui_action: '运行时属性动作', gui_on_selection_single: '单来源选择事件', gui_if_selection: '如果当前选择是', gui_set_status_direct: '直接设置状态', gui_on_selection: '选择变化事件', gui_selection_source: '选择控件来源', gui_event_option: '当前事件 optionId', gui_if_option: 'optionId 条件比较', gui_if: '如果 / 否则分支', gui_status_map: '内联状态映射', gui_shared_status_map: '共享状态映射', gui_mapping_pair: '映射项', gui_set_status: '设置指示器状态' };
+  const blockNames: Record<string, string> = { gui_switch: '类型化 Switch / Case', gui_if_chain: 'If / Else If / Else', gui_set_visible: '设置属性组可见性', gui_set_text: '设置静态显示文本', gui_on_event: '类型化事件入口', gui_event_value: '当前事件载荷', gui_constant: '类型化常量', gui_compare: '类型化比较', gui_action: '运行时属性动作', gui_on_selection_single: '单来源选择事件', gui_if_selection: '如果当前选择是', gui_set_status_direct: '直接设置状态', gui_on_selection: '选择变化事件', gui_selection_source: '选择控件来源', gui_event_option: '当前事件 optionId', gui_if_option: 'optionId 条件比较', gui_if: '如果 / 否则分支', gui_status_map: '内联状态映射', gui_shared_status_map: '共享状态映射', gui_mapping_pair: '映射项', gui_set_status: '设置指示器状态' };
   const mapPanel = <aside className={`blockly-sidebar ${mapDrawerOpen ? 'drawer-open' : ''}`} aria-label="Blockly 属性与共享映射面板" data-testid="blockly-sidebar" onClick={event => event.stopPropagation()}>
     <div className="blockly-sidebar-heading"><strong>属性与共享映射</strong><button type="button" aria-label="关闭映射侧栏" onClick={() => { setMapPanelOpen(false); setMapDrawerOpen(false); }}>×</button></div>
     {selectedBlock && <section className="blockly-selection-info" aria-label="选中积木属性"><strong>{blockNames[selectedBlock.type] ?? selectedBlock.type}</strong><code>{selectedBlock.id}</code>{selectedBlockFields.map(([name, value, stableId]) => <div key={name}><span>{name}</span><code>{value || '（未设置）'}</code>{stableId && stableId !== value && <small>{stableId}</small>}</div>)}{selectedBlock.type === 'gui_shared_status_map' && <button type="button" onClick={() => { const id = selectedBlock.getFieldValue('MAP'); setSelectedMapId(id || null); document.querySelector(`[data-map-id="${CSS.escape(id)}"]`)?.scrollIntoView({ block: 'nearest' }); }}>查看此映射</button>}</section>}
@@ -261,6 +270,48 @@ export default function BlocklyBehaviorEditor({ active, openRuleId, setMode, not
       </div>; })}</div>
       <button type="button" disabled={dirty || !!blocked || conflict} onClick={() => beginNewMap()}>新建共享映射</button>
       {mapDraft && <div className="blockly-map-editor"><strong>{mapDraft.id} · {(draftScreen.behaviorMaps ?? []).some(map => map.id === mapDraft.id) ? '编辑' : '新建'}</strong><label>映射名称<input aria-label="共享映射名称" value={mapDraft.name} maxLength={128} onChange={event => setMapDraft({ ...mapDraft, name: event.target.value })}/></label>{mapDraft.mappings.map((mapping, index) => <div className="blockly-map-pair" key={`${mapDraft.id}-${index}`}><label>optionId<select aria-label={`共享映射选项 ${index + 1}`} value={mapping.optionId} onChange={event => setMapDraft({ ...mapDraft, mappings: mapDraft.mappings.map((item, i) => i === index ? { ...item, optionId: event.target.value } : item) })}><option value="">请选择</option>{allOptions.map(([id, name]) => <option key={id} value={id}>{name}</option>)}</select></label><span>→</span><label>statusId<select aria-label={`共享映射状态 ${index + 1}`} value={mapping.statusId} onChange={event => setMapDraft({ ...mapDraft, mappings: mapDraft.mappings.map((item, i) => i === index ? { ...item, statusId: event.target.value } : item) })}><option value="">请选择</option>{allStatuses.map(([id, name]) => <option key={id} value={id}>{name}</option>)}</select></label><button type="button" aria-label={`删除映射项 ${index + 1}`} onClick={() => setMapDraft({ ...mapDraft, mappings: mapDraft.mappings.filter((_, i) => i !== index) })}>删除项</button></div>)}<button type="button" disabled={mapDraft.mappings.length >= 100 || !allOptions.length || !allStatuses.length} onClick={() => setMapDraft({ ...mapDraft, mappings: [...mapDraft.mappings, { optionId: allOptions[0][0], statusId: allStatuses[0][0] }] })}>添加映射项</button><button type="button" disabled={!!blocked || conflict || !mapDraft.name.trim() || mapDraft.mappings.some(item => !item.optionId || !item.statusId) || new Set(mapDraft.mappings.map(item => item.optionId)).size !== mapDraft.mappings.length} onClick={() => { try { if (mapBaseDoc.current !== editorStore.getState().doc || editorStore.getState().currentScreenId !== draftScreenId.current) throw new Error('Screen 或项目已变化，请重新载入映射草稿'); editorStore.getState().saveBehaviorMap(mapDraft); baseDoc.current = editorStore.getState().doc; mapBaseDoc.current = baseDoc.current; const nextScreen = currentScreenOf(baseDoc.current, draftScreenId.current); setDraftScreen(nextScreen); setBlockContext(workspace.current!, nextScreen); setMapDraft(null); markMapDirty(false); setMessage('共享映射已保存；所有引用均通过 Schema 校验。'); } catch (error) { setMessage((error as Error).message); } }}>保存映射定义</button><button type="button" onClick={() => { setMapDraft(null); markMapDirty(false); }}>取消</button></div>}
+    </div>
+  <div className="blockly-text-mappings" aria-label="命名文本映射" data-testid="blockly-text-mappings">
+      <div><strong>命名映射（{draftScreen.textMappings?.length ?? 0}）</strong><details className="blockly-map-help"><summary>命名映射说明</summary><small>Screen 局部纯值映射：OptionId → Literal / Translatable 文本。Lookup 读取时使用当前定义，未匹配返回声明的 fallback；不持有运行时变量。</small></details></div>
+      {!(draftScreen.textMappings?.length) && <p className="blockly-map-empty">尚无命名映射。创建后可被多个 Lookup 复用。</p>}
+      <div className="blockly-map-list">{(draftScreen.textMappings ?? []).map(mapping => { const refs = textMappingReferences(mapping.id); return <div key={mapping.id} className="blockly-map-row" data-text-map-id={mapping.id}>
+        <strong>{mapping.name}</strong><code>{mapping.id}</code><small>{mapping.inputType} → {mapping.outputType} · {mapping.entries.length} 项 · {refs.length} 个引用</small><small data-testid="text-mapping-summary">{mapping.entries.map(entry => `${entry.key} → ${textMappingValueLabel(entry.value)}`).join('；')}；未匹配 → {textMappingValueLabel(mapping.fallback)}</small>
+        <div className="blockly-map-actions"><button type="button" disabled={dirty || !!blocked || conflict} onClick={() => { mapBaseDoc.current = editorStore.getState().doc; markMapDirty(true); setTextMapDraft(structuredClone(mapping)); }}>编辑</button><button type="button" disabled={dirty || !!blocked || conflict || refs.length > 0} title={refs.length ? '先解除所有 Lookup 引用' : undefined} onClick={() => { try { editorStore.getState().deleteTextMapping(mapping.id); if (textMapDraft?.id === mapping.id) { setTextMapDraft(null); markMapDirty(false); } } catch (error) { setMessage((error as Error).message); } }}>删除</button></div>
+        {!!refs.length && <div className="blockly-map-references"><span>引用位置</span>{refs.map((reference, index) => <small key={`${reference.ruleId}-${reference.actionIndex}-${index}`}>{reference.ruleId} · 动作 {reference.actionIndex + 1} → {reference.targetId}</small>)}</div>}
+      </div>; })}</div>
+      <button type="button" disabled={dirty || !!blocked || conflict} onClick={() => beginNewTextMapping()}>新建命名映射</button>
+      {textMapDraft && <div className="blockly-text-map-editor" data-testid="blockly-text-map-editor">
+        <strong>{textMapDraft.id} · {(draftScreen.textMappings ?? []).some(mapping => mapping.id === textMapDraft.id) ? '编辑' : '新建'}</strong>
+        <label>映射名称<input aria-label="命名映射名称" value={textMapDraft.name} maxLength={128} onChange={event => setTextMapDraft({ ...textMapDraft, name: event.target.value })}/></label>
+        <label>输入类型<select aria-label="命名映射输入类型" value={textMapDraft.inputType} onChange={event => setTextMapDraft({ ...textMapDraft, inputType: event.target.value as 'OptionId' })}><option value="OptionId">OptionId</option></select></label>
+        <label>输出类型<select aria-label="命名映射输出类型" value={textMapDraft.outputType} onChange={event => setTextMapDraft({ ...textMapDraft, outputType: event.target.value as 'Text' })}><option value="Text">Text（Literal / Translatable）</option></select></label>
+        {textMapDraft.entries.map((entry, index) => <div className="blockly-map-pair" key={`${textMapDraft.id}-${index}`} data-entry-index={index}>
+          <label>选项<select aria-label={`命名映射选项 ${index + 1}`} value={entry.key} onChange={event => setTextMapDraft({ ...textMapDraft, entries: textMapDraft.entries.map((item, i) => i === index ? { ...item, key: event.target.value } : item) })}><option value="">请选择</option>{allOptions.map(([id, name]) => <option key={id} value={id}>{name}</option>)}</select></label>
+          <span>→</span>
+          <label>文本类型<select aria-label={`命名映射文本类型 ${index + 1}`} value={entry.value.kind} onChange={event => setTextMapDraft({ ...textMapDraft, entries: textMapDraft.entries.map((item, i) => i === index ? { ...item, value: event.target.value === 'literal' ? { kind: 'literal', value: '' } : { kind: 'translate', key: '', fallback: '' } } : item) })}><option value="literal">Literal</option><option value="translate">Translatable</option></select></label>
+          {entry.value.kind === 'literal'
+            ? <label>文本<input aria-label={`命名映射文本 ${index + 1}`} value={entry.value.value} onChange={event => { const text = event.target.value; setTextMapDraft({ ...textMapDraft, entries: textMapDraft.entries.map((item, i) => i === index ? { ...item, value: { kind: 'literal', value: text } } : item) }); }}/></label>
+            : <><label>翻译键<input aria-label={`命名映射翻译键 ${index + 1}`} value={entry.value.key} onChange={event => { const key = event.target.value; setTextMapDraft({ ...textMapDraft, entries: textMapDraft.entries.map((item, i) => i === index && item.value.kind === 'translate' ? { ...item, value: { ...item.value, key } } : item) }); }}/></label><label>fallback<input aria-label={`命名映射翻译回退 ${index + 1}`} value={entry.value.fallback} onChange={event => { const fallback = event.target.value; setTextMapDraft({ ...textMapDraft, entries: textMapDraft.entries.map((item, i) => i === index && item.value.kind === 'translate' ? { ...item, value: { ...item.value, fallback } } : item) }); }}/></label></>}
+          <button type="button" aria-label={`删除命名映射项 ${index + 1}`} onClick={() => setTextMapDraft({ ...textMapDraft, entries: textMapDraft.entries.filter((_, i) => i !== index) })}>删除项</button>
+        </div>)}
+        <button type="button" disabled={textMapDraft.entries.length >= 32 || !allOptions.length} onClick={() => setTextMapDraft({ ...textMapDraft, entries: [...textMapDraft.entries, { key: allOptions[0][0], value: { kind: 'literal', value: allOptions[0][0] } }] })}>添加映射项</button>
+        <fieldset className="blockly-text-map-fallback"><legend>未匹配 fallback（必填）</legend>
+          <label>类型<select aria-label="命名映射 fallback 类型" value={textMapDraft.fallback.kind} onChange={event => setTextMapDraft({ ...textMapDraft, fallback: event.target.value === 'literal' ? { kind: 'literal', value: '' } : { kind: 'translate', key: '', fallback: '' } })}><option value="literal">Literal</option><option value="translate">Translatable</option></select></label>
+          {textMapDraft.fallback.kind === 'literal'
+            ? <label>文本<input aria-label="命名映射 fallback 文本" value={textMapDraft.fallback.value} onChange={event => { const text = event.target.value; setTextMapDraft({ ...textMapDraft, fallback: { kind: 'literal', value: text } }); }}/></label>
+            : <><label>翻译键<input aria-label="命名映射 fallback 翻译键" value={textMapDraft.fallback.key} onChange={event => { const key = event.target.value; setTextMapDraft(current => current && current.fallback.kind === 'translate' ? { ...current, fallback: { ...current.fallback, key } } : current); }}/></label><label>fallback<input aria-label="命名映射 fallback 翻译回退" value={textMapDraft.fallback.fallback} onChange={event => { const fallback = event.target.value; setTextMapDraft(current => current && current.fallback.kind === 'translate' ? { ...current, fallback: { ...current.fallback, fallback } } : current); }}/></label></>}
+        </fieldset>
+        <small>预览：{textMapDraft.entries.map(entry => `${entry.key} → ${textMappingValueLabel(entry.value)}`).join('；') || '（无条目）'}；未匹配 → {textMappingValueLabel(textMapDraft.fallback)}</small>
+        {new Set(textMapDraft.entries.map(entry => entry.key)).size !== textMapDraft.entries.length && <p role="alert">映射键重复，无法保存。</p>}
+        <button type="button" disabled={!!blocked || conflict || !textMapDraft.name.trim() || !textMapDraft.entries.length || textMapDraft.entries.some(entry => !entry.key || (entry.value.kind === 'translate' ? !entry.value.key : false)) || (textMapDraft.fallback.kind === 'translate' && !textMapDraft.fallback.key) || new Set(textMapDraft.entries.map(entry => entry.key)).size !== textMapDraft.entries.length} onClick={() => { try {
+          if (mapBaseDoc.current !== editorStore.getState().doc || editorStore.getState().currentScreenId !== draftScreenId.current) throw new Error('Screen 或项目已变化，请重新载入映射草稿');
+          editorStore.getState().saveTextMapping(textMapDraft);
+          baseDoc.current = editorStore.getState().doc; mapBaseDoc.current = baseDoc.current;
+          const nextScreen = currentScreenOf(baseDoc.current, draftScreenId.current); setDraftScreen(nextScreen); setBlockContext(workspace.current!, nextScreen);
+          setTextMapDraft(null); markMapDirty(false); setMessage('命名映射已保存；引用它的 Lookup 将在下次明确触发时读取新定义。');
+        } catch (error) { setMessage((error as Error).message); } }}>保存命名映射</button>
+        <button type="button" onClick={() => { setTextMapDraft(null); markMapDirty(false); }}>取消</button>
+      </div>}
     </div>
   </aside>;
   return <section className={`blockly-editor ${active ? 'active' : 'inactive'} ${mapPanelOpen ? 'maps-open' : 'maps-collapsed'}`} role="region" aria-label="Blockly 行为工作区" data-testid="blockly-editor" aria-hidden={!active} style={{ '--blockly-sidebar-width': `${mapPanelWidth}px` } as CSSProperties}>
@@ -284,13 +335,13 @@ export default function BlocklyBehaviorEditor({ active, openRuleId, setMode, not
       </fieldset>
     </>, toolbarHost)}
     <div className="blockly-editor-main"><div className="blockly-center">
-      <div className="blockly-editor-controls" aria-label="规则编辑操作"><button disabled={!dirty || mapDraft !== null || !!blocked || conflict || !candidate} onClick={save}>保存积木规则</button><button disabled={!ready} onClick={() => workspace.current?.undo(false)}>撤销积木</button><button disabled={!ready} onClick={() => workspace.current?.undo(true)}>重做积木</button><button disabled={!ready} onClick={() => load(screen.behaviors.find(rule => rule.id === selected && canEditWithBlocks(rule))?.id)}>放弃草稿并重新载入</button><button type="button" onClick={() => setMode(false)}>返回 GUI 设计</button><details className="blockly-create-tools"><summary>新建规则</summary><div className="blockly-template-options"><label>新规则事件<select aria-label="通用规则事件" value={genericEvent} onChange={event => setGenericEvent(event.target.value as TypedEventType)}>{Object.entries(TYPED_EVENTS).map(([id, spec]) => <option key={id} value={id}>{spec.label}（{spec.valueType}）</option>)}</select></label><button disabled={dirty || !ready || !!blocked || conflict} onClick={() => load(undefined, false, genericEvent)}>新建通用规则</button><button disabled={dirty || !ready || !!blocked || conflict} onClick={() => load(undefined, true)}>新建简单条件规则</button><button disabled={dirty || !ready || !!blocked || conflict} onClick={() => load()}>新建共享规则</button></div></details></div>
+      <div className="blockly-editor-controls" aria-label="规则编辑操作"><button disabled={!dirty || mapDraft !== null || textMapDraft !== null || !!blocked || conflict || !candidate} onClick={save}>保存积木规则</button><button disabled={!ready} onClick={() => workspace.current?.undo(false)}>撤销积木</button><button disabled={!ready} onClick={() => workspace.current?.undo(true)}>重做积木</button><button disabled={!ready} onClick={() => load(screen.behaviors.find(rule => rule.id === selected && canEditWithBlocks(rule))?.id)}>放弃草稿并重新载入</button><button type="button" onClick={() => setMode(false)}>返回 GUI 设计</button><details className="blockly-create-tools"><summary>新建规则</summary><div className="blockly-template-options"><label>新规则事件<select aria-label="通用规则事件" value={genericEvent} onChange={event => setGenericEvent(event.target.value as TypedEventType)}>{Object.entries(TYPED_EVENTS).map(([id, spec]) => <option key={id} value={id}>{spec.label}（{spec.valueType}）</option>)}</select></label><button disabled={dirty || !ready || !!blocked || conflict} onClick={() => load(undefined, false, genericEvent)}>新建通用规则</button><button disabled={dirty || !ready || !!blocked || conflict} onClick={() => load(undefined, true)}>新建简单条件规则</button><button disabled={dirty || !ready || !!blocked || conflict} onClick={() => load()}>新建共享规则</button></div></details></div>
       {conflict && <div className="blockly-conflict" role="alert">当前积木仍保留在 {draftScreen.id} 草稿中。请显式放弃并重新载入当前 Screen；此草稿不会写入 {screen.id}。</div>}
       <p role="status" data-testid="blockly-diagnostic" className={`blockly-diagnostic ${!candidate && ready && (dirty || !!original.current) ? 'attention' : ''}`}>{dirty ? '未保存草稿 · ' : '与项目一致 · '}{message}</p>
 
       <div className="blockly-host" ref={host} data-testid="blockly-workspace"/>
       <details className="blockly-semantic-details"><summary>行为语义预览（未提交）</summary><pre data-testid="blockly-semantic-preview">{candidate ? JSON.stringify(candidate, null, 2) : '请修复积木连接和引用'}</pre></details>
-      <details className="blockly-help"><summary>帮助与能力合同</summary><div>    <p className="blockly-editor-intro">事件发生 → 读取本次事件的类型化值 → 比较与分支 → 更新目标支持的运行时属性。通用入口支持选项身份与数值；快捷积木沿用同一 F2 合同。切换工作模式保留草稿。</p>      <small className="blockly-editor-contract">通用条件支持 OptionId / Number 同类型比较；分支按顺序执行目标能力允许的动作。旧 event-option 与快捷积木继续可用；布尔条件最多嵌套 4 层、32 个节点；if 动作不能嵌套。直接赋值使用合法状态 ID；映射模式的未映射选项保持目标状态。每项映射必须存在于每个来源；非法引用禁止保存。共享映射按 Screen 隔离，修改会影响所有引用，删除前必须解除引用；复制会创建独立 map ID。已保存规则的布局缓存在本机；未提交草稿不持久化。规则保存沿用项目事务。</small></div></details>
+      <details className="blockly-help"><summary>帮助与能力合同</summary><div>    <p className="blockly-editor-intro">事件发生 → 读取本次事件的类型化值 → 比较与分支 → 更新目标支持的运行时属性。通用入口支持选项身份与数值；快捷积木沿用同一 F2 合同。切换工作模式保留草稿。</p>      <small className="blockly-editor-contract">通用条件支持 OptionId / Number 同类型比较；分支按顺序执行目标能力允许的动作。可见性动作支持同 Screen 普通节点和容器，文本动作仅支持 StringWidget 字符串常量；程序化赋值不触发新事件。旧 event-option 与快捷积木继续可用；布尔条件最多嵌套 4 层、32 个节点；控制动作不能嵌套。Switch 与 If / Else If 使用齿轮增删和排序分支，最多 16 个条件分支，每分支最多 50 个动作，整条扩展规则最多 200 个叶动作。Switch 只执行首个强类型匹配，未匹配时执行可选 Default；无匹配且没有 Default 时跳过。删除分支后需重新连接或删除保留的游离积木。直接赋值使用合法状态 ID；映射模式的未映射选项保持目标状态。每项映射必须存在于每个来源；非法引用禁止保存。共享映射按 Screen 隔离，修改会影响所有引用，删除前必须解除引用；复制会创建独立 map ID。已保存规则的布局缓存在本机；未提交草稿不持久化。规则保存沿用项目事务。</small></div></details>
     </div>{mapPanelOpen && <><div className="blockly-sidebar-resizer" role="separator" aria-label="调整共享映射面板宽度" onPointerDown={beginResize}/>{mapPanel}</>}</div>
 
     {mapDrawerOpen && <div className="blockly-drawer-backdrop" onClick={() => setMapDrawerOpen(false)}>{mapPanel}</div>}
